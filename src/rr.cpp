@@ -33,8 +33,8 @@ namespace rr {
     }
 
 
-    bool optimize(QVector& q_current, PoseVector& P_desired, QVector& q_opt,
-                  QVector& dq_opt) {
+    bool optimize(QVector& q_current, PoseVector& P_desired,
+                  PoseVector& dP_desired, QVector& q_opt, QVector& dq_opt) {
         // Objective
         QMatrix Q = QMatrix::Identity();
         QVector C = QVector::Zero();
@@ -47,7 +47,7 @@ namespace rr {
 
         // Solve the QP.
         Eigen::QuadProgDense qp(NUM_JOINTS, 6, 0);
-        bool r = qp.solve(Q, C, J, P_desired, Aineq, Bineq);
+        bool r = qp.solve(Q, C, J, dP_desired, Aineq, Bineq);
         dq_opt = qp.result();
 
         // Currently not optimizing on position level.
@@ -60,10 +60,11 @@ namespace rr {
         // Convert to Eigen.
         QVector q_current(req.q_current.data());
         PoseVector P_desired(req.P_desired.data());
+        PoseVector dP_desired(req.dP_desired.data());
 
         QVector q_opt, dq_opt;
 
-        bool status = optimize(q_current, P_desired, q_opt, dq_opt);
+        bool status = optimize(q_current, P_desired, dP_desired, q_opt, dq_opt);
 
         // Populate response
         res.q_opt = std::vector<double>(q_opt.data(), q_opt.data() + q_opt.size());
@@ -73,8 +74,8 @@ namespace rr {
     }
 }
 
-int main(int argc, char **argv)
-{
+
+int main(int argc, char **argv) {
   ros::init(argc, argv, "ik_optimize_server");
   ros::NodeHandle n;
 
@@ -83,10 +84,6 @@ int main(int argc, char **argv)
 
   return 0;
 }
-
-
-
-
 
 
 // int main() {
