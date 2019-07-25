@@ -112,11 +112,11 @@ include_directories(
 )
 
 # Compile executable
-add_executable(${PROJECT_NAME}
-  src/rr.cpp
+add_executable(rr_test
+  src/test.cpp
 )
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(rr_test
   ${catkin_LIBRARIES}
   /usr/local/lib/libeigen-quadprog.so
 )

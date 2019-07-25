@@ -44,7 +44,10 @@ namespace rr {
             ros::Subscriber pose_cmd_sub;
 
             // Subscribe to current joint values of the robot.
-            ros::Subscriber joint_states_sub;
+            ros::Subscriber ur10_joint_states_sub;
+
+            // Get (x, y, theta) from Vicon
+            ros::Subscriber rb_state_sub;
 
             // Publisher for desired joint speeds calculated by controller.
             // JointVelocityPublisher joint_vel_pub;
@@ -103,8 +106,7 @@ namespace rr {
             }
 
         private:
-            // Time step between control loop iterations.
-            double dt;
+            // TODO may want to store previous time
 
             // Proportional gain on the end effector pose error (in task space);
             Matrix6d K;
@@ -119,13 +121,13 @@ namespace rr {
         pose_cmd_sub = nh.subscribe("/pose_cmd", 1,
                 &IKControlNode::pose_cmd_sub, this);
 
-        // TODO probably need to subscribe to vicon to get correct value for
-        // base joints
-        joint_states_sub = nh.subscribe("/joint_states", 1,
+        ur10_joint_states_sub = nh.subscribe("/ur10_joint_states", 1,
                 &IKControlNode::joint_states_sub, this);
 
-        // TODO need to figure out the API for this
-        joint_vel_pub = np.advertise<>("", 1);
+        // TODO need vicon for this
+        // rb_state_sub
+
+        joint_vel_pub = np.advertise<trajectory_msgs::JointTrajectory>("/ur_driver/joint_speed", 1);
 
     }
 
@@ -139,8 +141,14 @@ namespace rr {
             QVector dq_cmd;
             controller.update(,dq_cmd);
 
-            // TODO
-            joint_vel_pub.publish();
+            // Convert to JointTrajectory message with a single point (i.e.
+            // velocity servoing)
+            JointTrajectoryPoint point;
+            point.velocities = std::vector<double>(dq_cmd.data(), dq_cmd.data() + dq_cmd.size());
+            JointTrajectory traj;
+            traj.points.append(point);
+
+            joint_vel_pub.publish(traj);
 
             rate.sleep()
         }
@@ -153,7 +161,11 @@ namespace rr {
 
 
     void IKControlNode::joint_states_cb(const sensor_msgs::JointState& msg) {
-        //std::vector<std::string>::iterator it = std::find(msg.name.begin(), msg.name.end, "name");
-        // extract joint information from message
+        // order is [ur10_arm_shoulder_pan_joint, ur10_arm_shoulder_lift_joint,
+        // ur10_arm_elbow_joint, ur10_arm_wrist_1_joint,
+        // ur10_arm_wrist_2_joint, ur10_arm_wrist_3_joint]
+
+        // Reinitialize current joint values.
+        q_act(msg.position.data());
     }
 }

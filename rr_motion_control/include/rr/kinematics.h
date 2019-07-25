@@ -5,9 +5,19 @@
 
 #include "rr/rr.h"
 
+
+#define DH_TF(T, q, a, d, alpha) Affine3d T; dh_transform(q, a, d, alpha, T);
+
+using namespace Eigen;
+
 namespace rr {
     class Kinematics {
-        static void jacobian(QVector& q, JacMatrix& J) {
+        public:
+
+        // Calculate Jacoian
+        // q: current joint values
+        // J: populated with Jacobian matrix
+        static void jacobian(const QVector& q, JacMatrix& J) {
             // Base joints
             double xb = q[0];
             double yb = q[1];
@@ -86,11 +96,53 @@ namespace rr {
                 -((-sq2*sq3 + cq2*cq3)*sq4 + (sq2*cq3 + sq3*cq2)*cq4)*sq5;
         }
 
-        static void forward(QVector& q, PoseVector& P) {
-            // TODO
+        // Forward kinematics
+        // q: joint values
+        // P: populated with pose of end effector
+        static void forward(const QVector& q, Affine3d& w_T_e) {
+            // Base
+            DH_TF(T1, M_PI_2, 0, 0,    M_PI_2);
+            DH_TF(T2, M_PI_2, 0, q(0), M_PI_2);
+            DH_TF(T3, M_PI_2, 0, q(1), M_PI_2);
+            DH_TF(T4, q(2),   0, 0,    0);
+
+            Affine3d w_T_b = T1 * T2 * T3 * T4;
+
+            // between base and arm
+            DH_TF(T5, 0, 0.27, 0.653, -M_PI_2);
+            DH_TF(T6, 0, 0,    0.01,   M_PI_2);
+
+            Affine3d b_T_a = T5 * T6;
+
+            // Arm
+            DH_TF(T7,  q(3),  0,      0.1273,   M_PI_2);
+            DH_TF(T8,  q(4), -0.612,  0,        0);
+            DH_TF(T9,  q(5), -0.5723, 0,        0);
+            DH_TF(T10, q(6),  0,      0.163941, M_PI_2);
+            DH_TF(T11, q(7),  0,      0.1157,  -M_PI_2);
+            DH_TF(T12, q(8),  0,      0.0922,   0);
+
+            Affine3d a_T_e = T7 * T8 * T9 * T10 * T11 * T12;
+
+            w_T_e = w_T_b * b_T_a * a_T_e;
         }
 
-    }
+        private:
 
-void calc_jacobian() {
+        // Create transformation matrix from D-H parameters.
+        static void dh_transform(double q, double a, double d, double alpha,
+                                 Affine3d& T) {
+            double sq = std::sin(q);
+            double cq = std::cos(q);
+            double salpha = std::sin(alpha);
+            double calpha = std::cos(alpha);
+
+            T.matrix() << cq, -sq*calpha, sq*salpha, a*cq,
+                          sq,  cq*calpha, cq*salpha, a*sq,
+                          0,   salpha,    calpha,    d,
+                          0,   0,         0,         1;
+        }
+
+    };
 }
+
