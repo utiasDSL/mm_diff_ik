@@ -12,6 +12,7 @@ namespace rr {
     typedef Eigen::Matrix<double, NUM_JOINTS, 1> QVector;
     typedef Eigen::Matrix<double, NUM_JOINTS, NUM_JOINTS> QMatrix;
     typedef Eigen::Matrix<double, 6, NUM_JOINTS> JacMatrix;
-    typedef Eigen::Matrix<double, 6, 1> PoseVector;
-    typedef Eigen::Matrix<double, 4, 4> Transform;
+    //typedef Eigen::Matrix<double, 4, 4> Transform;
+    typedef Eigen::Matrix<double, 6, 1> Vector6d;
+    typedef Eigen::Matrix<double, 6, 6> Matrix6d;
 }

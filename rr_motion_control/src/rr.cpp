@@ -80,6 +80,7 @@ int main(int argc, char **argv) {
   ros::NodeHandle n;
 
   ros::ServiceServer service = n.advertiseService("ik_optimize", rr::optimize_cb);
+  ROS_INFO("ik_optimize server started");
   ros::spin();
 
   return 0;

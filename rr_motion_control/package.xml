@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>rr</name>
+  <name>rr_motion_control</name>
   <version>0.0.0</version>
-  <description>The rr package</description>
+  <description>The rr_motion_control package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -29,6 +29,7 @@
 
   <depend>message_generation</depend>
   <depend>cmake_modules</depend>
+  <depend>rr_msgs</depend>
 
   <!-- <run_depend>cmake_modules</run_depend> -->
 
