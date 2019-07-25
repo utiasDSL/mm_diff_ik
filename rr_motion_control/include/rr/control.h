@@ -119,6 +119,8 @@ namespace rr {
         pose_cmd_sub = nh.subscribe("/pose_cmd", 1,
                 &IKControlNode::pose_cmd_sub, this);
 
+        // TODO probably need to subscribe to vicon to get correct value for
+        // base joints
         joint_states_sub = nh.subscribe("/joint_states", 1,
                 &IKControlNode::joint_states_sub, this);
 
