@@ -85,28 +85,30 @@ namespace rr {
             // vel_ff:   feedforward pose velocity
             // q_act:    current value of joint angles
             // dq_cmd:   populated with joint velocity commands to send
-            void update(const Affine3d& pose_des, const Vector6d& vel_ff,
+            void update(const Affine3d& ee_pose_des, const Vector6d& ee_vel_ff,
                         const QVector& q_act, QVector& dq_cmd) {
 
                 // Calculate actual pose using forward kinematics.
-                Affine3d pose_act;
-                Kinematics::forward(q_act, pose_act);
+                Affine3d ee_pose_act;
+                Kinematics::forward(q_act, ee_pose_act);
 
-                Vector3d pos_des = pose_des.translation();
-                Vector3d pos_act = pose_act.translation();
+                Vector3d pos_des = ee_pose_des.translation();
+                Vector3d pos_act = ee_pose_act.translation();
                 Vector3d pos_err = pos_des - pos_act;
 
                 Matrix3d K_pos = K.block<3,3>(0,0);
 
-                // Velocity command in task space.
+                // Velocity command in task space: P control with velocity
+                // feedforward.
                 Vector3d vel_cmd = K_pos * pos_err + vel_ff;
 
-                // TODO need to determine interface here
-                optimizer.solve()
+                // Optimize to solve IK problem.
+                optimizer.solve(q_act, vel_cmd, dq_cmd)
             }
 
         private:
-            // TODO may want to store previous time
+            // TODO may want to store previous time for later use in the
+            // optimizer
 
             // Proportional gain on the end effector pose error (in task space);
             Matrix6d K;
@@ -138,6 +140,7 @@ namespace rr {
         while (ros::ok()) {
             ros::spinOnce();
 
+            // TODO
             QVector dq_cmd;
             controller.update(,dq_cmd);
 
@@ -153,6 +156,7 @@ namespace rr {
             rate.sleep()
         }
     }
+
 
     void IKControlNode::pose_cmd_cb(const rr_msgs::PoseTrajectoryPoint& msg) {
         // do interpolation
