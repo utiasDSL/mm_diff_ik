@@ -14,6 +14,7 @@
 #include "rr/rr.h"
 #include "rr/kinematics.h"
 #include "rr/optimize.h"
+#include "rr/interp.h"
 
 
 using namespace Eigen;
@@ -22,7 +23,11 @@ using namespace Eigen;
 namespace rr {
     class IKController {
         public:
-            IKController(Matrix3d& K) : K(K), optimizer() {}
+            IKController() : optimizer() {}
+
+            bool init(Matrix3d& K) {
+                this->K = K;
+            }
 
             // Run one iteration of the control loop.
             // pose_des: desired pose
@@ -41,13 +46,13 @@ namespace rr {
 
                 // Velocity command in task space: P control with velocity
                 // feedforward.
-                Vector3d linear_vel = K_pos * pos_err + vel_ff;
+                Vector3d linear_vel = K * pos_err + vel_ff;
 
                 Vector6d vel_cmd;
                 vel_cmd << linear_vel, Vector3d::Zero();
 
                 // Optimize to solve IK problem.
-                optimizer.solve(q_act, vel_cmd, dq_cmd)
+                optimizer.solve(q_act, vel_cmd, dq_cmd);
             }
 
         private:
@@ -112,7 +117,8 @@ namespace rr {
 
             // Cubic polynomial trajectory, interpolated between current state
             // and commanded pose.
-            CubicInterp trajectory;
+            // TODO we need sane defaults for this
+            CubicInterp<3> trajectory;
 
 
             /** FUNCTIONS **/
@@ -120,28 +126,31 @@ namespace rr {
             // Takes a single Pose trajectory point to control toward.
             void pose_cmd_cb(const rr_msgs::PoseTrajectoryPoint& msg);
 
-            void joint_states_cb(const sensor_msgs::JointState& msg);
+            void ur10_joint_states_cb(const sensor_msgs::JointState& msg);
 
             void update_forward_kinematics();
     };
-
 
 
     bool IKControlNode::init(ros::NodeHandle& nh) {
         // TODO later we probably want to allow multiple pose waypoints for
         // when we're not doing force servoing
         pose_cmd_sub = nh.subscribe("/pose_cmd", 1,
-                &IKControlNode::pose_cmd_sub, this);
+                &IKControlNode::pose_cmd_cb, this);
 
         ur10_joint_states_sub = nh.subscribe("/ur10_joint_states", 1,
-                &IKControlNode::joint_states_sub, this);
+                &IKControlNode::ur10_joint_states_cb, this);
 
         // TODO need vicon for this
         // rb_state_sub
 
-        joint_vel_pub = np.advertise<trajectory_msgs::JointTrajectory>("/ur_driver/joint_speed", 1);
+        joint_vel_pub = nh.advertise<trajectory_msgs::JointTrajectory>("/ur_driver/joint_speed", 1);
 
         // TODO probably want to publish some sort of state here
+
+        // Initialize the controller.
+        Matrix3d K = Matrix3d::Identity();
+        controller.init(K);
 
         q_act = QVector::Zero();
         dq_act = QVector::Zero();
@@ -163,14 +172,14 @@ namespace rr {
 
             // Convert to JointTrajectory message with a single point (i.e.
             // velocity servoing)
-            JointTrajectoryPoint point;
+            trajectory_msgs::JointTrajectoryPoint point;
             point.velocities = std::vector<double>(dq_cmd.data(), dq_cmd.data() + dq_cmd.size());
-            JointTrajectory traj;
-            traj.points.append(point);
+            trajectory_msgs::JointTrajectory traj;
+            traj.points.push_back(point);
 
             joint_vel_pub.publish(traj);
 
-            rate.sleep()
+            rate.sleep();
         }
     }
 
@@ -194,11 +203,11 @@ namespace rr {
         Vector3d vel_act = dw_T_e_act.block<3,1>(0,0);
 
         // Interpolate the trajectory, from which we sample later.
-        trajectory = CubicInterp(t1, t2, pos_act, pos, vel_act, vel);
+        trajectory.interpolate(t1, t2, pos_act, pos, vel_act, vel);
     }
 
 
-    void IKControlNode::joint_states_cb(const sensor_msgs::JointState& msg) {
+    void IKControlNode::ur10_joint_states_cb(const sensor_msgs::JointState& msg) {
         // order is [ur10_arm_shoulder_pan_joint, ur10_arm_shoulder_lift_joint,
         // ur10_arm_elbow_joint, ur10_arm_wrist_1_joint,
         // ur10_arm_wrist_2_joint, ur10_arm_wrist_3_joint]
@@ -211,7 +220,7 @@ namespace rr {
         update_forward_kinematics();
     }
 
-    void update_forward_kinematics() {
+    void IKControlNode::update_forward_kinematics() {
         // TODO we could actually just store the Jacobian for reuse later,
         // since we need it both for control and interpolation.
         Kinematics::forward(q_act, w_T_e_act);

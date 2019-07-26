@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Eigen>
+#include <QuadProg.h>
 #include <ros/ros.h>
 #include <realtime_tools/realtime_publisher.h>
 
@@ -26,7 +27,8 @@ namespace rr {
         public:
             IKOptimizer() {};
 
-            bool solve(QVector& q, Vector6d& ee_vel, QVector& dq_opt) {
+            bool solve(const QVector& q, const Vector6d& ee_vel,
+                       QVector& dq_opt) {
                 // Objective
                 QMatrix Q = QMatrix::Identity();
                 QVector C = QVector::Zero();

@@ -9,7 +9,10 @@ int main(int argc, char **argv) {
   ros::NodeHandle nh;
 
   ROS_INFO("ik_control_node started");
-  ros::spin();
+
+  rr::IKControlNode node;
+  node.init(nh);
+  node.loop(125);
 
   return 0;
 }

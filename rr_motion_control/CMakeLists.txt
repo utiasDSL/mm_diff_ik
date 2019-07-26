@@ -121,6 +121,15 @@ target_link_libraries(rr_test
   /usr/local/lib/libeigen-quadprog.so
 )
 
+add_executable(rr_control_node
+  src/rr.cpp
+)
+
+target_link_libraries(rr_control_node
+  ${catkin_LIBRARIES}
+  /usr/local/lib/libeigen-quadprog.so
+)
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure

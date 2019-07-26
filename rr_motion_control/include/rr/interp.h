@@ -14,8 +14,12 @@ namespace rr {
         typedef Matrix<double, 4, 4> Matrix4d;
         typedef Matrix<double, 4, N> Matrix4Nd;
 
-        CubicInterp(double t1, double t2, VectorNd& x1, VectorNd& x2,
-                    VectorNd& dx1, VectorNd& dx2) {
+        CubicInterp() {
+            C = Matrix4Nd::Zero();
+        }
+
+        void interpolate(double t1, double t2, VectorNd& x1, VectorNd& x2,
+                         VectorNd& dx1, VectorNd& dx2) {
             this->t1 = t1;
             this->t2 = t2;
 
