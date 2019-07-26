@@ -20,62 +20,6 @@ using namespace Eigen;
 
 
 namespace rr {
-    class IKControlNode {
-        public:
-            IKControlNode() : controller() {}
-
-            bool init(ros::NodeHandle& nh);
-
-            // Control loop.
-            void loop(const double hz);
-
-        private:
-            /** TYPEDEFS **/
-
-            // TODO I'm not sure if this is appropriate for publishing actual
-            // control commands, which I don't particularly wish to be
-            // throttled
-            // typedef realtime_tools::RealtimePublisher<trajectory_msgs::JointTrajectory> JointVelocityPublisher;
-
-
-            /** VARIABLES **/
-
-            // Subsribe to desired end effector pose.
-            ros::Subscriber pose_cmd_sub;
-
-            // Subscribe to current joint values of the robot.
-            ros::Subscriber ur10_joint_states_sub;
-
-            // Get (x, y, theta) from Vicon
-            ros::Subscriber rb_state_sub;
-
-            // Publisher for desired joint speeds calculated by controller.
-            // JointVelocityPublisher joint_vel_pub;
-            ros::Publisher joint_vel_pub;
-
-            IKController controller;
-
-            // All of these are only written by the subs and read everywhere
-            // else, so *should* be pretty thread-safe - but we're also not
-            // multi-threaded at the moment.
-
-            // Actual joint positions, updated by the subscriber
-            QVector q_act;
-            QVector dq_act;
-
-            // Cubic polynomial trajectory, interpolated between current state
-            // and commanded pose.
-            CubicInterp trajectory;
-
-
-            /** FUNCTIONS **/
-
-            // Takes a single Pose trajectory point to control toward.
-            void pose_cmd_cb(const rr_msgs::PoseTrajectoryPoint& msg);
-
-            void joint_states_cb(const sensor_msgs::JointState& msg);
-    };
-
     class IKController {
         public:
             IKController(Matrix3d& K) : K(K), optimizer() {}
@@ -119,6 +63,70 @@ namespace rr {
     };
 
 
+    class IKControlNode {
+        public:
+            IKControlNode() : controller() {}
+
+            bool init(ros::NodeHandle& nh);
+
+            // Control loop.
+            void loop(const double hz);
+
+        private:
+            /** TYPEDEFS **/
+
+            // TODO I'm not sure if this is appropriate for publishing actual
+            // control commands, which I don't particularly wish to be
+            // throttled
+            // typedef realtime_tools::RealtimePublisher<trajectory_msgs::JointTrajectory> JointVelocityPublisher;
+
+
+            /** VARIABLES **/
+
+            // Subsribe to desired end effector pose.
+            ros::Subscriber pose_cmd_sub;
+
+            // Subscribe to current joint values of the robot.
+            ros::Subscriber ur10_joint_states_sub;
+
+            // Get (x, y, theta) from Vicon
+            ros::Subscriber rb_state_sub;
+
+            // Publisher for desired joint speeds calculated by controller.
+            // JointVelocityPublisher joint_vel_pub;
+            ros::Publisher joint_vel_pub;
+
+            IKController controller;
+
+            // All of these are only written by the subs and read everywhere
+            // else, so *should* be pretty thread-safe - but we're also not
+            // multi-threaded at the moment.
+
+            // Actual joint positions, updated by the subscriber
+            QVector q_act;
+            QVector dq_act;
+
+            // Actual pose and twist of end effector.
+            Affine3d w_T_e_act;
+            Vector6d dw_T_e_act;
+
+            // Cubic polynomial trajectory, interpolated between current state
+            // and commanded pose.
+            CubicInterp trajectory;
+
+
+            /** FUNCTIONS **/
+
+            // Takes a single Pose trajectory point to control toward.
+            void pose_cmd_cb(const rr_msgs::PoseTrajectoryPoint& msg);
+
+            void joint_states_cb(const sensor_msgs::JointState& msg);
+
+            void update_forward_kinematics();
+    };
+
+
+
     bool IKControlNode::init(ros::NodeHandle& nh) {
         // TODO later we probably want to allow multiple pose waypoints for
         // when we're not doing force servoing
@@ -133,6 +141,8 @@ namespace rr {
 
         joint_vel_pub = np.advertise<trajectory_msgs::JointTrajectory>("/ur_driver/joint_speed", 1);
 
+        // TODO probably want to publish some sort of state here
+
         q_act = QVector::Zero();
         dq_act = QVector::Zero();
     }
@@ -145,9 +155,11 @@ namespace rr {
             // service any callbacks
             ros::spinOnce();
 
-            // TODO
+            Vector3d pos_act = w_T_e_act.translation();
+            Vector3d vel_act = dw_T_e_act.block<3,1>(0,0);
+
             QVector dq_cmd;
-            controller.update(pos, vel, q_act, dq_cmd);
+            controller.update(pos_act, vel_act, q_act, dq_cmd);
 
             // Convert to JointTrajectory message with a single point (i.e.
             // velocity servoing)
@@ -163,6 +175,7 @@ namespace rr {
     }
 
 
+    // We do interpolation whenever a new point comes in.
     void IKControlNode::pose_cmd_cb(const rr_msgs::PoseTrajectoryPoint& msg) {
         Vector3d pos;
         pos << msg.pose.position.x, msg.pose.position.y, msg.pose.position.z;
@@ -176,15 +189,9 @@ namespace rr {
         double t1 = now;
         double t2 = now + time_from_start;
 
-        // Calculate actual pose and velocity of the EE at the current time.
-        Affine3d pose_act;
-        Vector6d vel_act;
-        Kinematics::forward(q_act, pose_act);
-        Kinematics::forward_vel(q_act, dq_act, vel_act);
-
         // Only care about position for now.
-        Vector3d pos_act = pose_act.translation();
-        Vector3d vel_act = vel_act.block<3,1>(0,0);
+        Vector3d pos_act = w_T_e_act.translation();
+        Vector3d vel_act = dw_T_e_act.block<3,1>(0,0);
 
         // Interpolate the trajectory, from which we sample later.
         trajectory = CubicInterp(t1, t2, pos_act, pos, vel_act, vel);
@@ -201,9 +208,13 @@ namespace rr {
             q_act(i)  = msg.position[i];
             dq_act(i) = msg.velocity[i];
         }
+        update_forward_kinematics();
     }
 
     void update_forward_kinematics() {
-
+        // TODO we could actually just store the Jacobian for reuse later,
+        // since we need it both for control and interpolation.
+        Kinematics::forward(q_act, w_T_e_act);
+        Kinematics::forward_vel(q_act, dq_act, dw_T_e_act);
     }
 }
