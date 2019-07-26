@@ -103,10 +103,6 @@ namespace rr {
 
             IKController controller;
 
-            // All of these are only written by the subs and read everywhere
-            // else, so *should* be pretty thread-safe - but we're also not
-            // multi-threaded at the moment.
-
             // Actual joint positions, updated by the subscriber
             QVector q_act;
             QVector dq_act;
