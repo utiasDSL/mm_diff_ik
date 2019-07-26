@@ -59,13 +59,13 @@ namespace rr {
             // else, so *should* be pretty thread-safe - but we're also not
             // multi-threaded at the moment.
 
-            // Affine3d pose_des;
-            // Vector6d
-            // TODO this needs to be interpolated each time a new cmd comes in
-            trajectory_interface::QuinticSplineSegment<double> spline;
-
             // Actual joint positions, updated by the subscriber
             QVector q_act;
+            QVector dq_act;
+
+            // Cubic polynomial trajectory, interpolated between current state
+            // and commanded pose.
+            CubicInterp trajectory;
 
 
             /** FUNCTIONS **/
@@ -78,29 +78,29 @@ namespace rr {
 
     class IKController {
         public:
-            IKController(Matrix6d& K) : K(K), optimizer() {}
+            IKController(Matrix3d& K) : K(K), optimizer() {}
 
             // Run one iteration of the control loop.
             // pose_des: desired pose
             // vel_ff:   feedforward pose velocity
             // q_act:    current value of joint angles
             // dq_cmd:   populated with joint velocity commands to send
-            void update(const Affine3d& ee_pose_des, const Vector6d& ee_vel_ff,
+            void update(const Vector3d& pos_des, const Vector3d& vel_ff,
                         const QVector& q_act, QVector& dq_cmd) {
 
                 // Calculate actual pose using forward kinematics.
                 Affine3d ee_pose_act;
                 Kinematics::forward(q_act, ee_pose_act);
 
-                Vector3d pos_des = ee_pose_des.translation();
                 Vector3d pos_act = ee_pose_act.translation();
                 Vector3d pos_err = pos_des - pos_act;
 
-                Matrix3d K_pos = K.block<3,3>(0,0);
-
                 // Velocity command in task space: P control with velocity
                 // feedforward.
-                Vector3d vel_cmd = K_pos * pos_err + vel_ff;
+                Vector3d linear_vel = K_pos * pos_err + vel_ff;
+
+                Vector6d vel_cmd;
+                vel_cmd << linear_vel, Vector3d::Zero();
 
                 // Optimize to solve IK problem.
                 optimizer.solve(q_act, vel_cmd, dq_cmd)
@@ -111,7 +111,7 @@ namespace rr {
             // optimizer
 
             // Proportional gain on the end effector pose error (in task space);
-            Matrix6d K;
+            Matrix3d K;
 
             // Optimizer to solve for joint velocity commands to send to the
             // robot.
@@ -120,6 +120,8 @@ namespace rr {
 
 
     bool IKControlNode::init(ros::NodeHandle& nh) {
+        // TODO later we probably want to allow multiple pose waypoints for
+        // when we're not doing force servoing
         pose_cmd_sub = nh.subscribe("/pose_cmd", 1,
                 &IKControlNode::pose_cmd_sub, this);
 
@@ -131,6 +133,8 @@ namespace rr {
 
         joint_vel_pub = np.advertise<trajectory_msgs::JointTrajectory>("/ur_driver/joint_speed", 1);
 
+        q_act = QVector::Zero();
+        dq_act = QVector::Zero();
     }
 
     // Control loop.
@@ -138,11 +142,12 @@ namespace rr {
         ros::Rate rate(hz);
 
         while (ros::ok()) {
+            // service any callbacks
             ros::spinOnce();
 
             // TODO
             QVector dq_cmd;
-            controller.update(,dq_cmd);
+            controller.update(pos, vel, q_act, dq_cmd);
 
             // Convert to JointTrajectory message with a single point (i.e.
             // velocity servoing)
@@ -159,8 +164,30 @@ namespace rr {
 
 
     void IKControlNode::pose_cmd_cb(const rr_msgs::PoseTrajectoryPoint& msg) {
-        // do interpolation
-        // store trajectory somehow
+        Vector3d pos;
+        pos << msg.pose.position.x, msg.pose.position.y, msg.pose.position.z;
+
+        Vector3d vel;
+        vel << msg.velocity.linear.x, msg.velocity.linear.y, msg.velocity.linear.z;
+
+        double time_from_start = msg.time_from_start.toSec();
+        double now = ros::Time::now().toSec();
+
+        double t1 = now;
+        double t2 = now + time_from_start;
+
+        // Calculate actual pose and velocity of the EE at the current time.
+        Affine3d pose_act;
+        Vector6d vel_act;
+        Kinematics::forward(q_act, pose_act);
+        Kinematics::forward_vel(q_act, dq_act, vel_act);
+
+        // Only care about position for now.
+        Vector3d pos_act = pose_act.translation();
+        Vector3d vel_act = vel_act.block<3,1>(0,0);
+
+        // Interpolate the trajectory, from which we sample later.
+        trajectory = CubicInterp(t1, t2, pos_act, pos, vel_act, vel);
     }
 
 
@@ -169,7 +196,14 @@ namespace rr {
         // ur10_arm_elbow_joint, ur10_arm_wrist_1_joint,
         // ur10_arm_wrist_2_joint, ur10_arm_wrist_3_joint]
 
-        // Reinitialize current joint values.
-        q_act(msg.position.data());
+        // Reinitialize current joint states.
+        for (int i = 0; i < 6; ++i) {
+            q_act(i)  = msg.position[i];
+            dq_act(i) = msg.velocity[i];
+        }
+    }
+
+    void update_forward_kinematics() {
+
     }
 }

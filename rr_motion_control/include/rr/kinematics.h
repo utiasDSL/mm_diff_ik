@@ -127,6 +127,13 @@ namespace rr {
             w_T_e = w_T_b * b_T_a * a_T_e;
         }
 
+        // Forward velocity kinematics.
+        static void forward_vel(const QVector& q, const QVector& dq, Vector6d& v) {
+            JacMatrix J;
+            Kinematics::jacobian(q, J);
+            v = J * dq;
+        }
+
         private:
 
         // Create transformation matrix from D-H parameters.

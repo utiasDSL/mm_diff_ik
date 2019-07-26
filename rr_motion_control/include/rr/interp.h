@@ -16,6 +16,9 @@ namespace rr {
 
         CubicInterp(double t1, double t2, VectorNd& x1, VectorNd& x2,
                     VectorNd& dx1, VectorNd& dx2) {
+            this->t1 = t1;
+            this->t2 = t2;
+
             Matrix4d A;
             A << t1*t1*t1, t1*t1, t1, 1,
                  t2*t2*t2, t2*t2, t2, 1,
@@ -30,17 +33,23 @@ namespace rr {
             C = A.colPivHouseholderQr().solve(B);
         }
 
-        void sample(const double t, VectorNd& x, VectorNd& dx) {
+        bool sample(const double t, VectorNd& x, VectorNd& dx) {
             Vector4d T, dT;
             T  << t*t*t, t*t, t, 1;
             dT << 3*t*t, 2*t, 1, 0;
             x = C.transpose() * T;
             dx = C.transpose() * dT;
+
+            // true if t falls within the interpolation range, false otherwise
+            return t >= t1 && t <= t2;
         }
 
         private:
 
         // coefficients
         Matrix4Nd C;
+
+        // start and end times
+        double t1, t2;
     };
 }
