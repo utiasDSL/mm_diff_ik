@@ -160,11 +160,14 @@ namespace rr {
             // service any callbacks
             ros::spinOnce();
 
-            Vector3d pos_act = w_T_e_act.translation();
-            Vector3d vel_act = dw_T_e_act.block<3,1>(0,0);
+            // Sample interpolated trajectory.
+            Vector3d pos_des;
+            Vector3d vel_ff;
+            double now = ros::Time::now().toSec();
+            trajectory.sample(now, pos_des, vel_ff);
 
             QVector dq_cmd;
-            controller.update(pos_act, vel_act, q_act, dq_cmd);
+            controller.update(pos_des, vel_ff, q_act, dq_cmd);
 
             // Convert to JointTrajectory message with a single point (i.e.
             // velocity servoing)
