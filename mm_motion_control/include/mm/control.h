@@ -156,6 +156,11 @@ namespace mm {
     void IKControlNode::loop(const double hz) {
         ros::Rate rate(hz);
 
+        // Wait until we have a pose command to send any commands
+        while (ros::ok() && !pose_received) {
+            rate.sleep();
+        }
+
         while (ros::ok()) {
             // service any callbacks
             ros::spinOnce();
@@ -164,7 +169,12 @@ namespace mm {
             Vector3d pos_des;
             Vector3d vel_ff;
             double now = ros::Time::now().toSec();
-            trajectory.sample(now, pos_des, vel_ff);
+
+            // If we fall outside the interpolation range, take the last point.
+            // TODO would this be better inside the interpolation code
+            if (!trajectory.sample(now, pos_des, vel_ff)) {
+                trajectory.last(pos_des, vel_ff);
+            }
 
             QVector dq_cmd;
             controller.update(pos_des, vel_ff, q_act, dq_cmd);

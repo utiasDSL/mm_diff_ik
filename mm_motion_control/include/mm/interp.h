@@ -23,6 +23,11 @@ namespace mm {
             this->t1 = t1;
             this->t2 = t2;
 
+            this->x1 = x1;
+            this->x2 = x2;
+            this->dx1 = dx1;
+            this->dx2 = dx2;
+
             Matrix4d A;
             A << t1*t1*t1, t1*t1, t1, 1,
                  t2*t2*t2, t2*t2, t2, 1,
@@ -48,10 +53,18 @@ namespace mm {
             return t >= t1 && t <= t2;
         }
 
+        // Last point in the range.
+        void last(VectorNd& x, VectorNd& dx) {
+            x = x2;
+            dx = dx2;
+        }
+
         private:
 
         // coefficients
         Matrix4Nd C;
+
+        VectorNd x1, x2, dx1, dx2;
 
         // start and end times
         double t1, t2;
