@@ -116,13 +116,23 @@ namespace mm {
             // TODO we need sane defaults for this
             CubicInterp<3> trajectory;
 
+            // Set to true once a pose command has been received. Before that,
+            // we don't want to send any commands.
+            bool pose_received;
+
 
             /** FUNCTIONS **/
 
             // Takes a single Pose trajectory point to control toward.
             void pose_cmd_cb(const mm_msgs::PoseTrajectoryPoint& msg);
 
+            // Update state of UR10 joints.
             void ur10_joint_states_cb(const sensor_msgs::JointState& msg);
+
+            // Update state of Ridgeback joints
+            // TODO this is going to change once we add Vicon, which has a
+            // different API.
+            void rb_joint_states_cb(const sensor_msgs::JointState& msg);
 
             void update_forward_kinematics();
     };
@@ -150,6 +160,8 @@ namespace mm {
 
         q_act = QVector::Zero();
         dq_act = QVector::Zero();
+
+        pose_received = false;
     }
 
     // Control loop.
@@ -171,7 +183,7 @@ namespace mm {
             double now = ros::Time::now().toSec();
 
             // If we fall outside the interpolation range, take the last point.
-            // TODO would this be better inside the interpolation code
+            // TODO would this be better inside the interpolation code?
             if (!trajectory.sample(now, pos_des, vel_ff)) {
                 trajectory.last(pos_des, vel_ff);
             }
@@ -213,6 +225,18 @@ namespace mm {
 
         // Interpolate the trajectory, from which we sample later.
         trajectory.interpolate(t1, t2, pos_act, pos, vel_act, vel);
+
+        pose_received = true;
+    }
+
+
+    void IKControlNode::rb_joint_states_cb(const sensor_msgs::JointState& msg) {
+        // Update current joint states.
+        for (int i = 0; i < 3; ++i) {
+            q_act(i)  = msg.position[i];
+            dq_act(i) = msg.velocity[i];
+        }
+        update_forward_kinematics();
     }
 
 
@@ -222,7 +246,7 @@ namespace mm {
         // ur10_arm_wrist_2_joint, ur10_arm_wrist_3_joint]
 
         // Reinitialize current joint states.
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 3; i < 9; ++i) {
             q_act(i)  = msg.position[i];
             dq_act(i) = msg.velocity[i];
         }
