@@ -8,7 +8,8 @@ import time
 
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory
-from rr_msgs.msg import PoseTrajectoryPoint
+from geometry_msgs.msg import Twist
+from mm_msgs.msg import PoseTrajectoryPoint
 
 from kinematics import ThingKinematics, R_t_from_T
 
@@ -86,15 +87,37 @@ class RobotSim(object):
         self.Ts = self.kin.calc_fk_chain(q[:3], q[3:])
         self.last_time = time.time()
 
-        self.base_state_pub = rospy.Publisher('/rb_joint_states', JointState, queue_size=10)
-        self.arm_state_pub = rospy.Publisher('/ur10_joint_states', JointState, queue_size=10)
-        self.pose_cmd_pub = rospy.Publisher('/pose_cmd', PoseTrajectoryPoint, queue_size=10)
-        self.joint_speed_sub = rospy.Subscriber('/ur_driver/joint_speed', JointTrajectory, self.joint_speed_cb)
+        # publish joint states
+        self.rb_state_pub = rospy.Publisher('/rb_joint_states', JointState, queue_size=10)
+        self.ur10_state_pub = rospy.Publisher('/ur10_joint_states', JointState, queue_size=10)
 
-    def joint_speed_cb(self, msg):
+        # subscribe to joint speed commands
+        self.rb_joint_speed_sub = rospy.Subscriber(
+                '/ridgeback_velocity_controller/cmd_vel', Twist,
+                self.rb_joint_speed_cb)
+        self.ur10_joint_speed_sub = rospy.Subscriber('/ur_driver/joint_speed',
+                JointTrajectory, self.ur10_joint_speed_cb)
+
+    def rb_joint_speed_cb(self, msg):
+        self.dq[:3] = np.array([msg.linear.x, msg.linear.y, msg.linear.z])
+
+    def ur10_joint_speed_cb(self, msg):
         # msg is of type trajectory_msgs/JointTrajectory
         # take the velocities from the first point
-        self.dq = np.array(msg.points[0].velocities)
+        self.dq[3:] = np.array(msg.points[0].velocities)
+
+    def publish_joint_states(self):
+        # Base
+        rb_joint_state = JointState()
+        rb_joint_state.position = list(self.q[:3])
+        rb_joint_state.velocity = list(self.q[:3])
+        self.rb_state_pub.publish(rb_joint_state)
+
+        # Arm
+        ur10_joint_state = JointState()
+        ur10_joint_state.position = list(self.q[:3])
+        ur10_joint_state.velocity = list(self.q[:3])
+        self.ur10_state_pub.publish(ur10_joint_state)
 
     def step(self):
         now = time.time()
@@ -106,6 +129,8 @@ class RobotSim(object):
 
         # Forward kinematics along the whole chain.
         self.Ts = self.kin.calc_fk_chain(self.q[:3], self.q[3:])
+
+        self.publish_joint_states()
 
 
 def main():
