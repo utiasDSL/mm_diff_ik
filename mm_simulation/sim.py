@@ -115,8 +115,8 @@ class RobotSim(object):
 
         # Arm
         ur10_joint_state = JointState()
-        ur10_joint_state.position = list(self.q[:3])
-        ur10_joint_state.velocity = list(self.q[:3])
+        ur10_joint_state.position = list(self.q[3:])
+        ur10_joint_state.velocity = list(self.q[3:])
         self.ur10_state_pub.publish(ur10_joint_state)
 
     def step(self):
