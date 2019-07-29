@@ -1,8 +1,8 @@
 #include <Eigen/Eigen>
 #include <iostream>
 
-#include "rr/kinematics.h"
-#include "rr/interp.h"
+#include "mm/kinematics.h"
+#include "mm/interp.h"
 
 using namespace Eigen;
 
@@ -14,7 +14,7 @@ void test_interp() {
     Vector1d dx1; dx1 << 1;
     Vector1d dx2; dx2 << 13;
 
-    rr::CubicInterp<1> interp;
+    mm::CubicInterp<1> interp;
     interp.interpolate(1, 2, x1, x2, dx1, dx2);
 
     Vector1d x, dx;

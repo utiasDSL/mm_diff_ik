@@ -8,19 +8,19 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/JointState.h>
 
-#include <rr_msgs/PoseTrajectoryPoint.h>
-#include <rr_msgs/PoseTrajectory.h>
+#include <mm_msgs/PoseTrajectoryPoint.h>
+#include <mm_msgs/PoseTrajectory.h>
 
-#include "rr/rr.h"
-#include "rr/kinematics.h"
-#include "rr/optimize.h"
-#include "rr/interp.h"
+#include "mm/mm.h"
+#include "mm/kinematics.h"
+#include "mm/optimize.h"
+#include "mm/interp.h"
 
 
 using namespace Eigen;
 
 
-namespace rr {
+namespace mm {
     class IKController {
         public:
             IKController() : optimizer() {}
@@ -120,7 +120,7 @@ namespace rr {
             /** FUNCTIONS **/
 
             // Takes a single Pose trajectory point to control toward.
-            void pose_cmd_cb(const rr_msgs::PoseTrajectoryPoint& msg);
+            void pose_cmd_cb(const mm_msgs::PoseTrajectoryPoint& msg);
 
             void ur10_joint_states_cb(const sensor_msgs::JointState& msg);
 
@@ -184,7 +184,7 @@ namespace rr {
 
 
     // We do interpolation whenever a new point comes in.
-    void IKControlNode::pose_cmd_cb(const rr_msgs::PoseTrajectoryPoint& msg) {
+    void IKControlNode::pose_cmd_cb(const mm_msgs::PoseTrajectoryPoint& msg) {
         Vector3d pos;
         pos << msg.pose.position.x, msg.pose.position.y, msg.pose.position.z;
 

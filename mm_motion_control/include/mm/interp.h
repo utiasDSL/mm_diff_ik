@@ -5,7 +5,7 @@
 
 using namespace Eigen;
 
-namespace rr {
+namespace mm {
     template <unsigned int N>
     class CubicInterp {
         public:

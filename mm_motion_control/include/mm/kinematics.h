@@ -3,14 +3,14 @@
 #include <Eigen/Eigen>
 #include <ros/ros.h>
 
-#include "rr/rr.h"
+#include "mm/mm.h"
 
 
 #define DH_TF(T, q, a, d, alpha) Affine3d T; dh_transform(q, a, d, alpha, T);
 
 using namespace Eigen;
 
-namespace rr {
+namespace mm {
     class Kinematics {
         public:
 
@@ -19,24 +19,24 @@ namespace rr {
         // J: populated with Jacobian matrix
         static void jacobian(const QVector& q, JacMatrix& J) {
             // Base joints
-            double xb = q[0];
-            double yb = q[1];
-            double stb = std::sin(q[2]);
-            double ctb = std::cos(q[2]);
+            double xb = q(0);
+            double yb = q(1);
+            double stb = std::sin(q(2));
+            double ctb = std::cos(q(2));
 
             // Arm joints
-            double sq1 = std::sin(q[3]);
-            double cq1 = std::cos(q[3]);
-            double sq2 = std::sin(q[4]);
-            double cq2 = std::cos(q[4]);
-            double sq3 = std::sin(q[5]);
-            double cq3 = std::cos(q[5]);
-            double sq4 = std::sin(q[6]);
-            double cq4 = std::cos(q[6]);
-            double sq5 = std::sin(q[7]);
-            double cq5 = std::cos(q[7]);
-            double sq6 = std::sin(q[8]);
-            double cq6 = std::cos(q[8]);
+            double sq1 = std::sin(q(3));
+            double cq1 = std::cos(q(3));
+            double sq2 = std::sin(q(4));
+            double cq2 = std::cos(q(4));
+            double sq3 = std::sin(q(5));
+            double cq3 = std::cos(q(5));
+            double sq4 = std::sin(q(6));
+            double cq4 = std::cos(q(6));
+            double sq5 = std::sin(q(7));
+            double cq5 = std::cos(q(7));
+            double sq6 = std::sin(q(8));
+            double cq6 = std::cos(q(8));
 
             // here be dragons - generated from the `thing_kinematics.py` Python script
             // using symbolic math

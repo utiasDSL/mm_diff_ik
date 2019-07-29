@@ -1,9 +1,9 @@
+#!/usr/bin/env python2
 import rospy
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+#import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
-import quadprog
 import time
 
 from sensor_msgs.msg import JointState
@@ -11,8 +11,6 @@ from trajectory_msgs.msg import JointTrajectory
 from rr_msgs.msg import PoseTrajectoryPoint
 
 from kinematics import ThingKinematics, R_t_from_T
-
-import IPython
 
 
 class RobotPlotter(object):
@@ -78,6 +76,8 @@ class RobotPlotter(object):
 
 
 class RobotSim(object):
+    ''' Simulation of Thing platform: Ridgeback omnidirectional base + UR10
+        6-DOF arm. '''
     def __init__(self, q, dq):
         # maintain an internal robot state
         self.q = q
@@ -86,7 +86,7 @@ class RobotSim(object):
         self.Ts = self.kin.calc_fk_chain(q[:3], q[3:])
         self.last_time = time.time()
 
-        self.base_state_pub = rospy.publisher('/rb_joint_states', JointState, queue_size=10)
+        self.base_state_pub = rospy.Publisher('/rb_joint_states', JointState, queue_size=10)
         self.arm_state_pub = rospy.Publisher('/ur10_joint_states', JointState, queue_size=10)
         self.pose_cmd_pub = rospy.Publisher('/pose_cmd', PoseTrajectoryPoint, queue_size=10)
         self.joint_speed_sub = rospy.Subscriber('/ur_driver/joint_speed', JointTrajectory, self.joint_speed_cb)

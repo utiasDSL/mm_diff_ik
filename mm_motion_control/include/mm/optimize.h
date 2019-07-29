@@ -9,10 +9,12 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/JointState.h>
 
-#include "rr/rr.h"
-#include "rr/kinematics.h"
+#include "mm/mm.h"
+#include "mm/kinematics.h"
 
 
+// eigen-quadprog API:
+//
 // QuadProgDense(int nrvar, int nreq, int nrineq);
 //
 // bool solve(const MatrixXd& Q, const VectorXd& C,
@@ -22,11 +24,15 @@
 //
 
 
-namespace rr {
+namespace mm {
     class IKOptimizer {
         public:
             IKOptimizer() {};
 
+            // Create and solve the QP.
+            // q: Current value of joint angles.
+            // ee_vel: Desired task space velocity of end effector.
+            // dq_opt: Optimal values of joint velocities.
             bool solve(const QVector& q, const Vector6d& ee_vel,
                        QVector& dq_opt) {
                 // Objective

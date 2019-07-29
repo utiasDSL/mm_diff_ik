@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 
-#include "rr/rr.h"
-#include "rr/control.h"
+#include "mm/mm.h"
+#include "mm/control.h"
 
 
 int main(int argc, char **argv) {
@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
 
   ROS_INFO("ik_control_node started");
 
-  rr::IKControlNode node;
+  mm::IKControlNode node;
   node.init(nh);
   node.loop(125);
 
