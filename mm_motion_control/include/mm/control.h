@@ -6,6 +6,7 @@
 
 #include <trajectory_msgs/JointTrajectory.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Twist.h>
 #include <sensor_msgs/JointState.h>
 
 #include <mm_msgs/PoseTrajectoryPoint.h>
@@ -35,25 +36,7 @@ namespace mm {
             // q_act:    current value of joint angles
             // dq_cmd:   populated with joint velocity commands to send
             void update(const Vector3d& pos_des, const Vector3d& vel_ff,
-                        const QVector& q_act, QVector& dq_cmd) {
-
-                // Calculate actual pose using forward kinematics.
-                Affine3d ee_pose_act;
-                Kinematics::forward(q_act, ee_pose_act);
-
-                Vector3d pos_act = ee_pose_act.translation();
-                Vector3d pos_err = pos_des - pos_act;
-
-                // Velocity command in task space: P control with velocity
-                // feedforward.
-                Vector3d linear_vel = K * pos_err + vel_ff;
-
-                Vector6d vel_cmd;
-                vel_cmd << linear_vel, Vector3d::Zero();
-
-                // Optimize to solve IK problem.
-                optimizer.solve(q_act, vel_cmd, dq_cmd);
-            }
+                        const QVector& q_act, QVector& dq_cmd);
 
         private:
             // TODO may want to store previous time for later use in the
@@ -66,6 +49,27 @@ namespace mm {
             // robot.
             IKOptimizer optimizer;
     };
+
+
+    void IKController::update(const Vector3d& pos_des, const Vector3d& vel_ff,
+                      const QVector& q_act, QVector& dq_cmd) {
+        // Calculate actual pose using forward kinematics.
+        Affine3d ee_pose_act;
+        Kinematics::forward(q_act, ee_pose_act);
+
+        Vector3d pos_act = ee_pose_act.translation();
+        Vector3d pos_err = pos_des - pos_act;
+
+        // Velocity command in task space: P control with velocity
+        // feedforward.
+        Vector3d linear_vel = K * pos_err + vel_ff;
+
+        Vector6d vel_cmd;
+        vel_cmd << linear_vel, Vector3d::Zero();
+
+        // Optimize to solve IK problem.
+        optimizer.solve(q_act, vel_cmd, dq_cmd);
+    }
 
 
     class IKControlNode {
@@ -97,9 +101,9 @@ namespace mm {
             // Get (x, y, theta) from Vicon
             ros::Subscriber rb_state_sub;
 
-            // Publisher for desired joint speeds calculated by controller.
-            // JointVelocityPublisher joint_vel_pub;
-            ros::Publisher joint_vel_pub;
+            // Publishers for desired joint speeds calculated by controller.
+            ros::Publisher ur10_joint_vel_pub;
+            ros::Publisher rb_joint_vel_pub;
 
             IKController controller;
 
@@ -150,7 +154,9 @@ namespace mm {
         // TODO need vicon for this
         // rb_state_sub
 
-        joint_vel_pub = nh.advertise<trajectory_msgs::JointTrajectory>("/ur_driver/joint_speed", 1);
+        ur10_joint_vel_pub = nh.advertise<trajectory_msgs::JointTrajectory>("/ur_driver/joint_speed", 1);
+
+        rb_joint_vel_pub = nh.advertise<geometry_msgs::Twist>("/ridgeback_velocity_controller/cmd_vel", 1);
 
         // TODO probably want to publish some sort of state here
 
@@ -191,14 +197,27 @@ namespace mm {
             QVector dq_cmd;
             controller.update(pos_des, vel_ff, q_act, dq_cmd);
 
+            // Split into base and arm joints to send out.
+            Vector3d dq_cmd_rb = dq_cmd.topRows<3>();
+            Vector6d dq_cmd_ur10 = dq_cmd.bottomRows<6>();
+
             // Convert to JointTrajectory message with a single point (i.e.
-            // velocity servoing)
+            // velocity servoing) to publish to UR10.
             trajectory_msgs::JointTrajectoryPoint point;
-            point.velocities = std::vector<double>(dq_cmd.data(), dq_cmd.data() + dq_cmd.size());
+            point.velocities = std::vector<double>(
+                    dq_cmd_ur10.data(), dq_cmd_ur10.data() + dq_cmd_ur10.size());
             trajectory_msgs::JointTrajectory traj;
             traj.points.push_back(point);
 
-            joint_vel_pub.publish(traj);
+            ur10_joint_vel_pub.publish(traj);
+
+            // Publish to base.
+            geometry_msgs::Twist twist_rb;
+            twist_rb.linear.x = dq_cmd_rb(0);
+            twist_rb.linear.y = dq_cmd_rb(1);
+            twist_rb.linear.z = dq_cmd_rb(2);
+
+            rb_joint_vel_pub.publish(twist_rb);
 
             rate.sleep();
         }
