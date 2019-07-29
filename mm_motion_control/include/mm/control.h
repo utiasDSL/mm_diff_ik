@@ -188,10 +188,13 @@ namespace mm {
             Vector3d vel_ff;
             double now = ros::Time::now().toSec();
 
-            // If we fall outside the interpolation range, take the last point.
-            // TODO would this be better inside the interpolation code?
+            // If we fall outside the interpolation range, do not send any
+            // commands.
+            // TODO need to validate robot behaviour in this case - will it
+            // stop (as desired), or somehow keep moving based on previous
+            // velocity?
             if (!trajectory.sample(now, pos_des, vel_ff)) {
-                trajectory.last(pos_des, vel_ff);
+                break;
             }
 
             QVector dq_cmd;
