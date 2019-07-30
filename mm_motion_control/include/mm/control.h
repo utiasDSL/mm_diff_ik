@@ -68,7 +68,10 @@ namespace mm {
         vel_cmd << linear_vel, Vector3d::Zero();
 
         // Optimize to solve IK problem.
-        optimizer.solve(q_act, vel_cmd, dq_cmd);
+        bool success = optimizer.solve(q_act, vel_cmd, dq_cmd);
+        if (!success) {
+            ROS_INFO("Optimization failed");
+        }
     }
 
 
@@ -199,8 +202,10 @@ namespace mm {
             // stop (as desired), or somehow keep moving based on previous
             // velocity?
             if (!trajectory.sample(now, pos_des, vel_ff)) {
+                ROS_INFO("outside of sampling window");
                 break;
             }
+            // ROS_INFO_STREAM("pos_des = " << pos_des << "\nvel_ff = " << vel_ff);
 
             QVector dq_cmd;
             controller.update(pos_des, vel_ff, q_act, dq_cmd);
@@ -254,6 +259,7 @@ namespace mm {
         trajectory.interpolate(t1, t2, pos_act, pos, vel_act, vel);
 
         pose_received = true;
+        ROS_INFO("new pose cmd received");
     }
 
 

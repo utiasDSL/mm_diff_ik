@@ -134,6 +134,7 @@ namespace mm {
             v = J * dq;
         }
 
+        // Manipulability index (arm only).
         static double manipulability(const QVector& q) {
             JacMatrix J;
             Kinematics::jacobian(q, J);
@@ -156,12 +157,11 @@ namespace mm {
             double salpha = std::sin(alpha);
             double calpha = std::cos(alpha);
 
-            T.matrix() << cq, -sq*calpha, sq*salpha, a*cq,
-                          sq,  cq*calpha, cq*salpha, a*sq,
-                          0,   salpha,    calpha,    d,
-                          0,   0,         0,         1;
+            T.matrix() << cq, -sq*calpha,  sq*salpha, a*cq,
+                          sq,  cq*calpha, -cq*salpha, a*sq,
+                          0,   salpha,     calpha,    d,
+                          0,   0,          0,         1;
         }
-
     };
 }
 
