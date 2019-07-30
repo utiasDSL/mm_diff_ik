@@ -174,10 +174,15 @@ namespace mm {
     void IKControlNode::loop(const double hz) {
         ros::Rate rate(hz);
 
+        ROS_INFO("Control loop started");
+
         // Wait until we have a pose command to send any commands
         while (ros::ok() && !pose_received) {
+            ros::spinOnce();
             rate.sleep();
         }
+
+        ROS_INFO("First pose command received.");
 
         while (ros::ok()) {
             // service any callbacks

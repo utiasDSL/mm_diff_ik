@@ -35,7 +35,10 @@ namespace mm {
                  3*t2*t2,  2*t2,  1,  0;
 
             Matrix4Nd B;
-            B << x1, x2, dx1, dx2;
+            B << x1.transpose(),
+                 x2.transpose(),
+                 dx1.transpose(),
+                 dx2.transpose();
 
             // Solve the system AC=B to get the coefficients of the cubic
             // polynomials.

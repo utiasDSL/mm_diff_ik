@@ -90,6 +90,7 @@ class RobotSim(object):
         # publish joint states
         self.rb_state_pub = rospy.Publisher('/rb_joint_states', JointState, queue_size=10)
         self.ur10_state_pub = rospy.Publisher('/ur10_joint_states', JointState, queue_size=10)
+        self.state_pub = rospy.Publisher('/joint_states', JointState, queue_size=10)
 
         # subscribe to joint speed commands
         self.rb_joint_speed_sub = rospy.Subscriber(
@@ -99,25 +100,34 @@ class RobotSim(object):
                 JointTrajectory, self.ur10_joint_speed_cb)
 
     def rb_joint_speed_cb(self, msg):
+        ''' Callback for velocity commands for the base. '''
         self.dq[:3] = np.array([msg.linear.x, msg.linear.y, msg.linear.z])
 
     def ur10_joint_speed_cb(self, msg):
+        ''' Callback for velocity commands to the arm joints. '''
         # msg is of type trajectory_msgs/JointTrajectory
         # take the velocities from the first point
         self.dq[3:] = np.array(msg.points[0].velocities)
 
     def publish_joint_states(self):
+        ''' Publish current joint states (position and velocity). '''
         # Base
         rb_joint_state = JointState()
         rb_joint_state.position = list(self.q[:3])
-        rb_joint_state.velocity = list(self.q[:3])
+        rb_joint_state.velocity = list(self.dq[:3])
         self.rb_state_pub.publish(rb_joint_state)
 
         # Arm
         ur10_joint_state = JointState()
         ur10_joint_state.position = list(self.q[3:])
-        ur10_joint_state.velocity = list(self.q[3:])
+        ur10_joint_state.velocity = list(self.dq[3:])
         self.ur10_state_pub.publish(ur10_joint_state)
+
+        # All joints together, for convenience (e.g. for simulation)
+        joint_state = JointState()
+        joint_state.position = list(self.q)
+        joint_state.velocity = list(self.dq)
+        self.state_pub.publish(joint_state)
 
     def step(self):
         now = time.time()
