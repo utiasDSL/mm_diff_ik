@@ -134,6 +134,18 @@ namespace mm {
             v = J * dq;
         }
 
+        static double manipulability(const QVector& q) {
+            JacMatrix J;
+            Kinematics::jacobian(q, J);
+
+            // Arm Jacobian is the right 6x6 block of the full 6x9 Jacobian.
+            Matrix6d Ja = J.rightCols<6>();
+
+            double m = sqrt((Ja * Ja.transpose()).determinant());
+
+            return m;
+        }
+
         private:
 
         // Create transformation matrix from D-H parameters.
