@@ -38,6 +38,7 @@ namespace mm {
             void update(const Vector3d& pos_des, const Vector3d& vel_ff,
                         const QVector& q_act, QVector& dq_cmd);
 
+
         private:
             // TODO may want to store previous time for later use in the
             // optimizer
@@ -257,7 +258,6 @@ namespace mm {
         trajectory.interpolate(t1, t2, pos_act, pos, vel_act, vel);
 
         pose_received = true;
-        ROS_INFO("new pose cmd received");
     }
 
 
@@ -277,9 +277,10 @@ namespace mm {
         // ur10_arm_wrist_2_joint, ur10_arm_wrist_3_joint]
 
         // Reinitialize current joint states.
-        for (int i = 3; i < 9; ++i) {
-            q_act(i)  = msg.position[i];
-            dq_act(i) = msg.velocity[i];
+        for (int i = 0; i < 6; ++i) {
+            // first 3 joints are the base
+            q_act(3+i)  = msg.position[i];
+            dq_act(3+i) = msg.velocity[i];
         }
         update_forward_kinematics();
     }
