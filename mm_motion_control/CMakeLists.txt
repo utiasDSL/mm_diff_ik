@@ -131,6 +131,11 @@ target_link_libraries(mm_control_node
   /usr/local/lib/libeigen-quadprog.so
 )
 
+# Tests
+catkin_add_executable_with_gtest(test_kinematics
+  test/test_kinematics.cpp
+)
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
@@ -191,7 +196,7 @@ target_link_libraries(mm_control_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_rr.cpp)
+#catkin_add_gtest(test_kinematics test/test_kinematics.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
