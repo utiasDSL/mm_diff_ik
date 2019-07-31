@@ -44,8 +44,8 @@ namespace mm {
                 JacMatrix J;
                 Kinematics::jacobian(q, J);
 
-                ROS_INFO_STREAM("q = " << q);
-                ROS_INFO_STREAM("ee_vel = " << ee_vel);
+                // ROS_INFO_STREAM("q = " << q);
+                // ROS_INFO_STREAM("ee_vel = " << ee_vel);
 
                 Eigen::Matrix<double, 6, 9> Aeq = J;
                 Eigen::Matrix<double, 6, 1> Beq = ee_vel;

@@ -102,7 +102,7 @@ namespace mm {
             ros::Subscriber ur10_joint_states_sub;
 
             // Get (x, y, theta) from Vicon
-            ros::Subscriber rb_state_sub;
+            ros::Subscriber rb_joint_states_sub;
 
             // Publishers for desired joint speeds calculated by controller.
             ros::Publisher ur10_joint_vel_pub;
@@ -153,12 +153,10 @@ namespace mm {
 
         ur10_joint_states_sub = nh.subscribe("/ur10_joint_states", 1,
                 &IKControlNode::ur10_joint_states_cb, this);
-
-        // TODO need vicon for this
-        // rb_state_sub
+        rb_joint_states_sub = nh.subscribe("/rb_joint_states", 1,
+                &IKControlNode::rb_joint_states_cb, this);
 
         ur10_joint_vel_pub = nh.advertise<trajectory_msgs::JointTrajectory>("/ur_driver/joint_speed", 1);
-
         rb_joint_vel_pub = nh.advertise<geometry_msgs::Twist>("/ridgeback_velocity_controller/cmd_vel", 1);
 
         // TODO probably want to publish some sort of state here
@@ -228,7 +226,7 @@ namespace mm {
             geometry_msgs::Twist twist_rb;
             twist_rb.linear.x = dq_cmd_rb(0);
             twist_rb.linear.y = dq_cmd_rb(1);
-            twist_rb.linear.z = dq_cmd_rb(2);
+            twist_rb.angular.z = dq_cmd_rb(2);
 
             rb_joint_vel_pub.publish(twist_rb);
 

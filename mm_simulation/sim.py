@@ -101,12 +101,14 @@ class RobotSim(object):
 
     def rb_joint_speed_cb(self, msg):
         ''' Callback for velocity commands for the base. '''
-        self.dq[:3] = np.array([msg.linear.x, msg.linear.y, msg.linear.z])
+        print('Received RB speeds = {}'.format(msg.linear))
+        self.dq[:3] = np.array([msg.linear.x, msg.linear.y, msg.angular.z])
 
     def ur10_joint_speed_cb(self, msg):
         ''' Callback for velocity commands to the arm joints. '''
         # msg is of type trajectory_msgs/JointTrajectory
         # take the velocities from the first point
+        print('Received UR10 speeds = {}'.format(msg.points[0].velocities))
         self.dq[3:] = np.array(msg.points[0].velocities)
 
     def publish_joint_states(self):
@@ -146,7 +148,13 @@ class RobotSim(object):
 def main():
     rospy.init_node('robot_sim')
 
-    sim = RobotSim(q=np.zeros(9), dq=np.zeros(9))
+    q = np.zeros(9)
+    dq = np.zeros(9)
+
+    # q[4] = -np.pi*0.75
+    # q[5] = -np.pi/2
+
+    sim = RobotSim(q, dq)
 
     plot = RobotPlotter()
     plot.start(sim.Ts)

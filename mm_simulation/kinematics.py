@@ -1,6 +1,8 @@
 import sympy as sym
 import re
 
+import numpy as np
+
 
 def dh_tf(q, a, d, alpha):
     ''' Transformation matrix from D-H parameters. '''
@@ -28,41 +30,43 @@ class ThingKinematics(object):
         self.q1, self.q2, self.q3, self.q4, self.q5, self.q6 = sym.symbols('q1,q2,q3,q4,q5,q6')
         self.xb, self.yb, self.tb = sym.symbols('xb,yb,tb')
 
+        self.T = [None] * 12
+
         # Transform from base to world.
-        T1 = dh_tf(sym.pi/2, 0, 0,  sym.pi/2)
-        T2 = dh_tf(sym.pi/2, 0, self.xb, sym.pi/2)
-        T3 = dh_tf(sym.pi/2, 0, self.yb, sym.pi/2)
-        T4 = dh_tf(self.tb,       0, 0,  0)
+        self.T[0] = dh_tf(sym.pi/2, 0, 0,  sym.pi/2)
+        self.T[1] = dh_tf(sym.pi/2, 0, self.xb, sym.pi/2)
+        self.T[2] = dh_tf(sym.pi/2, 0, self.yb, sym.pi/2)
+        self.T[3] = dh_tf(self.tb,       0, 0,  0)
 
         # Transform from arm to base.
-        T5 = dh_tf(0, 0.27, 0.653, -sym.pi/2)
-        T6 = dh_tf(0, 0,    0.01,   sym.pi/2)
+        self.T[4] = dh_tf(0, 0.27, 0.653, -sym.pi/2)
+        self.T[5] = dh_tf(0, 0,    0.01,   sym.pi/2)
 
         # Transform from end effector to arm.
-        T7  = dh_tf(self.q1,  0,      0.1273,   sym.pi/2)
-        T8  = dh_tf(self.q2, -0.612,  0,        0)
-        T9  = dh_tf(self.q3, -0.5723, 0,        0)
-        T10 = dh_tf(self.q4,  0,      0.163941, sym.pi/2)
-        T11 = dh_tf(self.q5,  0,      0.1157,  -sym.pi/2)
-        T12 = dh_tf(self.q6,  0,      0.0922,   0)
+        self.T[6]  = dh_tf(self.q1,  0,      0.1273,   sym.pi/2)
+        self.T[7]  = dh_tf(self.q2, -0.612,  0,        0)
+        self.T[8]  = dh_tf(self.q3, -0.5723, 0,        0)
+        self.T[9]  = dh_tf(self.q4,  0,      0.163941, sym.pi/2)
+        self.T[10] = dh_tf(self.q5,  0,      0.1157,  -sym.pi/2)
+        self.T[11] = dh_tf(self.q6,  0,      0.0922,   0)
 
         # Transforms from intermediate points to world.
         self.T0 = [None] * 13
 
         # Construct intermediate transforms.
         self.T0[0]  = sym.eye(4)
-        self.T0[1]  = self.T0[0]  * T1
-        self.T0[2]  = self.T0[1]  * T2   # xb
-        self.T0[3]  = self.T0[2]  * T3   # yb
-        self.T0[4]  = self.T0[3]  * T4   # tb - this is w_T_b
-        self.T0[5]  = self.T0[4]  * T5
-        self.T0[6]  = self.T0[5]  * T6
-        self.T0[7]  = self.T0[6]  * T7   # q1
-        self.T0[8]  = self.T0[7]  * T8   # q2
-        self.T0[9]  = self.T0[8]  * T9   # q3
-        self.T0[10] = self.T0[9]  * T10  # q4
-        self.T0[11] = self.T0[10] * T11  # q5
-        self.T0[12] = self.T0[11] * T12  # q6
+        self.T0[1]  = self.T0[0]  * self.T[0]
+        self.T0[2]  = self.T0[1]  * self.T[1]   # xb
+        self.T0[3]  = self.T0[2]  * self.T[2]   # yb
+        self.T0[4]  = self.T0[3]  * self.T[3]   # tb - this is w_T_b
+        self.T0[5]  = self.T0[4]  * self.T[4]
+        self.T0[6]  = self.T0[5]  * self.T[5]
+        self.T0[7]  = self.T0[6]  * self.T[6]   # q1
+        self.T0[8]  = self.T0[7]  * self.T[7]   # q2
+        self.T0[9]  = self.T0[8]  * self.T[8]   # q3
+        self.T0[10] = self.T0[9]  * self.T[9]   # q4
+        self.T0[11] = self.T0[10] * self.T[10]  # q5
+        self.T0[12] = self.T0[11] * self.T[11]  # q6
 
     def _calc_sym_jacobian(self):
         R0_0,  t0_0  = R_t_from_T(self.T0[0])
@@ -120,18 +124,23 @@ class ThingKinematics(object):
             'q1': qa[0], 'q2': qa[1], 'q3': qa[2], 'q4': qa[3], 'q5': qa[4], 'q6': qa[5]
         }
 
+    def _as_np(self, M):
+        return np.array(M).astype(np.float64)
+
     def calc_fk_chain(self, qb, qa):
         ''' Calculate all transforms in the kinematic chain. '''
         d = self._sub_dict(qb, qa)
-        return [T0i.subs(d) for T0i in self.T0]
+        return [self._as_np(T0i.subs(d)) for T0i in self.T0]
 
     def calc_fk(self, qb, qa):
         ''' Calculate the transform of the EE. '''
-        return self.T0[-1].subs(self._sub_dict(qb, qa))
+        d = self._sub_dict(qb, qa)
+        return self._as_np(self.T0[-1].subs(d))
 
     def calc_jac(self, qb, qa):
         ''' Calculate the Jacobian. '''
-        return self.J_sym.subs(self._sub_dict(qb, qa))
+        d = self._sub_dict(qb, qa)
+        return self._as_np(self.J_sym.subs(d))
 
     def write_sym_jac(self, fname):
         ''' Write symbolic Jacobian out to a file. '''
@@ -148,3 +157,37 @@ class ThingKinematics(object):
                     Jijs = re.sub('sin\(([a-z0-9]+)\)', sin_repl, Jijs)
                     Jijs = re.sub('cos\(([a-z0-9]+)\)', cos_repl, Jijs)
                     f.write(Jijs + '\n')
+
+
+def main():
+    kin = ThingKinematics()
+    qb = np.zeros(3)
+    qa = np.zeros(6)
+    q = np.zeros(9)
+    eps = 1e-5
+
+    J = kin.calc_jac(q[:3], q[3:])
+    Ts = kin.calc_fk_chain(q[:3], q[3:])
+
+    print(Ts[3])
+    print(Ts[5])
+    print(Ts[11])
+
+
+    # for i in range(9):
+    #     epsv = np.zeros(9)
+    #     epsv[i] = eps
+    #
+    #     q1 = q + epsv
+    #     q2 = q - epsv
+    #
+    #     T1 = kin.calc_fk(q1[:3], q1[3:])
+    #     T2 = kin.calc_fk(q2[:3], q2[3:])
+    #
+    #     approx = (T1[:3,3] - T2[:3,3]) / (2*eps)
+    #     real = J[:3,i]
+    #     print('{} << {}'.format(approx, real))
+
+
+if __name__ == '__main__':
+    main()
