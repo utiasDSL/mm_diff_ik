@@ -1,5 +1,7 @@
 #!/usr/bin/env python2
 
+from __future__ import print_function
+
 import rospy
 import numpy as np
 
@@ -46,8 +48,27 @@ class LineTrajectory(object):
         return np.array([x, y, z]), np.array([dx, dy, dz])
 
 
+class SineTrajectory(object):
+    def __init__(self, p0):
+        self.p0 = p0
+        self.t0 = rospy.get_time()
+
+    def sample(self, t):
+        v = 0.05
+        w = 0.05
+
+        x = self.p0[0] + v * (t - self.t0)
+        y = self.p0[1] + np.sin(w*(t - self.t0))
+        z = self.p0[2]
+
+        dx = v
+        dy = w * np.cos(w*(t-self.t0))
+        dz = 0
+
+        return np.array([x, y, z]), np.array([dx, dy, dz])
+
+
 def main():
-    # TODO need to get initial position
     rospy.init_node('traj_generator')
     pose_cmd_pub = rospy.Publisher('/pose_cmd', PoseTrajectoryPoint, queue_size=10)
     joint_init = JointInitializer()
@@ -59,7 +80,6 @@ def main():
         rospy.sleep(dt)
     q0, dq0 = joint_init.state()
 
-
     kin = ThingKinematics()
 
     # calculate initial EE position and velocity
@@ -68,7 +88,7 @@ def main():
 
     print('Trajectory initialized with initial position\n= {}'.format(list(p0)))
 
-    traj = LineTrajectory(p0)
+    traj = SineTrajectory(p0)
 
     while not rospy.is_shutdown():
         now = rospy.get_time()
@@ -87,6 +107,8 @@ def main():
         waypoint.time_from_start = rospy.Time(dt)
 
         pose_cmd_pub.publish(waypoint)
+
+        print(waypoint)
 
         rospy.sleep(dt)
 
