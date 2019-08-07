@@ -12,7 +12,6 @@
 #include <mm_msgs/PoseTrajectoryPoint.h>
 #include <mm_msgs/PoseTrajectory.h>
 
-#include "mm/mm.h"
 #include "mm/kinematics.h"
 #include "mm/optimize.h"
 #include "mm/interp.h"
@@ -36,7 +35,7 @@ namespace mm {
             // q_act:    current value of joint angles
             // dq_cmd:   populated with joint velocity commands to send
             void update(const Vector3d& pos_des, const Vector3d& vel_ff,
-                        const QVector& q_act, QVector& dq_cmd);
+                        const JointVector& q_act, JointVector& dq_cmd);
 
 
         private:
@@ -53,7 +52,7 @@ namespace mm {
 
 
     void IKController::update(const Vector3d& pos_des, const Vector3d& vel_ff,
-                      const QVector& q_act, QVector& dq_cmd) {
+                              const JointVector& q_act, JointVector& dq_cmd) {
         // Calculate actual pose using forward kinematics.
         Affine3d ee_pose_act;
         Kinematics::forward(q_act, ee_pose_act);
@@ -112,8 +111,8 @@ namespace mm {
             IKController controller;
 
             // Actual joint positions, updated by the subscriber
-            QVector q_act;
-            QVector dq_act;
+            JointVector q_act;
+            JointVector dq_act;
 
             // Actual pose and twist of end effector.
             Affine3d w_T_e_act;
@@ -166,8 +165,8 @@ namespace mm {
         Matrix3d K = Matrix3d::Identity();
         controller.init(K);
 
-        q_act = QVector::Zero();
-        dq_act = QVector::Zero();
+        q_act = JointVector::Zero();
+        dq_act = JointVector::Zero();
 
         pose_received = false;
     }
@@ -206,7 +205,7 @@ namespace mm {
             }
             // ROS_INFO_STREAM("pos_des = " << pos_des << "\nvel_ff = " << vel_ff);
 
-            QVector dq_cmd;
+            JointVector dq_cmd;
             controller.update(pos_des, vel_ff, q_act, dq_cmd);
 
             // Split into base and arm joints to send out.

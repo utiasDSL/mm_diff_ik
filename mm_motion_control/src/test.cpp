@@ -14,11 +14,11 @@ using namespace Eigen;
 
 
 void test_qp() {
-    mm::QVector q = mm::QVector::Zero();
+    mm::JointVector q = mm::JointVector::Zero();
     mm::Vector6d ee_vel;
     ee_vel << 1, 0, 0, 0, 0, 0;
 
-    mm::QVector dq_opt;
+    mm::JointVector dq_opt;
 
     mm::IKOptimizer optimizer;
     bool ret = optimizer.solve(q, ee_vel, dq_opt);

@@ -8,12 +8,12 @@ using namespace mm;
 using namespace Eigen;
 
 
-void test_jac_finite_diff(const QVector& q, const double eps) {
-    JacMatrix J;
+void test_jac_finite_diff(const JointVector& q, const double eps) {
+    JacobianMatrix J;
     Kinematics::jacobian(q, J);
 
     for (int i = 0; i < 9; ++i) {
-        QVector epsv = QVector::Zero();
+        JointVector epsv = JointVector::Zero();
         epsv(i) = eps;
 
         Affine3d T1, T2;
@@ -34,7 +34,7 @@ void test_jac_finite_diff(const QVector& q, const double eps) {
 
 TEST(KinematicsTestSuite, testJac1) {
     // All joints are zero.
-    QVector q = QVector::Zero();
+    JointVector q = JointVector::Zero();
     double eps = 1e-8;
     test_jac_finite_diff(q, eps);
 }
@@ -42,7 +42,7 @@ TEST(KinematicsTestSuite, testJac1) {
 
 TEST(KinematicsTestSuite, testJac2) {
     // Arm is in "ready position"
-    QVector q = QVector::Zero();
+    JointVector q = JointVector::Zero();
     q(4) = -M_PI * 0.75;
     q(5) = -M_PI_2;
     double eps = 1e-8;
@@ -52,7 +52,7 @@ TEST(KinematicsTestSuite, testJac2) {
 
 TEST(KinematicsTestSuite, testJac3) {
     // Base is moved.
-    QVector q = QVector::Zero();
+    JointVector q = JointVector::Zero();
     q(0) = 1.0;
     q(1) = -0.5;
     q(2) = M_PI_2;

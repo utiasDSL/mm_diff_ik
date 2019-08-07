@@ -3,6 +3,8 @@ import re
 
 import numpy as np
 
+import IPython
+
 
 def dh_tf(q, a, d, alpha):
     ''' Transformation matrix from D-H parameters. '''
@@ -20,6 +22,11 @@ def R_t_from_T(T):
     return R, t
 
 
+def _as_np(M):
+    ''' Convert sympy matrix to numpy array. '''
+    return np.array(M).astype(np.float64)
+
+
 class ThingKinematics(object):
     def __init__(self):
         self._calc_sym_transforms()
@@ -27,28 +34,38 @@ class ThingKinematics(object):
 
     def _calc_sym_transforms(self):
         ''' Calculate symbolic transforms from intermediate points to world. '''
+
+        # Arm joints/variables.
         self.q1, self.q2, self.q3, self.q4, self.q5, self.q6 = sym.symbols('q1,q2,q3,q4,q5,q6')
+
+        # Base joint/variables.
         self.xb, self.yb, self.tb = sym.symbols('xb,yb,tb')
+
+        # Offset from base to arm.
+        px, py, pz = sym.symbols('px,py,pz')
+
+        # Arm D-H parameters.
+        d1, a2, a3, d4, d5, d6 = sym.symbols('d1,a2,a3,d4,d5,d6')
 
         self.T = [None] * 12
 
         # Transform from base to world.
-        self.T[0] = dh_tf(sym.pi/2, 0, 0,  sym.pi/2)
+        self.T[0] = dh_tf(sym.pi/2, 0, 0,       sym.pi/2)
         self.T[1] = dh_tf(sym.pi/2, 0, self.xb, sym.pi/2)
         self.T[2] = dh_tf(sym.pi/2, 0, self.yb, sym.pi/2)
-        self.T[3] = dh_tf(self.tb,       0, 0,  0)
+        self.T[3] = dh_tf(self.tb,  0, 0,       0)
 
         # Transform from arm to base.
-        self.T[4] = dh_tf(0, 0.27, 0.653, -sym.pi/2)
-        self.T[5] = dh_tf(0, 0,    0.01,   sym.pi/2)
+        self.T[4] = dh_tf(0, px, pz, -sym.pi/2)
+        self.T[5] = dh_tf(0, 0,  py,  sym.pi/2)
 
         # Transform from end effector to arm.
-        self.T[6]  = dh_tf(self.q1,  0,      0.1273,   sym.pi/2)
-        self.T[7]  = dh_tf(self.q2, -0.612,  0,        0)
-        self.T[8]  = dh_tf(self.q3, -0.5723, 0,        0)
-        self.T[9]  = dh_tf(self.q4,  0,      0.163941, sym.pi/2)
-        self.T[10] = dh_tf(self.q5,  0,      0.1157,  -sym.pi/2)
-        self.T[11] = dh_tf(self.q6,  0,      0.0922,   0)
+        self.T[6]  = dh_tf(self.q1, 0,  d1,  sym.pi/2)
+        self.T[7]  = dh_tf(self.q2, a2, 0,   0)
+        self.T[8]  = dh_tf(self.q3, a3, 0,   0)
+        self.T[9]  = dh_tf(self.q4, 0,  d4,  sym.pi/2)
+        self.T[10] = dh_tf(self.q5, 0,  d5, -sym.pi/2)
+        self.T[11] = dh_tf(self.q6, 0,  d6,  0)
 
         # Transforms from intermediate points to world.
         self.T0 = [None] * 13
@@ -118,29 +135,30 @@ class ThingKinematics(object):
         # Full Jacobian
         self.J_sym = sym.Matrix.vstack(Jv, Jw)
 
-    def _sub_dict(self, qb, qa):
+    def _sub_dict(self, q):
+        qb = q[:3]
+        qa = q[3:]
         return {
             'xb': qb[0], 'yb': qb[1], 'tb': qb[2],
-            'q1': qa[0], 'q2': qa[1], 'q3': qa[2], 'q4': qa[3], 'q5': qa[4], 'q6': qa[5]
+            'q1': qa[0], 'q2': qa[1], 'q3': qa[2], 'q4': qa[3], 'q5': qa[4], 'q6': qa[5],
+            'px': 0.27, 'py': 0.01, 'pz': 0.653,
+            'd1': 0.1273, 'a2': -0.612, 'a3': -0.5723, 'd4': 0.163941, 'd5': 0.1157, 'd6': 0.0922,
         }
 
-    def _as_np(self, M):
-        return np.array(M).astype(np.float64)
-
-    def calc_fk_chain(self, qb, qa):
+    def calc_fk_chain(self, q):
         ''' Calculate all transforms in the kinematic chain. '''
-        d = self._sub_dict(qb, qa)
-        return [self._as_np(T0i.subs(d)) for T0i in self.T0]
+        d = self._sub_dict(q)
+        return [_as_np(T0i.subs(d)) for T0i in self.T0]
 
-    def calc_fk(self, qb, qa):
+    def calc_fk(self, q):
         ''' Calculate the transform of the EE. '''
-        d = self._sub_dict(qb, qa)
-        return self._as_np(self.T0[-1].subs(d))
+        d = self._sub_dict(q)
+        return _as_np(self.T0[-1].subs(d))
 
-    def calc_jac(self, qb, qa):
+    def calc_jac(self, q):
         ''' Calculate the Jacobian. '''
-        d = self._sub_dict(qb, qa)
-        return self._as_np(self.J_sym.subs(d))
+        d = self._sub_dict(q)
+        return _as_np(self.J_sym.subs(d))
 
     def write_sym_jac(self, fname):
         ''' Write symbolic Jacobian out to a file. '''
@@ -150,44 +168,44 @@ class ThingKinematics(object):
         def cos_repl(m):
             return 'c' + m.group(1)
 
+        # Generate the string version of the Jacobian
+        J = np.empty((6, 9), dtype=object)
+        for i in range(6):
+            for j in range(9):
+                Jij = str(self.J_sym[i,j])
+                Jij = re.sub('sin\(([a-z0-9]+)\)', sin_repl, Jij)
+                Jij = re.sub('cos\(([a-z0-9]+)\)', cos_repl, Jij)
+                J[i,j] = Jij
+
         with open(fname, 'w+') as f:
+            f.write('Base\n')
             for i in range(6):
-                for j in range(9):
-                    Jijs = str(self.J_sym[i,j])
-                    Jijs = re.sub('sin\(([a-z0-9]+)\)', sin_repl, Jijs)
-                    Jijs = re.sub('cos\(([a-z0-9]+)\)', cos_repl, Jijs)
-                    f.write(Jijs + '\n')
+                for j in range(3):
+                    f.write('Jb({},{}) = {};\n'.format(i, j, J[i,j]))
+
+            f.write('\nArm\n')
+            for i in range(6):
+                for j in range(6):
+                    f.write('Ja({},{}) = {};\n'.format(i, j, J[i,j+3]))
 
 
 def main():
     kin = ThingKinematics()
-    qb = np.zeros(3)
-    qa = np.zeros(6)
     q = np.zeros(9)
     eps = 1e-5
 
-    J = kin.calc_jac(q[:3], q[3:])
-    Ts = kin.calc_fk_chain(q[:3], q[3:])
+    J = kin.calc_jac(q)
+    Ts = kin.calc_fk_chain(q)
 
     print(Ts[3])
     print(Ts[5])
     print(Ts[11])
 
 
-    # for i in range(9):
-    #     epsv = np.zeros(9)
-    #     epsv[i] = eps
-    #
-    #     q1 = q + epsv
-    #     q2 = q - epsv
-    #
-    #     T1 = kin.calc_fk(q1[:3], q1[3:])
-    #     T2 = kin.calc_fk(q2[:3], q2[3:])
-    #
-    #     approx = (T1[:3,3] - T2[:3,3]) / (2*eps)
-    #     real = J[:3,i]
-    #     print('{} << {}'.format(approx, real))
+def write_sym_jac():
+    kin = ThingKinematics()
+    kin.write_sym_jac('jac.txt')
 
 
 if __name__ == '__main__':
-    main()
+    write_sym_jac()

@@ -83,7 +83,7 @@ def main():
     kin = ThingKinematics()
 
     # calculate initial EE position and velocity
-    T0 = kin.calc_fk(q0[:3], q0[3:])
+    T0 = kin.calc_fk(q0)
     p0 = T0[:3,3]
 
     print('Trajectory initialized with initial position\n= {}'.format(list(p0)))

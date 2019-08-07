@@ -46,7 +46,7 @@ class RobotPlotter(object):
         self.q = np.array(msg.position)
 
     def _calc_positions(self):
-        Ts = self.kin.calc_fk_chain(self.q[:3], self.q[3:])
+        Ts = self.kin.calc_fk_chain(self.q)
         w_T_b = Ts[3]
         w_T_e = Ts[-1]
 
