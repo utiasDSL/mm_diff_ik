@@ -1,6 +1,0 @@
-float64[] q_current
-float64[] P_desired
-float64[] dP_desired
----
-float64[] q_opt
-float64[] dq_opt

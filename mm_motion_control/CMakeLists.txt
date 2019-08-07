@@ -11,7 +11,6 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   mm_msgs
-  message_generation
   message_runtime
 )
 find_package(cmake_modules REQUIRED)

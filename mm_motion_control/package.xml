@@ -23,7 +23,6 @@
   <!-- Example: -->
   <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
 
-  <depend>message_generation</depend>
   <depend>cmake_modules</depend>
   <depend>mm_msgs</depend>
 
