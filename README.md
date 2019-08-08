@@ -42,3 +42,11 @@ eventually be replaced by a proper Gazebo simulation.
 ## mm_msgs
 
 Defines custom ROS messages used by other packages in the project.
+
+## mm_vicon
+
+Contains Vicon estimation code and launch files for the Vicon system. To
+publish the Thing base pose from Vicon, connect to the Vicon wifi
+`DSL_DroneNet_5G` (see the wiki for the password) and run `roslaunch mm_vicon
+vicon.launch`. You should see the topic `/vicon/ThingBase/ThingBase` bring
+published.

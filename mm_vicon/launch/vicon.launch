@@ -1,0 +1,17 @@
+<launch>
+	<node pkg="vicon_bridge" type="vicon_bridge" name="vicon" output="screen">
+		<param name="stream_mode" value="ClientPull" type="str" />
+		<param name="datastream_hostport" value="192.168.2.120:801" type="str" />
+		<param name="tf_ref_frame_id" value="/odom" type="str" />
+
+    <!-- Origin of Vicon constellation is calibrated to correspond with the centre of the robot base. -->
+    <param name="ThingBase/ThingBase/zero_pose/position/x"    value="0.030513210" type="double" />
+    <param name="ThingBase/ThingBase/zero_pose/position/y"    value="0.0410731756" type="double" />
+    <param name="ThingBase/ThingBase/zero_pose/position/z"    value="0.33241197" type="double" />
+    <param name="ThingBase/ThingBase/zero_pose/orientation/x" value="0.00017717364" type="double" />
+    <param name="ThingBase/ThingBase/zero_pose/orientation/y" value="0.00" type="double" />
+    <param name="ThingBase/ThingBase/zero_pose/orientation/z" value="0.000123166264" type="double" />
+    <param name="ThingBase/ThingBase/zero_pose/orientation/w" value="0.99999997613" type="double" />
+
+	</node>
+</launch>
