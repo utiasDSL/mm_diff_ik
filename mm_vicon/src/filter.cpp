@@ -1,5 +1,3 @@
-#pragma once
-
 #include "mm_vicon/filter.h"
 
 
