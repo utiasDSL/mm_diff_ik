@@ -5,13 +5,13 @@
 		<param name="tf_ref_frame_id" value="/odom" type="str" />
 
     <!-- Origin of Vicon constellation is calibrated to correspond with the centre of the robot base. -->
-    <param name="ThingBase/ThingBase/zero_pose/position/x"    value="0.030513210" type="double" />
-    <param name="ThingBase/ThingBase/zero_pose/position/y"    value="0.0410731756" type="double" />
-    <param name="ThingBase/ThingBase/zero_pose/position/z"    value="0.33241197" type="double" />
-    <param name="ThingBase/ThingBase/zero_pose/orientation/x" value="0.00017717364" type="double" />
-    <param name="ThingBase/ThingBase/zero_pose/orientation/y" value="0.00" type="double" />
-    <param name="ThingBase/ThingBase/zero_pose/orientation/z" value="0.000123166264" type="double" />
-    <param name="ThingBase/ThingBase/zero_pose/orientation/w" value="0.99999997613" type="double" />
+    <param name="ThingBase/ThingBase/zero_pose/position/x"    value="0.028019" type="double" />
+    <param name="ThingBase/ThingBase/zero_pose/position/y"    value="0.007978" type="double" />
+    <param name="ThingBase/ThingBase/zero_pose/position/z"    value="0.331241" type="double" />
+    <param name="ThingBase/ThingBase/zero_pose/orientation/x" value="-0.000176" type="double" />
+    <param name="ThingBase/ThingBase/zero_pose/orientation/y" value="-0.000196" type="double" />
+    <param name="ThingBase/ThingBase/zero_pose/orientation/z" value="-0.000176" type="double" />
+    <param name="ThingBase/ThingBase/zero_pose/orientation/w" value="1.0000" type="double" />
 
 	</node>
 </launch>
