@@ -61,8 +61,8 @@ void approx_hessian(double (*f)(const Eigen::Matrix<double, N, 1>&),
     MatrixNd I = MatrixNd::Identity();
 
     for (int i = 0; i < N; ++i) {
+        VectorNd Ii = I.col(i);
         for (int j = 0; j < N; ++j) {
-            VectorNd Ii = I.col(i);
             VectorNd Ij = I.col(j);
             H(i,j) = (f(x + h*Ii + h*Ij) - f(x + h*Ii - h*Ij)
                     - f(x - h*Ii + h*Ij) + f(x - h*Ii - h*Ij)) / (4*h*h);
@@ -121,16 +121,9 @@ class IKOptimizer {
         // value m, gradient dm, and Hessian Hm.
         void linearized_manipulability(const JointVector& q, JointVector& dm,
                                        JointMatrix& Hm) {
-            double h = 1e-8; // Step size
-
+            double h = 1e-5; // Step size
             approx_gradient<NUM_JOINTS>(&Kinematics::manipulability, h, q, dm);
             approx_hessian<NUM_JOINTS>(&Kinematics::manipulability, h, q, Hm);
-
-            // Numerical gradient using central difference.
-            // JointMatrix E = JointMatrix::Identity();
-            // for (int i = 0; i < NUM_JOINTS; ++i) {
-            //     dm(i) = (Kinematics::manipulability(q + h*E.col(i)) - Kinematics::manipulability(q - h*E.col(i))) / (2*h);
-            // }
         }
 }; // class IKOptimizer
 

@@ -112,14 +112,6 @@ include_directories(
 )
 
 # Compile executable
-add_executable(mm_test
-  src/test.cpp
-)
-
-target_link_libraries(mm_test
-  ${catkin_LIBRARIES}
-  /usr/local/lib/libeigen-quadprog.so
-)
 
 add_executable(mm_control_node
   src/mm_control_node.cpp
@@ -137,6 +129,14 @@ catkin_add_executable_with_gtest(test_kinematics
 
 catkin_add_executable_with_gtest(test_interp
   test/test_interp.cpp
+)
+
+catkin_add_executable_with_gtest(test_optimize
+  test/test_optimize.cpp
+)
+target_link_libraries(test_optimize
+  ${catkin_LIBRARIES}
+  /usr/local/lib/libeigen-quadprog.so
 )
 
 ## Add cmake target dependencies of the library
