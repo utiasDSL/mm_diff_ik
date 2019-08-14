@@ -28,11 +28,7 @@
   </node>
 
   <!-- Combine base and arm joint_state messages into a single one. -->
-  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
-    <param name="/use_gui" value="false"/>
-    <param name="/rate" value="100"/>
-    <rosparam param="/source_list">[/ur10_joint_states, /rb_joint_states]</rosparam>
-  </node>
+  <node pkg="mm_motion_control" type="joint_state_mux" name="joint_state_mux_node">
 
   <!-- Start the controller. -->
   <node pkg="mm_motion_control" type="mm_control_node" name="mm_control_node" />

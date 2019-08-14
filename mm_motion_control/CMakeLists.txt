@@ -111,15 +111,20 @@ include_directories(
   /usr/local/include/eigen-quadprog
 )
 
-# Compile executable
-
+# Executables
 add_executable(mm_control_node
   src/mm_control_node.cpp
 )
-
 target_link_libraries(mm_control_node
   ${catkin_LIBRARIES}
   /usr/local/lib/libeigen-quadprog.so
+)
+
+add_executable(joint_state_mux
+  src/joint_state_mux.cpp
+)
+target_link_libraries(joint_state_mux
+  ${catkin_LIBRARIES}
 )
 
 # Tests

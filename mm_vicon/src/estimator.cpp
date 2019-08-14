@@ -85,6 +85,8 @@ void ViconEstimatorNode::publish_joint_states() {
     sensor_msgs::JointState rb_joint_states;
     rb_joint_states.header.stamp = ros::Time::now();
 
+    // TODO publish names of states
+
     rb_joint_states.position.push_back(position_curr(0)); // x
     rb_joint_states.position.push_back(position_curr(1)); // y
     rb_joint_states.position.push_back(yaw_curr); // yaw

@@ -277,7 +277,7 @@ namespace mm {
 
         // Reinitialize current joint states.
         for (int i = 0; i < 6; ++i) {
-            // first 3 joints are the base
+            // skip the first 3 joints, which are the base
             q_act(3+i)  = msg.position[i];
             dq_act(3+i) = msg.velocity[i];
         }
