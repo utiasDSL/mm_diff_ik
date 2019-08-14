@@ -85,24 +85,13 @@ namespace mm {
             void loop(const double hz);
 
         private:
-            /** TYPEDEFS **/
-
-            // TODO I'm not sure if this is appropriate for publishing actual
-            // control commands, which I don't particularly wish to be
-            // throttled
-            // typedef realtime_tools::RealtimePublisher<trajectory_msgs::JointTrajectory> JointVelocityPublisher;
-
-
             /** VARIABLES **/
 
             // Subsribe to desired end effector pose.
             ros::Subscriber pose_cmd_sub;
 
             // Subscribe to current joint values of the robot.
-            ros::Subscriber ur10_joint_states_sub;
-
-            // Get (x, y, theta) from Vicon
-            ros::Subscriber rb_joint_states_sub;
+            ros::Subscriber mm_joint_states_sub;
 
             // Publishers for desired joint speeds calculated by controller.
             ros::Publisher ur10_joint_vel_pub;
@@ -133,16 +122,11 @@ namespace mm {
             // Takes a single Pose trajectory point to control toward.
             void pose_cmd_cb(const mm_msgs::PoseTrajectoryPoint& msg);
 
-            // Update state of UR10 joints.
-            void ur10_joint_states_cb(const sensor_msgs::JointState& msg);
-
-            // Update state of Ridgeback joints
-            // TODO this is going to change once we add Vicon, which has a
-            // different API.
-            void rb_joint_states_cb(const sensor_msgs::JointState& msg);
+            // Update state of robot joints.
+            void mm_joint_states_cb(const sensor_msgs::JointState& msg);
 
             void update_forward_kinematics();
-    };
+    }; // class IKControlNode
 
 
     bool IKControlNode::init(ros::NodeHandle& nh) {
@@ -151,15 +135,11 @@ namespace mm {
         pose_cmd_sub = nh.subscribe("/pose_cmd", 1,
                 &IKControlNode::pose_cmd_cb, this);
 
-        ur10_joint_states_sub = nh.subscribe("/ur10_joint_states", 1,
-                &IKControlNode::ur10_joint_states_cb, this);
-        rb_joint_states_sub = nh.subscribe("/rb_joint_states", 1,
-                &IKControlNode::rb_joint_states_cb, this);
+        mm_joint_states_sub = nh.subscribe("/mm_joint_states", 1,
+                &IKControlNode::mm_joint_states_cb, this);
 
         ur10_joint_vel_pub = nh.advertise<trajectory_msgs::JointTrajectory>("/ur_driver/joint_speed", 1);
         rb_joint_vel_pub = nh.advertise<geometry_msgs::Twist>("/ridgeback_velocity_controller/cmd_vel", 1);
-
-        // TODO probably want to publish some sort of state here
 
         // Initialize the controller.
         Matrix3d K = Matrix3d::Identity();
@@ -201,9 +181,8 @@ namespace mm {
             // velocity?
             if (!trajectory.sample(now, pos_des, vel_ff)) {
                 ROS_INFO("outside of sampling window");
-                break;
+                continue;
             }
-            // ROS_INFO_STREAM("pos_des = " << pos_des << "\nvel_ff = " << vel_ff);
 
             JointVector dq_cmd;
             controller.update(pos_des, vel_ff, q_act, dq_cmd);
@@ -260,26 +239,10 @@ namespace mm {
     }
 
 
-    void IKControlNode::rb_joint_states_cb(const sensor_msgs::JointState& msg) {
-        // Update current joint states.
-        for (int i = 0; i < 3; ++i) {
-            q_act(i)  = msg.position[i];
+    void IKControlNode::mm_joint_states_cb(const sensor_msgs::JointState& msg) {
+        for (int i = 0; i < mm::NUM_JOINTS; ++i) {
+            q_act(i) = msg.position[i];
             dq_act(i) = msg.velocity[i];
-        }
-        update_forward_kinematics();
-    }
-
-
-    void IKControlNode::ur10_joint_states_cb(const sensor_msgs::JointState& msg) {
-        // order is [ur10_arm_shoulder_pan_joint, ur10_arm_shoulder_lift_joint,
-        // ur10_arm_elbow_joint, ur10_arm_wrist_1_joint,
-        // ur10_arm_wrist_2_joint, ur10_arm_wrist_3_joint]
-
-        // Reinitialize current joint states.
-        for (int i = 0; i < 6; ++i) {
-            // skip the first 3 joints, which are the base
-            q_act(3+i)  = msg.position[i];
-            dq_act(3+i) = msg.velocity[i];
         }
         update_forward_kinematics();
     }
@@ -290,4 +253,5 @@ namespace mm {
         Kinematics::forward(q_act, w_T_e_act);
         Kinematics::forward_vel(q_act, dq_act, dw_T_e_act);
     }
-}
+
+} // namespace mm
