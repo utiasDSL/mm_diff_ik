@@ -25,11 +25,10 @@ namespace mm {
         public:
             IKController() : optimizer() {}
 
-            bool init(Matrix3d& K) {
-                this->K = K;
-            }
+            bool init(Matrix3d& K);
 
             // Run one iteration of the control loop.
+            //
             // pose_des: desired pose
             // vel_ff:   feedforward pose velocity
             // q_act:    current value of joint angles
@@ -37,10 +36,9 @@ namespace mm {
             void update(const Vector3d& pos_des, const Vector3d& vel_ff,
                         const JointVector& q_act, JointVector& dq_cmd);
 
-
         private:
-            // TODO may want to store previous time for later use in the
-            // optimizer
+            // Time from previous control loop iteration.
+            double time_prev;
 
             // Proportional gain on the end effector pose error (in task space);
             Matrix3d K;
@@ -48,8 +46,12 @@ namespace mm {
             // Optimizer to solve for joint velocity commands to send to the
             // robot.
             IKOptimizer optimizer;
-    };
+    }; // class IKController
 
+    bool IKController::init(Matrix3d& K) {
+        this->K = K;
+        time_prev = ros::Time::now().toSec();
+    }
 
     void IKController::update(const Vector3d& pos_des, const Vector3d& vel_ff,
                               const JointVector& q_act, JointVector& dq_cmd) {
@@ -67,8 +69,13 @@ namespace mm {
         Vector6d vel_cmd;
         vel_cmd << linear_vel, Vector3d::Zero();
 
+        // Update time.
+        double now = ros::Time::now().toSec();
+        double dt = now - time_prev;
+        time_prev = now;
+
         // Optimize to solve IK problem.
-        bool success = optimizer.solve(q_act, vel_cmd, dq_cmd);
+        bool success = optimizer.solve(q_act, vel_cmd, dt, dq_cmd);
         if (!success) {
             ROS_INFO("Optimization failed");
         }

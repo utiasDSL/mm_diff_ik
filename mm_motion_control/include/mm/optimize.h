@@ -75,22 +75,31 @@ class IKOptimizer {
         IKOptimizer() {};
 
         // Create and solve the QP.
-        // q: Current value of joint angles.
+        //
+        // q:      Current value of joint angles.
         // ee_vel: Desired task space velocity of end effector.
+        // dt:     Control timestep.
         // dq_opt: Optimal values of joint velocities.
+        //
         // Returns true if optimization problem was solved successfully
         // (i.e. constraints satisified).
-        // TODO we're going to want dt here
-        bool solve(const JointVector& q, const Vector6d& ee_vel,
+        bool solve(const JointVector& q, const Vector6d& ee_vel, double dt,
                    JointVector& dq_opt) {
             // Minimize velocity objective.
-            JointMatrix Q = JointMatrix::Identity();
-            JointVector C = JointVector::Zero();
+            JointMatrix W = JointMatrix::Identity(); // norm weighting
 
             // Manipulability objective.
-            // JointVector dm;
-            // JointMatrix Hm;
-            // linearized_manipulability(q, dm, Hm);
+            JointVector dm;
+            JointMatrix Hm;
+            linearized_manipulability(q, dm, Hm);
+
+            double alpha = 1.0; // weighting of manipulability objective
+
+            JointMatrix Q = W + alpha * dt * dt * Hm;
+            JointVector C = alpha * dt * dm;
+
+            // JointMatrix Q = W;
+            // JointVector C = JointVector::Zero();
 
             // Equality constraints: track the reference velocity.
             // TODO relaxation
