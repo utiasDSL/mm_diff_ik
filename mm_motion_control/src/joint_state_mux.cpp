@@ -3,9 +3,14 @@
 #include <sensor_msgs/JointState.h>
 
 
-// TODO namespace, header, etc
+namespace mm {
+
+const std::vector<std::string> JOINT_NAMES = {
+    "qx", "qy", "qyaw", "q1", "q2", "q3", "q4", "q5", "q6"};
 
 
+// Combines /rb_joint_states and /ur10_joint_states messages into a single
+// /mm_joint_states message.
 class JointStateMux {
     public:
         JointStateMux() {}
@@ -45,6 +50,7 @@ class JointStateMux {
             mm_joint_states.header.stamp = ros::Time::now();
 
             for (int i = 0; i < 9; ++i) {
+                mm_joint_states.name.push_back(JOINT_NAMES[i]);
                 mm_joint_states.position.push_back(position[i]);
                 mm_joint_states.velocity.push_back(velocity[i]);
             }
@@ -63,14 +69,16 @@ class JointStateMux {
 
         std::vector<double> position;
         std::vector<double> velocity;
-};
+}; // class JointStateMux
+
+} // namespace mm
 
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "joint_state_mux_node");
   ros::NodeHandle nh;
 
-  JointStateMux mux;
+  mm::JointStateMux mux;
   mux.init(nh);
 
   ros::Rate rate(100);

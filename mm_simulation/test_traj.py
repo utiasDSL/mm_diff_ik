@@ -14,7 +14,7 @@ from kinematics import ThingKinematics
 class JointInitializer(object):
     ''' Initialize joints by waiting for '''
     def __init__(self):
-        self.joint_state_sub = rospy.Subscriber('/joint_states', JointState,
+        self.joint_state_sub = rospy.Subscriber('/mm_joint_states', JointState,
                                                 self.joint_state_cb)
         self.initialized = False
 
@@ -58,7 +58,7 @@ class SineTrajectory(object):
 
     def sample(self, t):
         v = 0.05
-        w = 0.05
+        w = 0.1
 
         x = self.p0[0] + v * (t - self.t0)
         y = self.p0[1] + np.sin(w*(t - self.t0))
@@ -74,18 +74,17 @@ class SineTrajectory(object):
 def main():
     rospy.init_node('traj_generator')
     pose_cmd_pub = rospy.Publisher('/pose_cmd', PoseTrajectoryPoint, queue_size=10)
-    joint_init = JointInitializer()
 
     dt = 0.1
 
     # wait until current joint state is received
+    joint_init = JointInitializer()
     while joint_init.waiting():
         rospy.sleep(dt)
     q0, dq0 = joint_init.state()
 
-    kin = ThingKinematics()
-
     # calculate initial EE position and velocity
+    kin = ThingKinematics()
     T0 = kin.calc_fk(q0)
     p0 = T0[:3,3]
 

@@ -221,17 +221,17 @@ namespace mm {
         private:
             // Kinematic parameters
             // Offset from base to arm
-            static const double px = 0.27;
-            static const double py = 0.01;
-            static const double pz = 0.653;
+            static constexpr double px = 0.27;
+            static constexpr double py = 0.01;
+            static constexpr double pz = 0.653;
 
             // Arm D-H parameters
-            static const double d1 = 0.1273;
-            static const double a2 = -0.612;
-            static const double a3 = -0.5723;
-            static const double d4 = 0.163941;
-            static const double d5 = 0.1157;
-            static const double d6 = 0.0922;
+            static constexpr double d1 = 0.1273;
+            static constexpr double a2 = -0.612;
+            static constexpr double a3 = -0.5723;
+            static constexpr double d4 = 0.163941;
+            static constexpr double d5 = 0.1157;
+            static constexpr double d6 = 0.0922;
 
 
             // Create transformation matrix from D-H parameters.
