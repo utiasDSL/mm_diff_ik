@@ -16,6 +16,7 @@ bool ViconEstimatorNode::init(ros::NodeHandle& nh) {
             "/rb_joint_states", 1);
 
     new_msg = false;
+    msg_count = 0;
 
     // Velocity is assumed to be 0 initially. Values for tau taken from
     // dsl__estimation__vicon package.
@@ -25,12 +26,20 @@ bool ViconEstimatorNode::init(ros::NodeHandle& nh) {
 
 void ViconEstimatorNode::loop(const double hz) {
     ros::Rate rate(hz);
+
+    // Wait until the previous and current messages have been populated so that
+    // calculations can be performed.
+    while (ros::ok() && msg_count < 2) {
+        ros::spinOnce();
+        rate.sleep();
+    }
+
     while (ros::ok()) {
-        // Fire callbacks.
         ros::spinOnce();
 
         if (new_msg) {
             publish_joint_states();
+            new_msg = false;
         }
 
         rate.sleep();
@@ -42,6 +51,7 @@ void ViconEstimatorNode::vicon_thing_base_cb(const geometry_msgs::TransformStamp
     tf_curr = msg;
 
     new_msg = true;
+    ++msg_count;
 }
 
 void ViconEstimatorNode::publish_joint_states() {

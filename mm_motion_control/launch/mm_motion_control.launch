@@ -26,4 +26,14 @@
     <param name="prefix" value="$(arg prefix)" />
     <remap from="/joint_states" to="/ur10_joint_states" />
   </node>
+
+  <!-- Combine base and arm joint_state messages into a single one. -->
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+    <param name="/use_gui" value="false"/>
+    <param name="/rate" value="100"/>
+    <rosparam param="/source_list">[/ur10_joint_states, /rb_joint_states]</rosparam>
+  </node>
+
+  <!-- Start the controller. -->
+  <node pkg="mm_motion_control" type="mm_control_node" name="mm_control_node" />
 </launch>

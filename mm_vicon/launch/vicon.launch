@@ -1,4 +1,5 @@
 <launch>
+  <!-- Communication with Vicon -->
 	<node pkg="vicon_bridge" type="vicon_bridge" name="vicon" output="screen">
 		<param name="stream_mode" value="ClientPull" type="str" />
 		<param name="datastream_hostport" value="192.168.2.120:801" type="str" />
@@ -12,6 +13,8 @@
     <param name="ThingBase/ThingBase/zero_pose/orientation/y" value="-0.000196" type="double" />
     <param name="ThingBase/ThingBase/zero_pose/orientation/z" value="-0.000176" type="double" />
     <param name="ThingBase/ThingBase/zero_pose/orientation/w" value="1.0000" type="double" />
+  </node>
 
-	</node>
+  <!-- Velocity estimation -->
+  <node pkg="mm_vicon" type="vicon_estimator_node" name="mm_vicon_estimator_node" output="screen" />
 </launch>

@@ -42,7 +42,11 @@ class ViconEstimatorNode {
         ExponentialSmoother<double>   filter_rot_vel;
         ExponentialSmoother<Eigen::Vector2d> filter_lin_vel;
 
+        // True after a new Vicon message has been received.
         bool new_msg;
+
+        // Number of messages received.
+        uint32_t msg_count;
 
         /* FUNCTIONS */
 

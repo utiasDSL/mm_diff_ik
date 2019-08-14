@@ -12,6 +12,7 @@ from kinematics import ThingKinematics
 
 
 class JointInitializer(object):
+    ''' Initialize joints by waiting for '''
     def __init__(self):
         self.joint_state_sub = rospy.Subscriber('/joint_states', JointState,
                                                 self.joint_state_cb)
@@ -20,6 +21,8 @@ class JointInitializer(object):
     def joint_state_cb(self, msg):
         self.q0 = np.array(msg.position)
         self.dq0 = np.array(msg.velocity)
+
+        # Once we have a message, we don't need any more
         self.joint_state_sub.unregister()
         self.initialized = True
 

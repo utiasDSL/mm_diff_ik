@@ -4,15 +4,18 @@
 #include "mm/control.h"
 
 
+static const double HZ = 125;
+
+
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "ik_control_node");
+  ros::init(argc, argv, "mm_control_node");
   ros::NodeHandle nh;
 
-  ROS_INFO("ik_control_node started");
+  ROS_INFO_STREAM("mm_control_node started at " << HZ << "Hz");
 
   mm::IKControlNode node;
   node.init(nh);
-  node.loop(125);
+  node.loop(HZ);
 
   return 0;
 }

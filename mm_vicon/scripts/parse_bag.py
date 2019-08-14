@@ -26,19 +26,29 @@ def parse_vic_msgs(vic_msgs):
     rpys = [tfs.euler_from_quaternion(q) for q in quats]
     yaw = [rpy[2] for rpy in rpys]
 
+    vx = np.zeros(len(t))
+    vy = np.zeros(len(t))
+
+    # experiments with exponential smoothing
     vyaw = np.zeros(len(yaw))
     vyaw_meas = np.zeros(len(yaw))
     vyaw[0] = 0  # start at zero velocity
     tau = 0.025
+
     for i in xrange(1, len(t)):
         dt = t[i] - t[i-1]
+
+        vx[i] = (x[i] - x[i-1]) / dt
+        vy[i] = (y[i] - y[i-1]) / dt
+
         c = 1 - np.exp(-dt/tau)
         vyaw_meas[i] = (yaw[i] - yaw[i-1]) / dt
         vyaw[i] = c * vyaw_meas[i] + (1-c) * vyaw[i-1]
 
-    plt.plot(t, yaw, label='yaw')
-    plt.plot(t, vyaw_meas, label='vyaw raw')
-    plt.plot(t, vyaw, label='vyaw')
+
+    # plt.plot(t, yaw, label='yaw')
+    # plt.plot(t, vyaw_meas, label='vyaw raw')
+    # plt.plot(t, vyaw, label='vyaw')
 
     # alternatively, we can calculate the difference between quaternions
     vyaw2 = np.zeros(len(yaw))
@@ -48,12 +58,12 @@ def parse_vic_msgs(vic_msgs):
         drpy = tfs.euler_from_quaternion(dq)
         vyaw2[i] = drpy[2] / dt
 
-    plt.plot(t, vyaw2, label='vyaw 2')
+    return t, vx, vy, vyaw_meas
 
-    plt.legend()
-    plt.show()
-
-    # IPython.embed()
+    # plt.plot(t, vyaw2, label='vyaw 2')
+    #
+    # plt.legend()
+    # plt.show()
 
 
 def parse_estimator_msgs(rb_state_msgs):
@@ -68,25 +78,61 @@ def parse_estimator_msgs(rb_state_msgs):
     vy = [msg.velocity[1] for msg in rb_state_msgs]
     vyaw = [msg.velocity[2] for msg in rb_state_msgs]
 
-    plt.figure()
-    plt.subplot(2, 1, 1)
-    plt.plot(x, y)
-    plt.xlabel('x (m)')
-    plt.ylabel('y (m)')
-    plt.grid()
+    return t, vx, vy, vyaw
 
-    plt.subplot(2, 1, 2)
-    plt.plot(t, yaw)
-    plt.xlabel('t (sec)')
-    plt.ylabel('yaw (rad)')
+    # TODO plot the raw direct from Vicon, calculated in this file
+
+    # plt.figure()
+    # plt.subplot(2, 1, 1)
+    # plt.plot(x, y)
+    # plt.xlabel('x (m)')
+    # plt.ylabel('y (m)')
+    # plt.grid()
+    #
+    # plt.subplot(2, 1, 2)
+    # plt.plot(t, yaw)
+    # plt.xlabel('t (sec)')
+    # plt.ylabel('yaw (rad)')
+
+    # plt.figure()
+    # plt.subplot(3, 1, 1)
+    # plt.plot(t, vx)
+    # plt.subplot(3, 1, 2)
+    # plt.plot(t, vy)
+    # plt.subplot(3, 1, 3)
+    # plt.plot(t, vyaw)
+    #
+    # plt.show()
+
+
+def comp_raw_filtered(rb_state_msgs, vic_msgs):
+    t_fil, vx_fil, vy_fil, vyaw_fil = parse_estimator_msgs(rb_state_msgs)
+    t_raw, vx_raw, vy_raw, vyaw_raw = parse_vic_msgs(vic_msgs)
 
     plt.figure()
     plt.subplot(3, 1, 1)
-    plt.plot(t, vx)
+    plt.title('Base velocity estimation')
+    plt.plot(t_raw, vx_raw, label='Raw')
+    plt.plot(t_fil, vx_fil, label='Filtered')
+    plt.ylabel('vx (m/s)')
+
     plt.subplot(3, 1, 2)
-    plt.plot(t, vy)
+    plt.plot(t_raw, vy_raw, label='Raw')
+    plt.plot(t_fil, vy_fil, label='Filtered')
+    plt.ylabel('vy (m/s)')
+
     plt.subplot(3, 1, 3)
-    plt.plot(t, vyaw)
+    plt.plot(t_raw, vyaw_raw, label='Raw')
+    plt.plot(t_fil, vyaw_fil, label='Filtered')
+    plt.ylabel('vyaw (rad/s)')
+    plt.xlabel('t (s)')
+    plt.legend()
+
+    # plt.subplot(3, 1, 2)
+    # plt.plot(t, vy)
+    #
+    # plt.subplot(3, 1, 3)
+    # plt.plot(t, vyaw)
 
     plt.show()
 
@@ -99,8 +145,9 @@ def main():
     rb_state_msgs = [msg for _, msg, _ in bag.read_messages('/rb_joint_states')]
     vic_msgs = [msg for _, msg, _ in bag.read_messages('/vicon/ThingBase/ThingBase')]
 
-    parse_estimator_msgs(rb_state_msgs)
+    # parse_estimator_msgs(rb_state_msgs)
     # parse_vic_msgs(vic_msgs)
+    comp_raw_filtered(rb_state_msgs, vic_msgs)
 
 
 if __name__ == '__main__':
