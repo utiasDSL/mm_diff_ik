@@ -6,9 +6,6 @@ import rospy
 import numpy as np
 
 from sensor_msgs.msg import JointState
-from mm_msgs.msg import PoseTrajectoryPoint
-
-from kinematics import ThingKinematics
 
 
 class JointInitializer(object):
@@ -22,15 +19,19 @@ class JointInitializer(object):
         self.q0 = np.array(msg.position)
         self.dq0 = np.array(msg.velocity)
 
-        # Once we have a message, we don't need any more
+        # Once we have a message, we don't need to listen any more
         self.joint_state_sub.unregister()
         self.initialized = True
 
-    def waiting(self):
-        return not self.initialized
-
     def state(self):
         return self.q0, self.dq0
+
+    @staticmethod
+    def wait_for_msg(dt):
+        j = JointInitializer()
+        while not rospy.is_shutdown() and not j.initialized:
+            rospy.sleep(dt)
+        return j.state()
 
 
 class LineTrajectory(object):
@@ -69,52 +70,4 @@ class SineTrajectory(object):
         dz = 0
 
         return np.array([x, y, z]), np.array([dx, dy, dz])
-
-
-def main():
-    rospy.init_node('traj_generator')
-    pose_cmd_pub = rospy.Publisher('/pose_cmd', PoseTrajectoryPoint, queue_size=10)
-
-    dt = 0.1
-
-    # wait until current joint state is received
-    joint_init = JointInitializer()
-    while joint_init.waiting():
-        rospy.sleep(dt)
-    q0, dq0 = joint_init.state()
-
-    # calculate initial EE position and velocity
-    kin = ThingKinematics()
-    T0 = kin.calc_fk(q0)
-    p0 = T0[:3,3]
-
-    print('Trajectory initialized with initial position\n= {}'.format(list(p0)))
-
-    traj = SineTrajectory(p0)
-
-    while not rospy.is_shutdown():
-        now = rospy.get_time()
-        p, v = traj.sample(now)
-
-        waypoint = PoseTrajectoryPoint()
-
-        waypoint.pose.position.x = p[0]
-        waypoint.pose.position.y = p[1]
-        waypoint.pose.position.z = p[2]
-
-        waypoint.velocity.linear.x = v[0]
-        waypoint.velocity.linear.y = v[1]
-        waypoint.velocity.linear.z = v[2]
-
-        waypoint.time_from_start = rospy.Time(dt)
-
-        pose_cmd_pub.publish(waypoint)
-
-        print(waypoint)
-
-        rospy.sleep(dt)
-
-
-if __name__ == '__main__':
-    main()
 
