@@ -6,7 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 from sensor_msgs.msg import JointState
 
-from kinematics import ThingKinematics, R_t_from_T
+from mm_kinematics import ThingKinematics, R_t_from_T
 
 
 class RobotPlotter(object):
