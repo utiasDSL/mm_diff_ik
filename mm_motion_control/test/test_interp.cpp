@@ -1,9 +1,7 @@
-#include "mm/mm.h"
-#include "mm/interp.h"
-
-#include <iostream>
-
+#include <ros/ros.h>
 #include <gtest/gtest.h>
+
+#include "mm_motion_control/interp.h"
 
 
 using namespace mm;

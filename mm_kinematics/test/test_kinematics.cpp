@@ -1,7 +1,7 @@
-#include "mm/mm.h"
-#include "mm/kinematics.h"
-
+#include <ros/ros.h>
 #include <gtest/gtest.h>
+
+#include "mm_kinematics/kinematics.h"
 
 
 using namespace mm;

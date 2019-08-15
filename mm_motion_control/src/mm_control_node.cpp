@@ -1,7 +1,6 @@
 #include <ros/ros.h>
 
-#include "mm/mm.h"
-#include "mm/control.h"
+#include "mm_motion_control/control.h"
 
 
 static const double HZ = 125;

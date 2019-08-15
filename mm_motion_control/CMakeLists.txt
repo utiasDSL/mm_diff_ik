@@ -11,13 +11,11 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   mm_msgs
+  mm_kinematics
   message_runtime
 )
 find_package(cmake_modules REQUIRED)
-
-## System dependencies are found with CMake's conventions
 find_package(Eigen REQUIRED)
-#find_package(eigen-quadprog REQUIRED)
 
 
 ################################################
@@ -93,9 +91,7 @@ find_package(Eigen REQUIRED)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES mm_motion_control
-  CATKIN_DEPENDS mm_msgs
+  CATKIN_DEPENDS mm_msgs mm_kinematics
   DEPENDS eigen
 )
 
@@ -108,6 +104,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
+  ${mm_kinematics_INCLUDE_DIRS}
   /usr/local/include/eigen-quadprog
 )
 
@@ -128,10 +125,6 @@ target_link_libraries(joint_state_mux
 )
 
 # Tests
-catkin_add_executable_with_gtest(test_kinematics
-  test/test_kinematics.cpp
-)
-
 catkin_add_executable_with_gtest(test_interp
   test/test_interp.cpp
 )

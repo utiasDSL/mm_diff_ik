@@ -1,7 +1,6 @@
-#include "mm/optimize.h"
-
 #include <gtest/gtest.h>
-#include <iostream>
+
+#include "mm_motion_control/optimize.h"
 
 
 using namespace mm;

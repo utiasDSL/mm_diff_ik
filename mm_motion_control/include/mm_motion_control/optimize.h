@@ -9,8 +9,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/JointState.h>
 
-//#include "mm/mm.h"
-#include "mm/kinematics.h"
+#include <mm_kinematics/kinematics.h>
 
 
 // eigen-quadprog API:

@@ -11,10 +11,10 @@
 
 #include <mm_msgs/PoseTrajectoryPoint.h>
 #include <mm_msgs/PoseTrajectory.h>
+#include <mm_kinematics/kinematics.h>
 
-#include "mm/kinematics.h"
-#include "mm/optimize.h"
-#include "mm/interp.h"
+#include "mm_motion_control/optimize.h"
+#include "mm_motion_control/interp.h"
 
 
 using namespace Eigen;
