@@ -41,12 +41,13 @@ class LineTrajectory(object):
         self.t0 = rospy.get_time()
 
     def sample(self, t):
-        # 1cm/second
-        x = self.p0[0] + 0.01 * (t - self.t0)
+        v = 0.05
+
+        x = self.p0[0] + v * (t - self.t0)
         y = self.p0[1]
         z = self.p0[2]
 
-        dx = 0.01
+        dx = v
         dy = dz = 0
 
         return np.array([x, y, z]), np.array([dx, dy, dz])

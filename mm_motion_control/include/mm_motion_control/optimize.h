@@ -94,8 +94,9 @@ class IKOptimizer {
 
             double alpha = 1.0; // weighting of manipulability objective
 
-            JointMatrix Q = W + alpha * dt * dt * Hm;
-            JointVector C = alpha * dt * dm;
+            // JointMatrix Q = W + alpha * dt * dt * Hm;
+            JointMatrix Q = dt * dt * Hm;
+            JointVector C = dt * dm;
 
             // JointMatrix Q = W;
             // JointVector C = JointVector::Zero();

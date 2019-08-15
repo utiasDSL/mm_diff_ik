@@ -33,7 +33,10 @@ namespace mm {
             // vel_ff:   feedforward pose velocity
             // q_act:    current value of joint angles
             // dq_cmd:   populated with joint velocity commands to send
-            void update(const Vector3d& pos_des, const Vector3d& vel_ff,
+            //
+            // Returns true if the optimization problem was solved sucessfully,
+            // false otherwise.
+            bool update(const Vector3d& pos_des, const Vector3d& vel_ff,
                         const JointVector& q_act, JointVector& dq_cmd);
 
         private:
@@ -53,7 +56,7 @@ namespace mm {
         time_prev = ros::Time::now().toSec();
     }
 
-    void IKController::update(const Vector3d& pos_des, const Vector3d& vel_ff,
+    bool IKController::update(const Vector3d& pos_des, const Vector3d& vel_ff,
                               const JointVector& q_act, JointVector& dq_cmd) {
         // Calculate actual pose using forward kinematics.
         Affine3d ee_pose_act;
@@ -75,10 +78,7 @@ namespace mm {
         time_prev = now;
 
         // Optimize to solve IK problem.
-        bool success = optimizer.solve(q_act, vel_cmd, dt, dq_cmd);
-        if (!success) {
-            ROS_INFO("Optimization failed");
-        }
+        return optimizer.solve(q_act, vel_cmd, dt, dq_cmd);
     }
 
 
@@ -192,7 +192,13 @@ namespace mm {
             }
 
             JointVector dq_cmd;
-            controller.update(pos_des, vel_ff, q_act, dq_cmd);
+            bool success = controller.update(pos_des, vel_ff, q_act, dq_cmd);
+            if (!success) {
+                // If the optimization fails we don't want to send commands to
+                // the robot.
+                ROS_INFO("Optimization failed");
+                continue;
+            }
 
             // Split into base and arm joints to send out.
             Vector3d dq_cmd_rb = dq_cmd.topRows<3>();

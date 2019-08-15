@@ -50,3 +50,8 @@ publish the Thing base pose from Vicon, connect to the Vicon wifi
 `DSL_DroneNet_5G` (see the wiki for the password) and run `roslaunch mm_vicon
 vicon.launch`. You should see the topic `/vicon/ThingBase/ThingBase` bring
 published.
+
+## mm_kinematics
+
+Contains forward kinematics code in both C++ and Python for use by other
+packages.

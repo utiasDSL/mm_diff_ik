@@ -27,7 +27,7 @@ def main():
 
     print('Trajectory initialized with initial position\n= {}'.format(list(p0)))
 
-    traj = SineTrajectory(p0)
+    traj = LineTrajectory(p0)
 
     while not rospy.is_shutdown():
         now = rospy.get_time()
