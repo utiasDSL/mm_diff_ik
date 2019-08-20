@@ -48,6 +48,9 @@ include_directories(
 add_library(${PROJECT_NAME}
   src/kinematics.cpp
 )
+target_link_libraries(${PROJECT_NAME}
+  ${catkin_LIBRARIES}
+)
 
 # Tests
 catkin_add_executable_with_gtest(test_kinematics

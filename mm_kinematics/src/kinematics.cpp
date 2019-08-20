@@ -6,7 +6,17 @@
 
 namespace mm {
 
+// Calculate the Jacobian of the overall system.
 void Kinematics::jacobian(const JointVector& q, JacobianMatrix& J) {
+    ArmJacobianMatrix Ja;
+    BaseJacobianMatrix Jb;
+    jacobians(q, Ja, Jb);
+    J << Jb, Ja;
+}
+
+// Calculate base and arm Jacobians.
+void Kinematics::jacobians(const JointVector& q, ArmJacobianMatrix& Ja,
+                           BaseJacobianMatrix& Jb) {
     // Base joints
     double xb = q(0);
     double yb = q(1);
@@ -103,7 +113,6 @@ void Kinematics::jacobian(const JointVector& q, JacobianMatrix& J) {
     double Ja54 = -((-sq2*sq3 + cq2*cq3)*sq4 + (sq2*cq3 + sq3*cq2)*cq4)*sq5;
     double Ja55 = -((-sq2*sq3 + cq2*cq3)*sq4 + (sq2*cq3 + sq3*cq2)*cq4)*sq5;
 
-    ArmJacobianMatrix Ja;
     Ja << Ja00, Ja01, Ja02, Ja03, Ja04, Ja05,
           Ja10, Ja11, Ja12, Ja13, Ja14, Ja15,
           Ja20, Ja21, Ja22, Ja23, Ja24, Ja25,
@@ -128,15 +137,12 @@ void Kinematics::jacobian(const JointVector& q, JacobianMatrix& J) {
         + d6*((-((-sq1*stb + cq1*ctb)*cq2*cq3 + (sq1*stb - cq1*ctb)*sq2*sq3)*cq4 - ((sq1*stb - cq1*ctb)*sq2*cq3 + (sq1*stb - cq1*ctb)*sq3*cq2)*sq4)*sq5 + (sq1*ctb + stb*cq1)*cq5)
         + px*ctb - py*stb;
 
-    BaseJacobianMatrix Jb;
     Jb << 1, 0, Jb02,
           0, 1, Jb12,
           0, 0, 0,
           0, 0, 0,
           0, 0, 0,
           0, 0, 1;
-
-    J << Jb, Ja;
 }
 
 void Kinematics::forward(const JointVector& q, Eigen::Affine3d& w_T_e) {
@@ -167,24 +173,35 @@ void Kinematics::forward(const JointVector& q, Eigen::Affine3d& w_T_e) {
     w_T_e = w_T_b * b_T_a * a_T_e;
 }
 
-void Kinematics::forward_vel(const JointVector& q,
-                                    const JointVector& dq, Vector6d& v) {
+void Kinematics::forward_vel(const JointVector& q, const JointVector& dq,
+                             Vector6d& v) {
     JacobianMatrix J;
     Kinematics::jacobian(q, J);
     v = J * dq;
 }
 
 double Kinematics::manipulability(const JointVector& q) {
-    JacobianMatrix J;
-    jacobian(q, J);
+    // JacobianMatrix J;
+    // jacobian(q, J);
+    // double m = sqrt((J * J.transpose()).determinant());
+    // return m;
+    ArmJacobianMatrix Ja;
+    BaseJacobianMatrix Jb;
+    jacobians(q, Ja, Jb);
+    double m2 = (Ja * Ja.transpose()).determinant();
 
-    double m = sqrt((J * J.transpose()).determinant());
+    // Protect against small negative results introduced by numerical errors.
+    if (m2 < 0) {
+        m2 = 0;
+    }
 
+    double m = sqrt(m2);
+    ROS_INFO_STREAM(m2); // TODO this could be negative
     return m;
 }
 
 void Kinematics::dh_transform(double q, double a, double d, double alpha,
-                                     Eigen::Affine3d& T) {
+                              Eigen::Affine3d& T) {
     double sq = std::sin(q);
     double cq = std::cos(q);
     double salpha = std::sin(alpha);
