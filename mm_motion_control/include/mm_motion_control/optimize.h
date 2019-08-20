@@ -3,7 +3,6 @@
 #include <Eigen/Eigen>
 #include <QuadProg.h>
 #include <ros/ros.h>
-#include <realtime_tools/realtime_publisher.h>
 
 #include <trajectory_msgs/JointTrajectory.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -67,6 +66,9 @@ void approx_hessian(double (*f)(const Eigen::Matrix<double, N, 1>&),
                     - f(x - h*Ii + h*Ij) + f(x - h*Ii - h*Ij)) / (4*h*h);
         }
     }
+
+    // Ensure resulting matrix is PSD.
+    H = 0.5 * (H + H.transpose());
 }
 
 class IKOptimizer {
@@ -84,6 +86,8 @@ class IKOptimizer {
         // (i.e. constraints satisified).
         bool solve(const JointVector& q, const Vector6d& ee_vel, double dt,
                    JointVector& dq_opt) {
+            /* OBJECTIVE */
+
             // Minimize velocity objective.
             JointMatrix W = JointMatrix::Identity(); // norm weighting
 
@@ -92,16 +96,19 @@ class IKOptimizer {
             JointMatrix Hm;
             linearized_manipulability(q, dm, Hm);
 
+            // ROS_INFO_STREAM(Hm);
+
             double alpha = 1.0; // weighting of manipulability objective
 
-            // JointMatrix Q = W + alpha * dt * dt * Hm;
-            JointMatrix Q = dt * dt * Hm;
-            JointVector C = dt * dm;
+            JointMatrix Q = W - alpha * dt * dt * Hm;
+            JointVector C = alpha * dt * dm;
 
             // JointMatrix Q = W;
             // JointVector C = JointVector::Zero();
 
-            // Equality constraints: track the reference velocity.
+            /* EQUALITY CONSTRAINTS */
+
+            // Track the reference velocity.
             // TODO relaxation
             JacobianMatrix J;
             Kinematics::jacobian(q, J);
@@ -109,30 +116,73 @@ class IKOptimizer {
             Eigen::Matrix<double, 6, 9> Aeq = J;
             Eigen::Matrix<double, 6, 1> Beq = ee_vel;
 
-            // Inequality constraints
-            // Eigen::Matrix<double, 1, 0> Aineq, Bineq;
+            /* INEQUALITY CONSTRAINTS */
 
-            // Requires -1 <= dq <= 1
-            Eigen::Matrix<double, 18, 9> Aineq;
-            Aineq << JointMatrix::Identity(), -JointMatrix::Identity();
-            Eigen::Matrix<double, 18, 1> Bineq = Eigen::Matrix<double, 18, 1>::Ones();
+            Eigen::Matrix<double, 1, 0> Aineq, Bineq;
+
+            // // Velocity damper ineq constraints
+            // // TODO what if we only enforce constraints on the manipulator?
+            // at least for position, then we can enforce only normal velocity
+            // constraints on the base
+            // JointVector dq_lb, dq_ub;
+            // velocity_damper_limits(q, dq_lb, dq_ub);
+            // Eigen::Matrix<double, 2*NUM_JOINTS, NUM_JOINTS> Aineq;
+            // Aineq << -JointMatrix::Identity(), JointMatrix::Identity();
+            // Eigen::Matrix<double, 2*NUM_JOINTS, 1> Bineq;
+            // Bineq << -dq_lb, dq_ub;
 
             // Solve the QP.
-            Eigen::QuadProgDense qp(NUM_JOINTS, 6, 18);
+            // Arguments: # variables, # eq constraints, # ineq constraints
+            Eigen::QuadProgDense qp(NUM_JOINTS, 6, 0);
             bool success = qp.solve(Q, C, Aeq, Beq, Aineq, Bineq);
             dq_opt = qp.result();
+
+            double vel_min_obj = dq_opt.transpose() * W * dq_opt; // want to minimize
+
+            double mi = Kinematics::manipulability(q);
+            double mi_obj_quad = alpha * dt * dt * dq_opt.transpose() * Hm * dq_opt;
+            double mi_obj_lin = alpha * dt * dm.dot(dq_opt);
+            double mi_obj = mi + mi_obj_quad + mi_obj_lin; // want to maximize
+
+            ROS_INFO_STREAM("vel obj = " << vel_min_obj << " mi obj = " << mi_obj);
 
             return success;
         }
 
-    private:
         // Linearize manipulability around joint values q, returning the
         // value m, gradient dm, and Hessian Hm.
         void linearized_manipulability(const JointVector& q, JointVector& dm,
                                        JointMatrix& Hm) {
-            double h = 1e-5; // Step size
+            double h = 1e-3; // Step size
             approx_gradient<NUM_JOINTS>(&Kinematics::manipulability, h, q, dm);
             approx_hessian<NUM_JOINTS>(&Kinematics::manipulability, h, q, Hm);
+        }
+
+        void velocity_damper_limits(const JointVector& q, JointVector& dq_lb,
+                                    JointVector& dq_ub) {
+            double M_PI_6 = M_PI / 6.0;
+
+            // Influence distance
+            JointVector rho_i;
+            rho_i << 0.5, 0.5, M_PI_6, M_PI_6, M_PI_6, M_PI_6, M_PI_6, M_PI_6, M_PI_6;
+
+            // Safety distance is half the influence distance
+            // TODO this could probably be much closer to zero
+            JointVector rho_s = 0.5 * rho_i;
+
+            for (int i = 0; i < NUM_JOINTS; ++i) {
+                double del_q_ub = POSITION_LIMITS_UPPER(i) - q(i);
+                dq_ub(i) = VELOCITY_LIMITS_UPPER(i);
+                if (del_q_ub <= rho_i(i)) {
+                    dq_ub(i) *= (del_q_ub - rho_s(i)) / (rho_i(i) - rho_s(i));
+                }
+
+                double del_q_lb = q(i) - POSITION_LIMITS_LOWER(i);
+                dq_lb(i) = VELOCITY_LIMITS_LOWER(i);
+                if (del_q_lb <= rho_i(i)) {
+                    dq_lb(i) *= (del_q_lb - rho_s(i)) / (rho_i(i) - rho_s(i));
+                }
+            }
         }
 }; // class IKOptimizer
 

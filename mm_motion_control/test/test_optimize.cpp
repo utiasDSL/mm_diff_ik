@@ -1,6 +1,9 @@
 #include <gtest/gtest.h>
 
+#include "mm_kinematics/kinematics.h"
 #include "mm_motion_control/optimize.h"
+
+#include <iostream>
 
 
 using namespace mm;
@@ -69,6 +72,24 @@ TEST(OptimizeTestSuite, testApproxHessian) {
     Matrix3d D = H_real - H_approx;
     bool matrices_close = check_entries<3,3>(D, h);
     EXPECT_TRUE(matrices_close);
+}
+
+TEST(OptimizeTestSuite, testLinearizedManipulability) {
+    // goal is verify that the manipulability objective is working as expected
+    JointVector q = JointVector::Zero();
+    q(4) = -M_PI*0.75;
+    q(5) = -M_PI_2;
+
+    double m = Kinematics::manipulability(q);
+
+    IKOptimizer optimizer;
+    JointVector dm;
+    JointMatrix Hm;
+    optimizer.linearized_manipulability(q, dm, Hm);
+
+    // std::cout << m << std::endl;
+    // std::cout << dm << std::endl;
+    std::cout << Hm << std::endl;
 }
 
 

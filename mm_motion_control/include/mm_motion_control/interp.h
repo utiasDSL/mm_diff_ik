@@ -2,17 +2,18 @@
 
 #include <Eigen/Eigen>
 #include <ros/ros.h>
+#include <tf/transform_datatypes.h>
 
-using namespace Eigen;
 
 namespace mm {
-    template <unsigned int N>
-    class CubicInterp {
-        public:
-        typedef Matrix<double, N, 1> VectorNd;
-        typedef Matrix<double, 4, 1> Vector4d;
-        typedef Matrix<double, 4, 4> Matrix4d;
-        typedef Matrix<double, 4, N> Matrix4Nd;
+
+template <unsigned int N>
+class CubicInterp {
+    public:
+        typedef Eigen::Matrix<double, N, 1> VectorNd;
+        typedef Eigen::Matrix<double, 4, 1> Vector4d;
+        typedef Eigen::Matrix<double, 4, 4> Matrix4d;
+        typedef Eigen::Matrix<double, 4, N> Matrix4Nd;
 
         CubicInterp() {
             C = Matrix4Nd::Zero();
@@ -45,6 +46,7 @@ namespace mm {
             C = A.colPivHouseholderQr().solve(B);
         }
 
+        // Sample the interpolated trajectory at time t.
         bool sample(const double t, VectorNd& x, VectorNd& dx) {
             Vector4d T, dT;
             T  << t*t*t, t*t, t, 1;
@@ -62,14 +64,43 @@ namespace mm {
             dx = dx2;
         }
 
-        private:
-
-        // coefficients
+    private:
+        // Coefficients of interpolated 3rd-order polynomials.
         Matrix4Nd C;
 
+        // Start and end positions and velocities.
         VectorNd x1, x2, dx1, dx2;
 
         // start and end times
         double t1, t2;
-    };
-}
+}; // class CubicInterp
+
+
+// Linear spherical interpolation between quaternions.
+class QuaternionInterp {
+    public:
+        QuaternionInterp() {}
+
+        void interpolate(double t1, double t2, tf::Quaternion& q1,
+                         tf::Quaternion& q2) {
+            this->t1 = t1;
+            this->t2 = t2;
+
+            this->q1 = q1;
+            this->q2 = q2;
+        }
+
+        bool sample(const double t, tf::Quaternion& q) {
+            double a = (t - t1) / (t2 - t1);
+            q = q1.slerp(q2, a);
+            return t >= t1 && t <= t2;
+        }
+
+    private:
+        tf::Quaternion q1, q2;
+
+        double t1, t2;
+
+}; // class QuaternionInterp
+
+} // namespace mm
