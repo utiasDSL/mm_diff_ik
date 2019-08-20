@@ -196,7 +196,6 @@ double Kinematics::manipulability(const JointVector& q) {
     }
 
     double m = sqrt(m2);
-    ROS_INFO_STREAM(m2); // TODO this could be negative
     return m;
 }
 
