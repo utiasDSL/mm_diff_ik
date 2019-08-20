@@ -20,8 +20,10 @@
 // 	const MatrixXd& Aineq, const VectorXd& Bineq,
 // 	bool isDecomp=false);
 
-
 namespace mm {
+
+// NOTE pushing this down to even 1e-5 makes the numerical Hessian fail
+static const double STEP_SIZE = 1e-3;
 
 // Approximate gradient using central differences.
 // f: Function mapping N-dim vector input to scalar output
@@ -58,17 +60,17 @@ void approx_hessian(double (*f)(const Eigen::Matrix<double, N, 1>&),
 
     MatrixNd I = MatrixNd::Identity();
 
+    // Note we exploit the fact that the Hessian is symmetric to avoid
+    // computing every single entry.
     for (int i = 0; i < N; ++i) {
         VectorNd Ii = I.col(i);
-        for (int j = 0; j < N; ++j) {
+        for (int j = i; j < N; ++j) {
             VectorNd Ij = I.col(j);
             H(i,j) = (f(x + h*Ii + h*Ij) - f(x + h*Ii - h*Ij)
                     - f(x - h*Ii + h*Ij) + f(x - h*Ii - h*Ij)) / (4*h*h);
+            H(j,i) = H(i,j);
         }
     }
-
-    // Ensure resulting matrix is PSD.
-    H = 0.5 * (H + H.transpose());
 }
 
 class IKOptimizer {
@@ -93,12 +95,11 @@ class IKOptimizer {
 
             // Manipulability objective.
             JointVector dm;
-            JointMatrix Hm;
-            linearized_manipulability(q, dm, Hm);
+            JointMatrix Hm = JointMatrix::Zero();
+            linearize_manipulability2(q, dm, Hm);
+            // linearize_manipulability1(q, dm);
 
-            // ROS_INFO_STREAM(Hm);
-
-            double alpha = 100.0; // weighting of manipulability objective
+            double alpha = 1000.0; // weighting of manipulability objective
 
             JointMatrix Q = W - alpha * dt * dt * Hm;
             JointVector C = -alpha * dt * dm;
@@ -145,19 +146,29 @@ class IKOptimizer {
             double mi_obj_lin = alpha * dt * dm.dot(dq_opt);
             double mi_obj = mi + mi_obj_quad + mi_obj_lin; // want to maximize
 
-            ROS_INFO_STREAM("vel obj = " << vel_obj << " mi obj = " << mi_obj);
+            // Compare to MI of numerically-integrated next position.
+            double mi_next = Kinematics::manipulability(q + dt*dq_opt);
+
+            // ROS_INFO_STREAM("vel obj = " << vel_obj << " mi obj = " << mi_obj << " mi = " << mi);
 
             return success;
         }
 
-        // Linearize manipulability around joint values q, returning the
-        // value m, gradient dm, and Hessian Hm.
-        void linearized_manipulability(const JointVector& q, JointVector& dm,
-                                       JointMatrix& Hm) {
-            double h = 1e-3; // Step size
+        // 1st-order linearization of manipulability index around joint values
+        // q, returning the gradient dm.
+        void linearize_manipulability1(const JointVector& q, JointVector& dm,
+                                       double h=STEP_SIZE) {
+            approx_gradient<NUM_JOINTS>(&Kinematics::manipulability, h, q, dm);
+        }
+
+        // 2nd-order linearization of manipulability index around joint values
+        // q, returning the gradient dm, and Hessian Hm.
+        void linearize_manipulability2(const JointVector& q, JointVector& dm,
+                                       JointMatrix& Hm, double h=STEP_SIZE) {
             approx_gradient<NUM_JOINTS>(&Kinematics::manipulability, h, q, dm);
             approx_hessian<NUM_JOINTS>(&Kinematics::manipulability, h, q, Hm);
         }
+
 
         void velocity_damper_limits(const JointVector& q, JointVector& dq_lb,
                                     JointVector& dq_ub) {

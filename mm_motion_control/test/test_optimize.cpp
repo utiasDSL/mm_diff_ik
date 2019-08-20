@@ -85,7 +85,7 @@ TEST(OptimizeTestSuite, testLinearizedManipulability) {
     IKOptimizer optimizer;
     JointVector dm;
     JointMatrix Hm;
-    optimizer.linearized_manipulability(q, dm, Hm);
+    optimizer.linearize_manipulability2(q, dm, Hm);
 
     // std::cout << m << std::endl;
     // std::cout << dm << std::endl;
