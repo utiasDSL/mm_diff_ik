@@ -98,10 +98,10 @@ class IKOptimizer {
 
             // ROS_INFO_STREAM(Hm);
 
-            double alpha = 1.0; // weighting of manipulability objective
+            double alpha = 100.0; // weighting of manipulability objective
 
             JointMatrix Q = W - alpha * dt * dt * Hm;
-            JointVector C = alpha * dt * dm;
+            JointVector C = -alpha * dt * dm;
 
             // JointMatrix Q = W;
             // JointVector C = JointVector::Zero();
@@ -137,14 +137,15 @@ class IKOptimizer {
             bool success = qp.solve(Q, C, Aeq, Beq, Aineq, Bineq);
             dq_opt = qp.result();
 
-            double vel_min_obj = dq_opt.transpose() * W * dq_opt; // want to minimize
+            // Examine objective function values
+            double vel_obj = dq_opt.transpose() * W * dq_opt; // want to minimize
 
             double mi = Kinematics::manipulability(q);
             double mi_obj_quad = alpha * dt * dt * dq_opt.transpose() * Hm * dq_opt;
             double mi_obj_lin = alpha * dt * dm.dot(dq_opt);
             double mi_obj = mi + mi_obj_quad + mi_obj_lin; // want to maximize
 
-            ROS_INFO_STREAM("vel obj = " << vel_min_obj << " mi obj = " << mi_obj);
+            ROS_INFO_STREAM("vel obj = " << vel_obj << " mi obj = " << mi_obj);
 
             return success;
         }
