@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>mm_vicon</name>
+  <name>mm_math_util</name>
   <version>0.0.0</version>
-  <description>Vicon utilities for the mobile manipulator.</description>
+  <description>Math utility code to support the mobile manipulator project.</description>
   <maintainer email="adam.heins@robotics.utias.utoronto.ca">Adam Heins</maintainer>
   <license>TODO</license>
 
   <depend>roscpp</depend>
-  <depend>mm_math_util</depend>
+  <depend>cmake_modules</depend>
 
   <buildtool_depend>catkin</buildtool_depend>
 </package>

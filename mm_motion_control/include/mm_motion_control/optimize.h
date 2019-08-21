@@ -9,6 +9,7 @@
 #include <sensor_msgs/JointState.h>
 
 #include <mm_kinematics/kinematics.h>
+#include <mm_math_util/differentiation.h>
 
 
 // eigen-quadprog API:
@@ -22,56 +23,22 @@
 
 namespace mm {
 
+// Distances for the velocity damper constraints.
+static const double M_PI_6 = M_PI / 6.0;
+static const JointVector INFLUENCE_DIST(
+        (JointVector() << 0.5, 0.5, M_PI_6, M_PI_6, M_PI_6, M_PI_6, M_PI_6, M_PI_6, M_PI_6).finished());
+static const JointVector SAFETY_DIST = 0.2 * INFLUENCE_DIST;
+
+// Make the joint true if a position limit should be enforced, false otherwise.
+static const bool POSITIION_LIMITED[] = {
+    false, false, false,               /* base */
+    true, true, true, true, true, true /* arm  */};
+
+
+// For numerical differentiation
 // NOTE pushing this down to even 1e-5 makes the numerical Hessian fail
 static const double STEP_SIZE = 1e-3;
 
-// Approximate gradient using central differences.
-// f: Function mapping N-dim vector input to scalar output
-// h: Step size
-// x: Input point
-// grad: The gradient, populated by this function.
-template<int N>
-void approx_gradient(double (*f)(const Eigen::Matrix<double, N, 1>&),
-                     double h, const Eigen::Matrix<double, N, 1>& x,
-                     Eigen::Matrix<double, N, 1>& grad) {
-    typedef Eigen::Matrix<double, N, N> MatrixNd;
-    typedef Eigen::Matrix<double, N, 1> VectorNd;
-
-    MatrixNd I = MatrixNd::Identity();
-
-    for (int i = 0; i < N; ++i) {
-        VectorNd Ii = I.col(i);
-        grad(i) = (f(x + h*Ii) - f(x - h*Ii)) / (2*h);
-    }
-}
-
-
-// Approximate Hessian using central differences.
-// f: Function mapping N-dim vector input to scalar output
-// h: Step size
-// x: Input point
-// H: The Hessian, populated by this function.
-template<int N>
-void approx_hessian(double (*f)(const Eigen::Matrix<double, N, 1>&),
-                    double h, const Eigen::Matrix<double, N, 1>& x,
-                    Eigen::Matrix<double, N, N>& H) {
-    typedef Eigen::Matrix<double, N, N> MatrixNd;
-    typedef Eigen::Matrix<double, N, 1> VectorNd;
-
-    MatrixNd I = MatrixNd::Identity();
-
-    // Note we exploit the fact that the Hessian is symmetric to avoid
-    // computing every single entry.
-    for (int i = 0; i < N; ++i) {
-        VectorNd Ii = I.col(i);
-        for (int j = i; j < N; ++j) {
-            VectorNd Ij = I.col(j);
-            H(i,j) = (f(x + h*Ii + h*Ij) - f(x + h*Ii - h*Ij)
-                    - f(x - h*Ii + h*Ij) + f(x - h*Ii - h*Ij)) / (4*h*h);
-            H(j,i) = H(i,j);
-        }
-    }
-}
 
 class IKOptimizer {
     public:
@@ -119,22 +86,21 @@ class IKOptimizer {
 
             /* INEQUALITY CONSTRAINTS */
 
-            Eigen::Matrix<double, 1, 0> Aineq, Bineq;
+            // Eigen::Matrix<double, 1, 0> Aineq, Bineq;
 
-            // // Velocity damper ineq constraints
-            // // TODO what if we only enforce constraints on the manipulator?
-            // at least for position, then we can enforce only normal velocity
-            // constraints on the base
-            // JointVector dq_lb, dq_ub;
-            // velocity_damper_limits(q, dq_lb, dq_ub);
-            // Eigen::Matrix<double, 2*NUM_JOINTS, NUM_JOINTS> Aineq;
-            // Aineq << -JointMatrix::Identity(), JointMatrix::Identity();
-            // Eigen::Matrix<double, 2*NUM_JOINTS, 1> Bineq;
-            // Bineq << -dq_lb, dq_ub;
+            // Velocity damper ineq constraints
+            JointVector dq_lb, dq_ub;
+            velocity_damper_limits(q, dq_lb, dq_ub);
+
+            Eigen::Matrix<double, 2*NUM_JOINTS, NUM_JOINTS> Aineq;
+            Aineq << -JointMatrix::Identity(), JointMatrix::Identity();
+
+            Eigen::Matrix<double, 2*NUM_JOINTS, 1> Bineq;
+            Bineq << -dq_lb, dq_ub;
 
             // Solve the QP.
             // Arguments: # variables, # eq constraints, # ineq constraints
-            Eigen::QuadProgDense qp(NUM_JOINTS, 6, 0);
+            Eigen::QuadProgDense qp(NUM_JOINTS, 6, 2*NUM_JOINTS);
             bool success = qp.solve(Q, C, Aeq, Beq, Aineq, Bineq);
             dq_opt = qp.result();
 
@@ -169,30 +135,23 @@ class IKOptimizer {
             approx_hessian<NUM_JOINTS>(&Kinematics::manipulability, h, q, Hm);
         }
 
-
+        // Compute velocity constraints, including damping as the position
+        // limits are approached.
         void velocity_damper_limits(const JointVector& q, JointVector& dq_lb,
                                     JointVector& dq_ub) {
-            double M_PI_6 = M_PI / 6.0;
-
-            // Influence distance
-            JointVector rho_i;
-            rho_i << 0.5, 0.5, M_PI_6, M_PI_6, M_PI_6, M_PI_6, M_PI_6, M_PI_6, M_PI_6;
-
-            // Safety distance is half the influence distance
-            // TODO this could probably be much closer to zero
-            JointVector rho_s = 0.5 * rho_i;
-
             for (int i = 0; i < NUM_JOINTS; ++i) {
                 double del_q_ub = POSITION_LIMITS_UPPER(i) - q(i);
                 dq_ub(i) = VELOCITY_LIMITS_UPPER(i);
-                if (del_q_ub <= rho_i(i)) {
-                    dq_ub(i) *= (del_q_ub - rho_s(i)) / (rho_i(i) - rho_s(i));
+                if (POSITIION_LIMITED[i] && del_q_ub <= INFLUENCE_DIST(i)) {
+                    dq_ub(i) *= (del_q_ub - SAFETY_DIST(i))
+                              / (INFLUENCE_DIST(i) - SAFETY_DIST(i));
                 }
 
                 double del_q_lb = q(i) - POSITION_LIMITS_LOWER(i);
                 dq_lb(i) = VELOCITY_LIMITS_LOWER(i);
-                if (del_q_lb <= rho_i(i)) {
-                    dq_lb(i) *= (del_q_lb - rho_s(i)) / (rho_i(i) - rho_s(i));
+                if (POSITIION_LIMITED[i] && del_q_lb <= INFLUENCE_DIST(i)) {
+                    dq_lb(i) *= (del_q_lb - SAFETY_DIST(i))
+                              / (INFLUENCE_DIST(i) - SAFETY_DIST(i));
                 }
             }
         }

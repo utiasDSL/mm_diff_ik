@@ -27,12 +27,22 @@ typedef Eigen::Matrix<double, 6, NUM_BASE_JOINTS> BaseJacobianMatrix;
 typedef Eigen::Matrix<double, 6, NUM_ARM_JOINTS>  ArmJacobianMatrix;
 typedef Eigen::Matrix<double, 6, NUM_JOINTS>      JacobianMatrix;
 
-// Position and velocity limits
-// TODO we don't really want a constraint on yaw at all
-const JointVector POSITION_LIMITS_UPPER(
-        (JointVector() << 4.0, 4.0, M_PI, M_PI, M_PI, M_PI, M_PI, M_PI, M_PI).finished());
-const JointVector POSITION_LIMITS_LOWER = -POSITION_LIMITS_UPPER;
 
+// Joint position limits
+// base: -0.75pi : 0.75pi
+// shoulder: -1.25pi : -0.25pi
+// elbow: -pi : pi
+// w1: -pi : pi
+// w2: -pi : pi
+// w3: -pi : pi
+const JointVector POSITION_LIMITS_LOWER(
+        (JointVector() << -4.0, -4.0, -M_PI,
+                          -0.75*M_PI, -1.25*M_PI, -M_PI, -M_PI, -M_PI, -M_PI).finished());
+const JointVector POSITION_LIMITS_UPPER(
+        (JointVector() << 4.0, 4.0, M_PI,
+                          0.75*M_PI, -0.25*M_PI, M_PI, M_PI, M_PI, M_PI).finished());
+
+// Joint velocity limits
 const JointVector VELOCITY_LIMITS_UPPER(
         (JointVector() << 1.0, 1.0, 2.0, 2.16, 2.16, 3.15, 3.2, 3.2, 3.2).finished());
 const JointVector VELOCITY_LIMITS_LOWER = -VELOCITY_LIMITS_UPPER;

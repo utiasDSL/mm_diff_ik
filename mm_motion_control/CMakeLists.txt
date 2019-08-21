@@ -12,31 +12,12 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   mm_msgs
   mm_kinematics
+  mm_math_util
   message_runtime
 )
 find_package(cmake_modules REQUIRED) # required for eigen
 find_package(Eigen REQUIRED)
 
-
-################################################
-## Declare ROS dynamic reconfigure parameters ##
-################################################
-
-## To declare and build dynamic reconfigure parameters within this
-## package, follow these steps:
-## * In the file package.xml:
-##   * add a build_depend and a exec_depend tag for "dynamic_reconfigure"
-## * In this file (CMakeLists.txt):
-##   * add "dynamic_reconfigure" to
-##     find_package(catkin REQUIRED COMPONENTS ...)
-##   * uncomment the "generate_dynamic_reconfigure_options" section below
-##     and list every .cfg file to be processed
-
-## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
 
 ###################################
 ## catkin specific configuration ##
@@ -48,7 +29,7 @@ find_package(Eigen REQUIRED)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  CATKIN_DEPENDS mm_msgs mm_kinematics
+  CATKIN_DEPENDS mm_msgs mm_kinematics mm_math_util
   DEPENDS eigen
 )
 
@@ -63,6 +44,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
   ${mm_kinematics_INCLUDE_DIRS}
+  ${mm_math_util_INCLUDE_DIRS}
   /usr/local/include/eigen-quadprog
 )
 

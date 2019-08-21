@@ -62,6 +62,7 @@ class RobotPlotter(object):
     def refresh(self):
         ''' Update plot based on current transforms. '''
         w_p_b, w_p_e, xs, ys, zs = self._calc_positions()
+        print(w_p_e)
 
         self.line.set_xdata(xs)
         self.line.set_ydata(ys)

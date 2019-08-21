@@ -10,6 +10,7 @@
 #include <mm_msgs/PoseTrajectoryPoint.h>
 #include <mm_msgs/PoseTrajectory.h>
 #include <mm_kinematics/kinematics.h>
+#include <mm_math_util/wrap.h>
 
 #include "mm_motion_control/optimize.h"
 #include "mm_motion_control/interp.h"
@@ -22,17 +23,19 @@ using namespace Eigen;
 namespace mm {
 
 // Controller gain.
-Matrix3d P_GAIN = Matrix3d::Identity();
+Matrix3d LINEAR_GAIN = Matrix3d::Identity();
+Matrix3d ROTATIONAL_GAIN = Matrix3d::Identity();
 
-bool IKController::init(Matrix3d& K) {
-    this->K = K;
+
+bool IKController::init(Matrix3d& Kv, Matrix3d& Kw) {
+    this->Kv = Kv;
+    this->Kw = Kw;
     time_prev = ros::Time::now().toSec();
 }
 
-bool IKController::update(const Vector3d& pos_des,
-                          const tf::Quaternion& rot_des,
-                          const Vector3d& vel_ff,
-                          const JointVector& q_act, JointVector& dq_cmd) {
+bool IKController::update(const Vector3d& pos_des, const Quaterniond& quat_des,
+                          const Vector3d& vel_ff, const JointVector& q_act,
+                          JointVector& dq_cmd) {
     // Calculate actual pose using forward kinematics.
     Affine3d ee_pose_act;
     Kinematics::forward(q_act, ee_pose_act);
@@ -42,18 +45,19 @@ bool IKController::update(const Vector3d& pos_des,
     Vector3d pos_err = pos_des - pos_act;
 
     // Orientation error.
-    Eigen::Quaterniond q(ee_pose_act.rotation());
-    tf::Quaternion rot_act(q.x(), q.y(), q.z(), q.w());
-    tf::Quaternion quat_err = rot_act.inverse() * rot_des;
-    tf::Vector3 rot_err = quat_err.getAxis() * quat_err.getAngle(); // TODO does this do what I think it does?
-    // TODO we can also do P control on orientation error now
+    Eigen::Quaterniond quat_act(ee_pose_act.rotation());
+    Eigen::AngleAxisd aa_err(quat_act.inverse() * quat_des);
+    double err_angle = wrap_to_pi(aa_err.angle());
+    Eigen::Vector3d rot_err = aa_err.axis() * err_angle;
 
-    // Velocity command in task space: P control with velocity
-    // feedforward.
-    Vector3d linear_vel = K * pos_err + vel_ff;
+    // Velocity command in task space: P control with velocity feedforward.
+    Vector3d v = Kv * pos_err + vel_ff;
+    Vector3d w = Kw * rot_err;
+
+    ROS_INFO_STREAM("angle = " << err_angle);
 
     Vector6d vel_cmd;
-    vel_cmd << linear_vel, Vector3d::Zero();
+    vel_cmd << v, w;
 
     // Update time.
     double now = ros::Time::now().toSec();
@@ -100,7 +104,7 @@ void IKControlNode::loop(const double hz) {
     // The controller is initialized here so that the time step of the
     // first iteration is not dependent on how long it takes to receive a
     // pose command. Then we sleep to have a typical timestep.
-    controller.init(P_GAIN);
+    controller.init(LINEAR_GAIN, ROTATIONAL_GAIN);
     rate.sleep();
 
     while (ros::ok()) {
@@ -118,18 +122,20 @@ void IKControlNode::loop(const double hz) {
         // stop (as desired), or somehow keep moving based on previous
         // velocity?
         if (!trajectory.sample(now, pos_des, vel_ff)) {
-            ROS_INFO("outside of sampling window");
+            ROS_WARN("outside of sampling window");
             continue;
         }
 
-        tf::Quaternion q = tf::Quaternion::getIdentity();
+        // Track identity rotation for now.
+        // Eigen::Quaterniond quat_des = Eigen::Quaterniond::Identity();
+        Eigen::Quaterniond quat_des(-0.27059805, -0.27059805,  0.65328148, -0.65328148);
 
         JointVector dq_cmd;
-        bool success = controller.update(pos_des, q, vel_ff, q_act, dq_cmd);
+        bool success = controller.update(pos_des, quat_des, vel_ff, q_act, dq_cmd);
         if (!success) {
             // If the optimization fails we don't want to send commands to
             // the robot.
-            ROS_INFO("Optimization failed");
+            ROS_WARN("Optimization failed");
             continue;
         }
 

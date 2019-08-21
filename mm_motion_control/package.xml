@@ -10,6 +10,7 @@
   <depend>cmake_modules</depend>
   <depend>mm_msgs</depend>
   <depend>mm_kinematics</depend>
+  <depend>mm_math_util</depend>
 
   <exec_depend>message_runtime</exec_depend>
 

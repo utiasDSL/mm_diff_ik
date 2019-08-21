@@ -29,5 +29,6 @@ class ExponentialSmoother {
 
 } // namespace mm
 
-// include implementation
-#include "mm_vicon/filter_impl.h"
+// include implementation, which must be in the header since the class is
+// templated
+#include "mm_math_util/filter_impl.h"

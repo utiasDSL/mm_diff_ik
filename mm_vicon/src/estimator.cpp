@@ -1,5 +1,7 @@
 #include "mm_vicon/estimator.h"
-#include "mm_vicon/filter.h"
+
+#include <mm_math_util/wrap.h>
+#include <mm_math_util/filter.h>
 
 
 using namespace Eigen;
@@ -76,7 +78,7 @@ void ViconEstimatorNode::publish_joint_states() {
                   (position_curr(1) - position_prev(1)) / dt;
 
     // Note the fmod call to wrap to [-pi, pi].
-    double vyaw_meas = fmod(yaw_curr - yaw_prev, M_PI) / dt;
+    double vyaw_meas = wrap_to_pi(yaw_curr - yaw_prev) / dt;
 
     // Apply filtering on velocity.
     Vector2d v_lin = filter_lin_vel.next(v_lin_meas, dt);

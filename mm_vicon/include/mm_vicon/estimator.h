@@ -6,7 +6,7 @@
 #include <sensor_msgs/JointState.h>
 #include <tf/transform_datatypes.h>
 
-#include "mm_vicon/filter.h"
+#include <mm_math_util/filter.h>
 
 
 namespace mm {

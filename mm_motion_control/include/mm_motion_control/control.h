@@ -18,9 +18,6 @@
 #include "mm_motion_control/interp.h"
 
 
-using namespace Eigen;
-
-
 namespace mm {
 
 
@@ -28,7 +25,7 @@ class IKController {
     public:
         IKController() : optimizer() {}
 
-        bool init(Matrix3d& K);
+        bool init(Eigen::Matrix3d& Kv, Eigen::Matrix3d& Kw);
 
         // Run one iteration of the control loop.
         //
@@ -39,16 +36,20 @@ class IKController {
         //
         // Returns true if the optimization problem was solved sucessfully,
         // false otherwise.
-        bool update(const Vector3d& pos_des, const tf::Quaternion& rot_des,
-                    const Vector3d& vel_ff, const JointVector& q_act,
+        bool update(const Eigen::Vector3d& pos_des,
+                    const Eigen::Quaterniond& quat_des,
+                    const Eigen::Vector3d& vel_ff,
+                    const JointVector& q_act,
                     JointVector& dq_cmd);
 
     private:
         // Time from previous control loop iteration.
         double time_prev;
 
-        // Proportional gain on the end effector pose error (in task space);
-        Matrix3d K;
+        // Proportional gains on the end effector pose error (in task space),
+        // for linear and rotational error, respectively.
+        Eigen::Matrix3d Kv;
+        Eigen::Matrix3d Kw;
 
         // Optimizer to solve for joint velocity commands to send to the
         // robot.
@@ -85,7 +86,7 @@ class IKControlNode {
         JointVector dq_act;
 
         // Actual pose and twist of end effector.
-        Affine3d w_T_e_act;
+        Eigen::Affine3d w_T_e_act;
         Vector6d dw_T_e_act;
 
         // Cubic polynomial trajectory, interpolated between current state

@@ -1,4 +1,4 @@
 <launch>
-  <node pkg="mm_simulation" type="sim_robot.py" name="mm_robot_sim" />
-  <node pkg="mm_simulation" type="visualization.py" name="mm_visualization" />
+  <node pkg="mm_simulation" type="sim_robot.py" name="mm_robot_sim" output="screen"/>
+  <node pkg="mm_simulation" type="visualization.py" name="mm_visualization" output="screen" />
 </launch>

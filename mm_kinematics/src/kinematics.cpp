@@ -6,6 +6,7 @@
 
 namespace mm {
 
+
 // Calculate the Jacobian of the overall system.
 void Kinematics::jacobian(const JointVector& q, JacobianMatrix& J) {
     ArmJacobianMatrix Ja;
