@@ -65,6 +65,13 @@ target_link_libraries(joint_state_mux
   ${catkin_LIBRARIES}
 )
 
+add_executable(pose_publisher
+  src/pose_publisher.cpp
+)
+target_link_libraries(pose_publisher
+  ${catkin_LIBRARIES}
+)
+
 # Tests
 
 catkin_add_executable_with_gtest(test_interp

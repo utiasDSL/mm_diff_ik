@@ -38,6 +38,7 @@ add_message_files(
   FILES
   PoseTrajectoryPoint.msg
   PoseTrajectory.msg
+  PoseControlState.msg
 )
 
 ## Generate services in the 'srv' folder

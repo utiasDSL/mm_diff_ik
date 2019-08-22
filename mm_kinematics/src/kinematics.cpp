@@ -146,22 +146,29 @@ void Kinematics::jacobians(const JointVector& q, ArmJacobianMatrix& Ja,
           0, 0, 1;
 }
 
-void Kinematics::forward(const JointVector& q, Eigen::Affine3d& w_T_e) {
-    // Base
+void Kinematics::calc_w_T_b(const JointVector& q, Eigen::Affine3d& w_T_b) {
     DH_TF(T1, M_PI_2, 0, 0,    M_PI_2);
     DH_TF(T2, M_PI_2, 0, q(0), M_PI_2);
     DH_TF(T3, M_PI_2, 0, q(1), M_PI_2);
     DH_TF(T4, q(2),   0, 0,    0);
 
-    Eigen::Affine3d w_T_b = T1 * T2 * T3 * T4;
+    w_T_b = T1 * T2 * T3 * T4;
+}
 
-    // between base and arm
+void Kinematics::calc_w_T_a(const JointVector& q, Eigen::Affine3d& w_T_a) {
+    Eigen::Affine3d w_T_b;
+    calc_w_T_b(q, w_T_b);
+
     DH_TF(T5, 0, px, pz, -M_PI_2);
     DH_TF(T6, 0, 0,  py,  M_PI_2);
 
-    Eigen::Affine3d b_T_a = T5 * T6;
+    w_T_a = w_T_b * T5 * T6;
+}
 
-    // Arm
+void Kinematics::calc_w_T_e(const JointVector& q, Eigen::Affine3d& w_T_e) {
+    Eigen::Affine3d w_T_a;
+    calc_w_T_a(q, w_T_a);
+
     DH_TF(T7,  q(3), 0,  d1,  M_PI_2);
     DH_TF(T8,  q(4), a2, 0,   0);
     DH_TF(T9,  q(5), a3, 0,   0);
@@ -169,9 +176,12 @@ void Kinematics::forward(const JointVector& q, Eigen::Affine3d& w_T_e) {
     DH_TF(T11, q(7), 0,  d5, -M_PI_2);
     DH_TF(T12, q(8), 0,  d6,  0);
 
-    Eigen::Affine3d a_T_e = T7 * T8 * T9 * T10 * T11 * T12;
+    w_T_e = w_T_a * T7 * T8 * T9 * T10 * T11 * T12;
+}
 
-    w_T_e = w_T_b * b_T_a * a_T_e;
+// TODO Legacy method: remove in favour of above
+void Kinematics::forward(const JointVector& q, Eigen::Affine3d& w_T_e) {
+    calc_w_T_e(q, w_T_e);
 }
 
 void Kinematics::forward_vel(const JointVector& q, const JointVector& dq,

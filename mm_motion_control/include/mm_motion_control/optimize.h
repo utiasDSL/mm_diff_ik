@@ -66,7 +66,7 @@ class IKOptimizer {
             linearize_manipulability2(q, dm, Hm);
             // linearize_manipulability1(q, dm);
 
-            double alpha = 1000.0; // weighting of manipulability objective
+            double alpha = 0;//1000.0; // weighting of manipulability objective
 
             JointMatrix Q = W - alpha * dt * dt * Hm;
             JointVector C = -alpha * dt * dm;
@@ -86,21 +86,21 @@ class IKOptimizer {
 
             /* INEQUALITY CONSTRAINTS */
 
-            // Eigen::Matrix<double, 1, 0> Aineq, Bineq;
+            Eigen::Matrix<double, 1, 0> Aineq, Bineq;
 
             // Velocity damper ineq constraints
-            JointVector dq_lb, dq_ub;
-            velocity_damper_limits(q, dq_lb, dq_ub);
-
-            Eigen::Matrix<double, 2*NUM_JOINTS, NUM_JOINTS> Aineq;
-            Aineq << -JointMatrix::Identity(), JointMatrix::Identity();
-
-            Eigen::Matrix<double, 2*NUM_JOINTS, 1> Bineq;
-            Bineq << -dq_lb, dq_ub;
+            // JointVector dq_lb, dq_ub;
+            // velocity_damper_limits(q, dq_lb, dq_ub);
+            //
+            // Eigen::Matrix<double, 2*NUM_JOINTS, NUM_JOINTS> Aineq;
+            // Aineq << -JointMatrix::Identity(), JointMatrix::Identity();
+            //
+            // Eigen::Matrix<double, 2*NUM_JOINTS, 1> Bineq;
+            // Bineq << -dq_lb, dq_ub;
 
             // Solve the QP.
             // Arguments: # variables, # eq constraints, # ineq constraints
-            Eigen::QuadProgDense qp(NUM_JOINTS, 6, 2*NUM_JOINTS);
+            Eigen::QuadProgDense qp(NUM_JOINTS, 6, 0/*2*NUM_JOINTS*/);
             bool success = qp.solve(Q, C, Aeq, Beq, Aineq, Bineq);
             dq_opt = qp.result();
 

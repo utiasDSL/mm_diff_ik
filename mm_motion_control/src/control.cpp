@@ -4,11 +4,13 @@
 
 #include <trajectory_msgs/JointTrajectory.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/JointState.h>
 
 #include <mm_msgs/PoseTrajectoryPoint.h>
 #include <mm_msgs/PoseTrajectory.h>
+#include <mm_msgs/PoseControlState.h>
 #include <mm_kinematics/kinematics.h>
 #include <mm_math_util/wrap.h>
 
@@ -27,11 +29,32 @@ Matrix3d LINEAR_GAIN = Matrix3d::Identity();
 Matrix3d ROTATIONAL_GAIN = Matrix3d::Identity();
 
 
+void pose_msg_from_eigen(const Eigen::Vector3d& p, const Eigen::Quaterniond& q,
+                         geometry_msgs::Pose& msg) {
+    msg.position.x = p(0);
+    msg.position.y = p(1);
+    msg.position.z = p(2);
+
+    msg.orientation.w = q.w();
+    msg.orientation.x = q.x();
+    msg.orientation.y = q.y();
+    msg.orientation.z = q.z();
+}
+
+
+void pose_msg_from_eigen(const Eigen::Affine3d& T, geometry_msgs::Pose& msg) {
+    Eigen::Vector3d p = T.translation();
+    Eigen::Quaterniond q(T.rotation());
+    pose_msg_from_eigen(p, q, msg);
+}
+
+
 bool IKController::init(Matrix3d& Kv, Matrix3d& Kw) {
     this->Kv = Kv;
     this->Kw = Kw;
     time_prev = ros::Time::now().toSec();
 }
+
 
 bool IKController::update(const Vector3d& pos_des, const Quaterniond& quat_des,
                           const Vector3d& vel_ff, const JointVector& q_act,
@@ -44,17 +67,20 @@ bool IKController::update(const Vector3d& pos_des, const Quaterniond& quat_des,
     Vector3d pos_act = ee_pose_act.translation();
     Vector3d pos_err = pos_des - pos_act;
 
-    // Orientation error.
+    // Orientation error (see pg. 140 of Siciliano et al., 2010).
     Eigen::Quaterniond quat_act(ee_pose_act.rotation());
-    Eigen::AngleAxisd aa_err(quat_act.inverse() * quat_des);
-    double err_angle = wrap_to_pi(aa_err.angle());
-    Eigen::Vector3d rot_err = aa_err.axis() * err_angle;
+    Eigen::Quaterniond quat_err = quat_des * quat_act.inverse();
+    Vector3d rot_err;
+    rot_err << quat_err.x(), quat_err.y(), quat_err.z();
 
     // Velocity command in task space: P control with velocity feedforward.
+    // At the moment we assume zero rotational feedforward.
     Vector3d v = Kv * pos_err + vel_ff;
     Vector3d w = Kw * rot_err;
 
-    ROS_INFO_STREAM("angle = " << err_angle);
+    // TODO I want this to be included in the published message as well
+    // TODO test out the /mm_pose_state topic
+    ROS_INFO_STREAM("angle_err = " << rot_err << "\npos_err = " << pos_err);
 
     Vector6d vel_cmd;
     vel_cmd << v, w;
@@ -81,6 +107,8 @@ bool IKControlNode::init(ros::NodeHandle& nh) {
     ur10_joint_vel_pub = nh.advertise<trajectory_msgs::JointTrajectory>("/ur_driver/joint_speed", 1);
     rb_joint_vel_pub = nh.advertise<geometry_msgs::Twist>("/ridgeback_velocity_controller/cmd_vel", 1);
 
+    mm_pose_pub = new realtime_tools::RealtimePublisher<mm_msgs::PoseControlState>(nh, "/mm_pose_state", 1);
+
     q_act = JointVector::Zero();
     dq_act = JointVector::Zero();
 
@@ -91,7 +119,7 @@ bool IKControlNode::init(ros::NodeHandle& nh) {
 void IKControlNode::loop(const double hz) {
     ros::Rate rate(hz);
 
-    ROS_INFO("Control loop started");
+    ROS_INFO("Control loop started, waiting for pose command...");
 
     // Wait until we have a pose command to send any commands
     while (ros::ok() && !pose_received) {
@@ -126,9 +154,10 @@ void IKControlNode::loop(const double hz) {
             continue;
         }
 
-        // Track identity rotation for now.
-        // Eigen::Quaterniond quat_des = Eigen::Quaterniond::Identity();
-        Eigen::Quaterniond quat_des(-0.27059805, -0.27059805,  0.65328148, -0.65328148);
+        // This is the current starting orientation of the sim - just try to
+        // maintain this. TODO remove hardcode
+        // Eigen::Quaterniond quat_des(-0.270598050073, -0.270598050073,
+        //                              0.653281482438, -0.653281482438);
 
         JointVector dq_cmd;
         bool success = controller.update(pos_des, quat_des, vel_ff, q_act, dq_cmd);
@@ -161,7 +190,27 @@ void IKControlNode::loop(const double hz) {
 
         rb_joint_vel_pub.publish(twist_rb);
 
+        publish_mm_pose_state(pos_des, quat_des);
+
         rate.sleep();
+    }
+}
+
+
+void IKControlNode::publish_mm_pose_state(const Eigen::Vector3d& pos_des,
+                                          const Eigen::Quaterniond& quat_des) {
+    geometry_msgs::Pose w_T_e_act_msg, w_T_e_des_msg;
+
+    pose_msg_from_eigen(w_T_e_act, w_T_e_act_msg);
+    pose_msg_from_eigen(pos_des, quat_des, w_T_e_des_msg);
+
+    // TODO not sure if this lock breaks the single threaded assumptions I have
+    // elsewhere
+    if (mm_pose_pub->trylock()) {
+        mm_pose_pub->msg_.actual.push_back(w_T_e_act_msg);
+        mm_pose_pub->msg_.desired.push_back(w_T_e_des_msg);
+        mm_pose_pub->msg_.header.stamp = ros::Time::now();
+        mm_pose_pub->unlockAndPublish();
     }
 }
 
@@ -174,18 +223,17 @@ void IKControlNode::pose_cmd_cb(const mm_msgs::PoseTrajectoryPoint& msg) {
     Vector3d vel;
     vel << msg.velocity.linear.x, msg.velocity.linear.y, msg.velocity.linear.z;
 
-    tf::Quaternion q(msg.pose.orientation.x, msg.pose.orientation.y,
-                     msg.pose.orientation.z, msg.pose.orientation.w);
-
     double time_from_start = msg.time_from_start.toSec();
     double now = ros::Time::now().toSec();
 
     double t1 = now;
     double t2 = now + time_from_start;
 
-    // Only care about position for now.
     Vector3d pos_act = w_T_e_act.translation();
     Vector3d vel_act = dw_T_e_act.block<3,1>(0,0);
+
+    quat_des = Quaterniond(msg.pose.orientation.w, msg.pose.orientation.x,
+                           msg.pose.orientation.y, msg.pose.orientation.z);
 
     // Interpolate the trajectory, from which we sample later.
     trajectory.interpolate(t1, t2, pos_act, pos, vel_act, vel);
@@ -202,10 +250,12 @@ void IKControlNode::mm_joint_states_cb(const sensor_msgs::JointState& msg) {
     update_forward_kinematics();
 }
 
+
 void IKControlNode::update_forward_kinematics() {
     // TODO we could actually just store the Jacobian for reuse later,
     // since we need it both for control and interpolation.
-    Kinematics::forward(q_act, w_T_e_act);
+    Kinematics::calc_w_T_b(q_act, w_T_b_act);
+    Kinematics::calc_w_T_e(q_act, w_T_e_act);
     Kinematics::forward_vel(q_act, dq_act, dw_T_e_act);
 }
 

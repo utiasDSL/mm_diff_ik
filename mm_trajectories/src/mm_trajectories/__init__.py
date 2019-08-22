@@ -1,1 +1,1 @@
-from trajectory import JointInitializer, LineTrajectory, SineTrajectory
+from trajectory import JointInitializer, StationaryTrajectory, LineTrajectory, SineTrajectory

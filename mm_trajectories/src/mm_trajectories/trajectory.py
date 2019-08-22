@@ -34,10 +34,22 @@ class JointInitializer(object):
         return j.state()
 
 
+class StationaryTrajectory(object):
+    ''' No movement from initial pose. '''
+    def __init__(self, p0, quat0):
+        self.p0 = p0
+        self.quat0 = quat0
+        self.t0 = rospy.get_time()
+
+    def sample(self, t):
+        return self.p0, np.zeros(3)
+
+
 class LineTrajectory(object):
     ''' Straight line in x-direction. '''
-    def __init__(self, p0):
+    def __init__(self, p0, quat0):
         self.p0 = p0
+        self.quat0 = quat0
         self.t0 = rospy.get_time()
 
     def sample(self, t):
@@ -54,8 +66,9 @@ class LineTrajectory(object):
 
 
 class SineTrajectory(object):
-    def __init__(self, p0):
+    def __init__(self, p0, quat0):
         self.p0 = p0
+        self.quat0 = quat0
         self.t0 = rospy.get_time()
 
     def sample(self, t):

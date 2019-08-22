@@ -60,6 +60,15 @@ class Kinematics {
         // P: populated with pose of end effector
         static void forward(const JointVector& q, Eigen::Affine3d& w_T_e);
 
+        // Transform from base to world.
+        static void calc_w_T_b(const JointVector& q, Eigen::Affine3d& w_T_b);
+
+        // Transform from arm to world.
+        static void calc_w_T_a(const JointVector& q, Eigen::Affine3d& w_T_a);
+
+        // Transform from EE to world.
+        static void calc_w_T_e(const JointVector& q, Eigen::Affine3d& w_T_e);
+
         // Forward velocity kinematics.
         static void forward_vel(const JointVector& q,
                                 const JointVector& dq, Vector6d& v);

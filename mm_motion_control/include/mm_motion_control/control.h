@@ -12,6 +12,7 @@
 
 #include <mm_msgs/PoseTrajectoryPoint.h>
 #include <mm_msgs/PoseTrajectory.h>
+#include <mm_msgs/PoseControlState.h>
 #include <mm_kinematics/kinematics.h>
 
 #include "mm_motion_control/optimize.h"
@@ -79,6 +80,8 @@ class IKControlNode {
         ros::Publisher ur10_joint_vel_pub;
         ros::Publisher rb_joint_vel_pub;
 
+        realtime_tools::RealtimePublisher<mm_msgs::PoseControlState> *mm_pose_pub;
+
         IKController controller;
 
         // Actual joint positions, updated by the subscriber
@@ -88,6 +91,13 @@ class IKControlNode {
         // Actual pose and twist of end effector.
         Eigen::Affine3d w_T_e_act;
         Vector6d dw_T_e_act;
+
+        // Base pose.
+        Eigen::Affine3d w_T_b_act;
+
+        // Orientation is not currently interpolated, and for best results
+        // should probably be constant throughout a trajectory.
+        Eigen::Quaterniond quat_des;
 
         // Cubic polynomial trajectory, interpolated between current state
         // and commanded pose.
@@ -107,7 +117,11 @@ class IKControlNode {
         // Update state of robot joints.
         void mm_joint_states_cb(const sensor_msgs::JointState& msg);
 
+        // Calculate poses in task space based on current joint state.
         void update_forward_kinematics();
+
+        void publish_mm_pose_state(const Eigen::Vector3d& pos_des,
+                                   const Eigen::Quaterniond& quat_des);
 }; // class IKControlNode
 
 } // namespace mm
