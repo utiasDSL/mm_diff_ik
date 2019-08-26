@@ -57,8 +57,8 @@ bool IKController::init(Matrix3d& Kv, Matrix3d& Kw) {
 
 
 bool IKController::update(const Vector3d& pos_des, const Quaterniond& quat_des,
-                          const Vector3d& vel_ff, const JointVector& q_act,
-                          JointVector& dq_cmd) {
+                          const Vector3d& v_ff, const Vector3d& w_ff,
+                          const JointVector& q_act, JointVector& dq_cmd) {
     // Calculate actual pose using forward kinematics.
     Affine3d ee_pose_act;
     Kinematics::forward(q_act, ee_pose_act);
@@ -69,18 +69,31 @@ bool IKController::update(const Vector3d& pos_des, const Quaterniond& quat_des,
 
     // Orientation error (see pg. 140 of Siciliano et al., 2010).
     Eigen::Quaterniond quat_act(ee_pose_act.rotation());
+
+    // ROS_INFO_STREAM("x = " << quat_act.x() << "\n" <<
+    //                 "y = " << quat_act.y() << "\n" <<
+    //                 "z = " << quat_act.z() << "\n" <<
+    //                 "w = " << quat_act.w());
+
     Eigen::Quaterniond quat_err = quat_des * quat_act.inverse();
+
+    // Keep quaternion positive. Otherwise, we can get in a situation where it
+    // flips between the negative and positive versions and doesn't go
+    // anywhere.
+    if (quat_err.w() < 0) {
+        quat_err.coeffs() *= -1;
+    }
     Vector3d rot_err;
     rot_err << quat_err.x(), quat_err.y(), quat_err.z();
 
     // Velocity command in task space: P control with velocity feedforward.
     // At the moment we assume zero rotational feedforward.
-    Vector3d v = Kv * pos_err + vel_ff;
-    Vector3d w = Kw * rot_err;
+    Vector3d v = Kv * pos_err + v_ff;
+    Vector3d w = Kw * rot_err + w_ff;
 
     // TODO I want this to be included in the published message as well
-    // TODO test out the /mm_pose_state topic
-    ROS_INFO_STREAM("angle_err = " << rot_err << "\npos_err = " << pos_err);
+    // ROS_INFO_STREAM("angle_err = " << rot_err);
+    ROS_INFO_STREAM(rot_err);
 
     Vector6d vel_cmd;
     vel_cmd << v, w;
@@ -136,64 +149,66 @@ void IKControlNode::loop(const double hz) {
     rate.sleep();
 
     while (ros::ok()) {
-        // service any callbacks
         ros::spinOnce();
 
         // Sample interpolated trajectory.
         Vector3d pos_des;
-        Vector3d vel_ff;
+        Vector3d v_ff;
         double now = ros::Time::now().toSec();
 
-        // If we fall outside the interpolation range, do not send any
-        // commands.
-        // TODO need to validate robot behaviour in this case - will it
-        // stop (as desired), or somehow keep moving based on previous
-        // velocity?
-        if (!trajectory.sample(now, pos_des, vel_ff)) {
+        // Send zero velocity command if we fall outside interpolation range.
+        if (!trajectory.sample(now, pos_des, v_ff)) {
             ROS_WARN("outside of sampling window");
+            publish_joint_speeds(JointVector::Zero());
             continue;
         }
 
-        // This is the current starting orientation of the sim - just try to
-        // maintain this. TODO remove hardcode
-        // Eigen::Quaterniond quat_des(-0.270598050073, -0.270598050073,
-        //                              0.653281482438, -0.653281482438);
+        Quaterniond quat_des;
+        if (!slerp.sample(now, quat_des)) {
+            ROS_WARN("outside of sampling window");
+            publish_joint_speeds(JointVector::Zero());
+            continue;
+        }
 
         JointVector dq_cmd;
-        bool success = controller.update(pos_des, quat_des, vel_ff, q_act, dq_cmd);
+        bool success = controller.update(pos_des, quat_des, v_ff, w_ff, q_act, dq_cmd);
         if (!success) {
-            // If the optimization fails we don't want to send commands to
-            // the robot.
+            // Send zero velocity command if optimization fails (the velocity
+            // commands are garbage in this case).
             ROS_WARN("Optimization failed");
+            publish_joint_speeds(JointVector::Zero());
             continue;
         }
 
-        // Split into base and arm joints to send out.
-        Vector3d dq_cmd_rb = dq_cmd.topRows<3>();
-        Vector6d dq_cmd_ur10 = dq_cmd.bottomRows<6>();
-
-        // Convert to JointTrajectory message with a single point (i.e.
-        // velocity servoing) to publish to UR10.
-        trajectory_msgs::JointTrajectoryPoint point;
-        point.velocities = std::vector<double>(
-                dq_cmd_ur10.data(), dq_cmd_ur10.data() + dq_cmd_ur10.size());
-        trajectory_msgs::JointTrajectory traj;
-        traj.points.push_back(point);
-
-        ur10_joint_vel_pub.publish(traj);
-
-        // Publish to base.
-        geometry_msgs::Twist twist_rb;
-        twist_rb.linear.x = dq_cmd_rb(0);
-        twist_rb.linear.y = dq_cmd_rb(1);
-        twist_rb.angular.z = dq_cmd_rb(2);
-
-        rb_joint_vel_pub.publish(twist_rb);
-
+        publish_joint_speeds(dq_cmd);
         publish_mm_pose_state(pos_des, quat_des);
 
         rate.sleep();
     }
+}
+
+
+void IKControlNode::publish_joint_speeds(const JointVector& dq_cmd) {
+    // Split into base and arm joints to send out.
+    Vector3d dq_cmd_rb = dq_cmd.topRows<3>();
+    Vector6d dq_cmd_ur10 = dq_cmd.bottomRows<6>();
+
+    // Convert to JointTrajectory message with a single point (i.e.
+    // velocity servoing) to publish to UR10.
+    trajectory_msgs::JointTrajectoryPoint point;
+    point.velocities = std::vector<double>(
+            dq_cmd_ur10.data(), dq_cmd_ur10.data() + dq_cmd_ur10.size());
+    trajectory_msgs::JointTrajectory traj_ur10;
+    traj_ur10.points.push_back(point);
+
+    // Base twist.
+    geometry_msgs::Twist twist_rb;
+    twist_rb.linear.x = dq_cmd_rb(0);
+    twist_rb.linear.y = dq_cmd_rb(1);
+    twist_rb.angular.z = dq_cmd_rb(2);
+
+    ur10_joint_vel_pub.publish(traj_ur10);
+    rb_joint_vel_pub.publish(twist_rb);
 }
 
 
@@ -207,8 +222,13 @@ void IKControlNode::publish_mm_pose_state(const Eigen::Vector3d& pos_des,
     // TODO not sure if this lock breaks the single threaded assumptions I have
     // elsewhere
     if (mm_pose_pub->trylock()) {
+        mm_pose_pub->msg_.actual.clear();
+        mm_pose_pub->msg_.desired.clear();
+
         mm_pose_pub->msg_.actual.push_back(w_T_e_act_msg);
         mm_pose_pub->msg_.desired.push_back(w_T_e_des_msg);
+
+        mm_pose_pub->msg_.header.frame_id = "world";
         mm_pose_pub->msg_.header.stamp = ros::Time::now();
         mm_pose_pub->unlockAndPublish();
     }
@@ -217,26 +237,34 @@ void IKControlNode::publish_mm_pose_state(const Eigen::Vector3d& pos_des,
 
 // We do interpolation whenever a new point comes in.
 void IKControlNode::pose_cmd_cb(const mm_msgs::PoseTrajectoryPoint& msg) {
-    Vector3d pos;
-    pos << msg.pose.position.x, msg.pose.position.y, msg.pose.position.z;
+    // Desired linear position and velocity.
+    Vector3d pos_des, v_des;
+    pos_des << msg.pose.position.x, msg.pose.position.y, msg.pose.position.z;
+    v_des << msg.velocity.linear.x, msg.velocity.linear.y, msg.velocity.linear.z;
 
-    Vector3d vel;
-    vel << msg.velocity.linear.x, msg.velocity.linear.y, msg.velocity.linear.z;
+    // Desired rotation and angular velocity.
+    quat_des = Quaterniond(msg.pose.orientation.w, msg.pose.orientation.x,
+                           msg.pose.orientation.y, msg.pose.orientation.z);
+    w_ff(0) = msg.velocity.angular.x;
+    w_ff(1) = msg.velocity.angular.y;
+    w_ff(2) = msg.velocity.angular.z;
 
+    // Actual pose.
+    Vector3d pos_act = w_T_e_act.translation();
+    Quaterniond quat_act = Quaterniond(w_T_e_act.rotation());
+    Vector3d v_act = dw_T_e_act.topRows<3>();
+    Vector3d w_act = dw_T_e_act.bottomRows<3>();
+
+    // Time
     double time_from_start = msg.time_from_start.toSec();
     double now = ros::Time::now().toSec();
 
     double t1 = now;
     double t2 = now + time_from_start;
 
-    Vector3d pos_act = w_T_e_act.translation();
-    Vector3d vel_act = dw_T_e_act.block<3,1>(0,0);
-
-    quat_des = Quaterniond(msg.pose.orientation.w, msg.pose.orientation.x,
-                           msg.pose.orientation.y, msg.pose.orientation.z);
-
     // Interpolate the trajectory, from which we sample later.
-    trajectory.interpolate(t1, t2, pos_act, pos, vel_act, vel);
+    trajectory.interpolate(t1, t2, pos_act, pos_des, v_act, v_des);
+    slerp.interpolate(t1, t2, quat_act, quat_des);
 
     pose_received = true;
 }
@@ -252,10 +280,9 @@ void IKControlNode::mm_joint_states_cb(const sensor_msgs::JointState& msg) {
 
 
 void IKControlNode::update_forward_kinematics() {
-    // TODO we could actually just store the Jacobian for reuse later,
-    // since we need it both for control and interpolation.
     Kinematics::calc_w_T_b(q_act, w_T_b_act);
     Kinematics::calc_w_T_e(q_act, w_T_e_act);
+
     Kinematics::forward_vel(q_act, dq_act, dw_T_e_act);
 }
 

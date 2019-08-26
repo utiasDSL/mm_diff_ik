@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import rospy
 import numpy as np
+import tf.transformations as tfs
 
 from sensor_msgs.msg import JointState
 
@@ -41,8 +42,11 @@ class StationaryTrajectory(object):
         self.quat0 = quat0
         self.t0 = rospy.get_time()
 
-    def sample(self, t):
+    def sample_linear(self, t):
         return self.p0, np.zeros(3)
+
+    def sample_rotation(self, t):
+        return self.quat0, np.zeros(3)
 
 
 class LineTrajectory(object):
@@ -52,7 +56,7 @@ class LineTrajectory(object):
         self.quat0 = quat0
         self.t0 = rospy.get_time()
 
-    def sample(self, t):
+    def sample_linear(self, t):
         v = 0.05
 
         x = self.p0[0] + v * (t - self.t0)
@@ -64,14 +68,18 @@ class LineTrajectory(object):
 
         return np.array([x, y, z]), np.array([dx, dy, dz])
 
+    def sample_rotation(self, t):
+        return self.quat0, np.zeros(3)
+
 
 class SineTrajectory(object):
+    ''' Move forward while the EE traces a sine wave in the x-y plane. '''
     def __init__(self, p0, quat0):
         self.p0 = p0
         self.quat0 = quat0
         self.t0 = rospy.get_time()
 
-    def sample(self, t):
+    def sample_linear(self, t):
         v = 0.05
         w = 0.1
 
@@ -84,4 +92,30 @@ class SineTrajectory(object):
         dz = 0
 
         return np.array([x, y, z]), np.array([dx, dy, dz])
+
+    def sample_rotation(self, t):
+        return self.quat0, np.zeros(3)
+
+
+class RotationalTrajectory(object):
+    ''' Rotate the EE about the z-axis with no linear movement. '''
+    def __init__(self, p0, quat0):
+        self.p0 = p0
+        self.quat0 = quat0
+        self.t0 = rospy.get_time()
+
+    def sample_linear(self, t):
+        # Positions do not change
+        return self.p0, np.zeros(3)
+
+    def sample_rotation(self, t):
+        # small rotation about the z-axis
+        w = 0.05
+        theta = w * t
+        axis = np.array([0, 0, 1])
+
+        dq = tfs.quaternion_about_axis(theta, axis)
+        quat = tfs.quaternion_multiply(dq, self.quat0)
+
+        return quat, w * axis
 

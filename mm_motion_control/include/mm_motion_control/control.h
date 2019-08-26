@@ -39,7 +39,8 @@ class IKController {
         // false otherwise.
         bool update(const Eigen::Vector3d& pos_des,
                     const Eigen::Quaterniond& quat_des,
-                    const Eigen::Vector3d& vel_ff,
+                    const Eigen::Vector3d& v_ff,
+                    const Eigen::Vector3d& w_ff,
                     const JointVector& q_act,
                     JointVector& dq_cmd);
 
@@ -99,10 +100,16 @@ class IKControlNode {
         // should probably be constant throughout a trajectory.
         Eigen::Quaterniond quat_des;
 
+        // Feedforward rotational velocity.
+        Eigen::Vector3d w_ff;
+
         // Cubic polynomial trajectory, interpolated between current state
         // and commanded pose.
         // TODO we need sane defaults for this
         CubicInterp<3> trajectory;
+
+        // Spherical linear interpolation for quaternions.
+        QuaternionInterp slerp;
 
         // Set to true once a pose command has been received. Before that,
         // we don't want to send any commands.
@@ -120,6 +127,10 @@ class IKControlNode {
         // Calculate poses in task space based on current joint state.
         void update_forward_kinematics();
 
+        // Publish joint speeds computed by the controller to the arm and base.
+        void publish_joint_speeds(const JointVector& dq_cmd);
+
+        // Publish actual and desired poses of the system.
         void publish_mm_pose_state(const Eigen::Vector3d& pos_des,
                                    const Eigen::Quaterniond& quat_des);
 }; // class IKControlNode

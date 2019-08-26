@@ -71,7 +71,7 @@ class CubicInterp {
         // Start and end positions and velocities.
         VectorNd x1, x2, dx1, dx2;
 
-        // start and end times
+        // Start and end times
         double t1, t2;
 }; // class CubicInterp
 
@@ -81,8 +81,8 @@ class QuaternionInterp {
     public:
         QuaternionInterp() {}
 
-        void interpolate(double t1, double t2, tf::Quaternion& q1,
-                         tf::Quaternion& q2) {
+        void interpolate(double t1, double t2, Eigen::Quaterniond& q1,
+                         Eigen::Quaterniond& q2) {
             this->t1 = t1;
             this->t2 = t2;
 
@@ -90,17 +90,37 @@ class QuaternionInterp {
             this->q2 = q2;
         }
 
-        bool sample(const double t, tf::Quaternion& q) {
+        bool sample(const double t, Eigen::Quaterniond& q) {
             double a = (t - t1) / (t2 - t1);
-            q = q1.slerp(q2, a);
+            q = q1.slerp(a, q2);
             return t >= t1 && t <= t2;
         }
 
     private:
-        tf::Quaternion q1, q2;
+        Eigen::Quaterniond q1, q2;
 
         double t1, t2;
 
 }; // class QuaternionInterp
+
+
+// class PoseInterp {
+//     public:
+//         PoseInterp() {}
+//
+//         void interpolate() {
+//
+//         }
+//
+//         bool sample(const double t, Eigen::Vector3d& p, Eigen::Vector3d& v,
+//                     Eigen::Quaterniond& q) {
+//             lerp.sample(
+//         }
+//
+//     private:
+//         CubicInterp<3> lerp;
+//         QuaternionInterp slerp;
+//
+// }; // class PoseInterp
 
 } // namespace mm

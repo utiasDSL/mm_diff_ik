@@ -8,7 +8,7 @@ import tf.transformations as tfs
 
 from mm_msgs.msg import PoseTrajectoryPoint
 
-from mm_trajectories import JointInitializer, StationaryTrajectory, LineTrajectory, SineTrajectory
+from mm_trajectories import JointInitializer, StationaryTrajectory, LineTrajectory, SineTrajectory, RotationalTrajectory
 from mm_kinematics import ThingKinematics
 
 
@@ -29,11 +29,12 @@ def main():
 
     print('Trajectory initialized with initial position\n= {}'.format(list(p0)))
 
-    traj = StationaryTrajectory(p0, quat0)
+    traj = RotationalTrajectory(p0, quat0)
 
     while not rospy.is_shutdown():
         now = rospy.get_time()
-        p, v = traj.sample(now)
+        p, v = traj.sample_linear(now)
+        q, w = traj.sample_rotation(now)
 
         waypoint = PoseTrajectoryPoint()
 
@@ -42,18 +43,18 @@ def main():
         waypoint.pose.position.z = p[2]
 
         # Constant orientation for now.
-        waypoint.pose.orientation.x = traj.quat0[0]
-        waypoint.pose.orientation.y = traj.quat0[1]
-        waypoint.pose.orientation.z = traj.quat0[2]
-        waypoint.pose.orientation.w = traj.quat0[3]
+        waypoint.pose.orientation.x = q[0]
+        waypoint.pose.orientation.y = q[1]
+        waypoint.pose.orientation.z = q[2]
+        waypoint.pose.orientation.w = q[3]
 
         waypoint.velocity.linear.x = v[0]
         waypoint.velocity.linear.y = v[1]
         waypoint.velocity.linear.z = v[2]
 
-        waypoint.velocity.angular.x = 0
-        waypoint.velocity.angular.y = 0
-        waypoint.velocity.angular.z = 0
+        waypoint.velocity.angular.x = w[0]
+        waypoint.velocity.angular.y = w[1]
+        waypoint.velocity.angular.z = w[2]
 
         waypoint.time_from_start = rospy.Time(dt)
 
