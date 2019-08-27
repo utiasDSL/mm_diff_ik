@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>mm_data_analysis</name>
+  <version>0.0.0</version>
+  <description>Data collection, analysis, and visualization for the mobile manipulator.</description>
+  <maintainer email="adam.heins@robotics.utias.utoronto.ca">Adam Heins</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>python-numpy</exec_depend>
+</package>

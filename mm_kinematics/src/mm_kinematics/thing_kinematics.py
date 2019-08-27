@@ -139,6 +139,17 @@ class ThingKinematics(object):
         d = self._sub_dict(q)
         return _as_np(self.J_sym.subs(d))
 
+    def manipulability(self, q):
+        d = self._sub_dict(q)
+        J = _as_np(self.J_sym.subs(d))
+        Ja = J[:,3:]
+
+        m2 = np.linalg.det(Ja.dot(Ja.T))
+        if m2 < 0:
+            m2 = 0
+        m = np.sqrt(m2)
+        return m
+
     def write_sym_jac(self, fname):
         ''' Write symbolic Jacobian out to a file. '''
         def sin_repl(m):
@@ -166,25 +177,3 @@ class ThingKinematics(object):
             for i in range(6):
                 for j in range(6):
                     f.write('Ja({},{}) = {};\n'.format(i, j, J[i,j+3]))
-
-
-def main():
-    kin = ThingKinematics()
-    q = np.zeros(9)
-    eps = 1e-5
-
-    J = kin.calc_jac(q)
-    Ts = kin.calc_fk_chain(q)
-
-    print(Ts[3])
-    print(Ts[5])
-    print(Ts[11])
-
-
-def write_sym_jac():
-    kin = ThingKinematics()
-    kin.write_sym_jac('jac.txt')
-
-
-if __name__ == '__main__':
-    write_sym_jac()

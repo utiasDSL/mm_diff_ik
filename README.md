@@ -55,3 +55,26 @@ published.
 
 Contains forward kinematics code in both C++ and Python for use by other
 packages.
+
+## Running
+### Simulation
+```bash
+> roslaunch mm_motion_control mm_motion_control_sim.launch
+> roslaunch mm_simulation sim.launch
+> rosrun mm_trajectories launch_traj.py
+```
+
+### Experiment
+1. Connect to `DSL_DroneNet_5G` network.
+2. Connect to the Thing via Ethernet.
+3. Run:
+```bash
+# on laptop
+> roslaunch mm_vicon vicon.launch
+
+# on board
+> roslaunch mm_motion_control mm_motion_control.launch
+
+# on laptop
+> rosrun mm_trajectories launch_traj.py
+```

@@ -29,7 +29,7 @@ def main():
 
     print('Trajectory initialized with initial position\n= {}'.format(list(p0)))
 
-    traj = RotationalTrajectory(p0, quat0)
+    traj = LineTrajectory(p0, quat0)
 
     while not rospy.is_shutdown():
         now = rospy.get_time()
