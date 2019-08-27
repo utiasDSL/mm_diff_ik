@@ -29,6 +29,7 @@ Matrix3d LINEAR_GAIN = Matrix3d::Identity();
 Matrix3d ROTATIONAL_GAIN = Matrix3d::Identity();
 
 
+// Populate Pose message from Eigen types.
 void pose_msg_from_eigen(const Eigen::Vector3d& p, const Eigen::Quaterniond& q,
                          geometry_msgs::Pose& msg) {
     msg.position.x = p(0);
@@ -42,16 +43,17 @@ void pose_msg_from_eigen(const Eigen::Vector3d& p, const Eigen::Quaterniond& q,
 }
 
 
-void pose_msg_from_eigen(const Eigen::Affine3d& T, geometry_msgs::Pose& msg) {
-    Eigen::Vector3d p = T.translation();
-    Eigen::Quaterniond q(T.rotation());
-    pose_msg_from_eigen(p, q, msg);
+bool IKController::init(ros::NodeHandle& nh, Matrix3d& Kv, Matrix3d& Kw) {
+    this->Kv = Kv;
+    this->Kw = Kw;
+    time_prev = ros::Time::now().toSec();
+
+    optimizer.init(nh);
+    state_pub.reset(new StatePublisher(nh, "/mm_pose_state", 1));
 }
 
 
-bool IKController::init(Matrix3d& Kv, Matrix3d& Kw) {
-    this->Kv = Kv;
-    this->Kw = Kw;
+void IKController::tick() {
     time_prev = ros::Time::now().toSec();
 }
 
@@ -69,12 +71,6 @@ bool IKController::update(const Vector3d& pos_des, const Quaterniond& quat_des,
 
     // Orientation error (see pg. 140 of Siciliano et al., 2010).
     Eigen::Quaterniond quat_act(ee_pose_act.rotation());
-
-    // ROS_INFO_STREAM("x = " << quat_act.x() << "\n" <<
-    //                 "y = " << quat_act.y() << "\n" <<
-    //                 "z = " << quat_act.z() << "\n" <<
-    //                 "w = " << quat_act.w());
-
     Eigen::Quaterniond quat_err = quat_des * quat_act.inverse();
 
     // Keep quaternion positive. Otherwise, we can get in a situation where it
@@ -91,20 +87,45 @@ bool IKController::update(const Vector3d& pos_des, const Quaterniond& quat_des,
     Vector3d v = Kv * pos_err + v_ff;
     Vector3d w = Kw * rot_err + w_ff;
 
-    // TODO I want this to be included in the published message as well
-    // ROS_INFO_STREAM("angle_err = " << rot_err);
-    ROS_INFO_STREAM(rot_err);
-
     Vector6d vel_cmd;
     vel_cmd << v, w;
 
     // Update time.
-    double now = ros::Time::now().toSec();
-    double dt = now - time_prev;
-    time_prev = now;
+    ros::Time now = ros::Time::now();
+    double dt = now.toSec() - time_prev;
+    time_prev = now.toSec();
 
     // Optimize to solve IK problem.
-    return optimizer.solve(q_act, vel_cmd, dt, dq_cmd);
+    bool success = optimizer.solve(q_act, vel_cmd, dt, dq_cmd);
+
+    publish_state(now, pos_act, quat_act, pos_des, quat_des, pos_err, quat_err);
+
+    return success;
+}
+
+
+void IKController::publish_state(const ros::Time& time,
+                                 const Vector3d& pos_act,
+                                 const Quaterniond& quat_act,
+                                 const Vector3d& pos_des,
+                                 const Quaterniond& quat_des,
+                                 const Vector3d& pos_err,
+                                 const Quaterniond& quat_err) {
+    if (state_pub->trylock()) {
+        geometry_msgs::Pose pose_act_msg, pose_des_msg, pose_err_msg;
+
+        pose_msg_from_eigen(pos_act, quat_act, pose_act_msg);
+        pose_msg_from_eigen(pos_des, quat_des, pose_des_msg);
+        pose_msg_from_eigen(pos_err, quat_err, pose_err_msg);
+
+        state_pub->msg_.actual = pose_act_msg;
+        state_pub->msg_.desired = pose_des_msg;
+        state_pub->msg_.error = pose_err_msg;
+
+        state_pub->msg_.header.frame_id = "world";
+        state_pub->msg_.header.stamp = time;
+        state_pub->unlockAndPublish();
+    }
 }
 
 
@@ -120,7 +141,7 @@ bool IKControlNode::init(ros::NodeHandle& nh) {
     ur10_joint_vel_pub = nh.advertise<trajectory_msgs::JointTrajectory>("/ur_driver/joint_speed", 1);
     rb_joint_vel_pub = nh.advertise<geometry_msgs::Twist>("/ridgeback_velocity_controller/cmd_vel", 1);
 
-    mm_pose_pub = new realtime_tools::RealtimePublisher<mm_msgs::PoseControlState>(nh, "/mm_pose_state", 1);
+    controller.init(nh, LINEAR_GAIN, ROTATIONAL_GAIN);
 
     q_act = JointVector::Zero();
     dq_act = JointVector::Zero();
@@ -142,10 +163,7 @@ void IKControlNode::loop(const double hz) {
 
     ROS_INFO("First pose command received.");
 
-    // The controller is initialized here so that the time step of the
-    // first iteration is not dependent on how long it takes to receive a
-    // pose command. Then we sleep to have a typical timestep.
-    controller.init(LINEAR_GAIN, ROTATIONAL_GAIN);
+    controller.tick();
     rate.sleep();
 
     while (ros::ok()) {
@@ -181,7 +199,6 @@ void IKControlNode::loop(const double hz) {
         }
 
         publish_joint_speeds(dq_cmd);
-        publish_mm_pose_state(pos_des, quat_des);
 
         rate.sleep();
     }
@@ -209,29 +226,6 @@ void IKControlNode::publish_joint_speeds(const JointVector& dq_cmd) {
 
     ur10_joint_vel_pub.publish(traj_ur10);
     rb_joint_vel_pub.publish(twist_rb);
-}
-
-
-void IKControlNode::publish_mm_pose_state(const Eigen::Vector3d& pos_des,
-                                          const Eigen::Quaterniond& quat_des) {
-    geometry_msgs::Pose w_T_e_act_msg, w_T_e_des_msg;
-
-    pose_msg_from_eigen(w_T_e_act, w_T_e_act_msg);
-    pose_msg_from_eigen(pos_des, quat_des, w_T_e_des_msg);
-
-    // TODO not sure if this lock breaks the single threaded assumptions I have
-    // elsewhere
-    if (mm_pose_pub->trylock()) {
-        mm_pose_pub->msg_.actual.clear();
-        mm_pose_pub->msg_.desired.clear();
-
-        mm_pose_pub->msg_.actual.push_back(w_T_e_act_msg);
-        mm_pose_pub->msg_.desired.push_back(w_T_e_des_msg);
-
-        mm_pose_pub->msg_.header.frame_id = "world";
-        mm_pose_pub->msg_.header.stamp = ros::Time::now();
-        mm_pose_pub->unlockAndPublish();
-    }
 }
 
 

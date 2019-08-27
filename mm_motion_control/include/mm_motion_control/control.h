@@ -26,7 +26,7 @@ class IKController {
     public:
         IKController() : optimizer() {}
 
-        bool init(Eigen::Matrix3d& Kv, Eigen::Matrix3d& Kw);
+        bool init(ros::NodeHandle& nh, Eigen::Matrix3d& Kv, Eigen::Matrix3d& Kw);
 
         // Run one iteration of the control loop.
         //
@@ -44,7 +44,14 @@ class IKController {
                     const JointVector& q_act,
                     JointVector& dq_cmd);
 
+        // Reset the stored previous time to current time.
+        void tick();
+
     private:
+        // Pattern followed by ROS control for typedefing.
+        typedef realtime_tools::RealtimePublisher<mm_msgs::PoseControlState> StatePublisher;
+        typedef std::unique_ptr<StatePublisher> StatePublisherPtr;
+
         // Time from previous control loop iteration.
         double time_prev;
 
@@ -56,6 +63,17 @@ class IKController {
         // Optimizer to solve for joint velocity commands to send to the
         // robot.
         IKOptimizer optimizer;
+
+        StatePublisherPtr state_pub;
+
+        // Publish state of the end effector.
+        void publish_state(const ros::Time& time,
+                           const Eigen::Vector3d&    pos_act,
+                           const Eigen::Quaterniond& quat_act,
+                           const Eigen::Vector3d&    pos_des,
+                           const Eigen::Quaterniond& quat_des,
+                           const Eigen::Vector3d&    pos_err,
+                           const Eigen::Quaterniond& quat_err);
 }; // class IKController
 
 
@@ -80,8 +98,6 @@ class IKControlNode {
         // Publishers for desired joint speeds calculated by controller.
         ros::Publisher ur10_joint_vel_pub;
         ros::Publisher rb_joint_vel_pub;
-
-        realtime_tools::RealtimePublisher<mm_msgs::PoseControlState> *mm_pose_pub;
 
         IKController controller;
 
@@ -129,10 +145,6 @@ class IKControlNode {
 
         // Publish joint speeds computed by the controller to the arm and base.
         void publish_joint_speeds(const JointVector& dq_cmd);
-
-        // Publish actual and desired poses of the system.
-        void publish_mm_pose_state(const Eigen::Vector3d& pos_des,
-                                   const Eigen::Quaterniond& quat_des);
 }; // class IKControlNode
 
 } // namespace mm

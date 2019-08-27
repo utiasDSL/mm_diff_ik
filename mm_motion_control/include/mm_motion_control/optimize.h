@@ -3,10 +3,12 @@
 #include <Eigen/Eigen>
 #include <QuadProg.h>
 #include <ros/ros.h>
+#include <realtime_tools/realtime_publisher.h>
 
 #include <trajectory_msgs/JointTrajectory.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/JointState.h>
+#include <mm_msgs/OptimizationState.h>
 
 #include <mm_kinematics/kinematics.h>
 #include <mm_math_util/differentiation.h>
@@ -43,6 +45,10 @@ static const double STEP_SIZE = 1e-3;
 class IKOptimizer {
     public:
         IKOptimizer() {};
+
+        bool init(ros::NodeHandle& nh) {
+            state_pub.reset(new StatePublisher(nh, "/optimization_state", 1));
+        }
 
         // Create and solve the QP.
         //
@@ -110,14 +116,14 @@ class IKOptimizer {
             double vel_obj = dq_opt.transpose() * W * dq_opt; // want to minimize
 
             double mi = Kinematics::manipulability(q);
-            double mi_obj_quad = alpha * dt * dt * dq_opt.transpose() * Hm * dq_opt;
-            double mi_obj_lin = alpha * dt * dm.dot(dq_opt);
-            double mi_obj = mi + mi_obj_quad + mi_obj_lin; // want to maximize
+            double mi_obj_quad = dt * dt * dq_opt.transpose() * Hm * dq_opt;
+            double mi_obj_lin = dt * dm.dot(dq_opt);
 
-            // Compare to MI of numerically-integrated next position.
-            double mi_next = Kinematics::manipulability(q + dt*dq_opt);
+            // This is what actually gets considering in the optimization
+            // problem.
+            double mi_obj = alpha * (mi_obj_quad + mi_obj_lin); // want to maximize
 
-            // ROS_INFO_STREAM("vel obj = " << vel_obj << " mi obj = " << mi_obj << " mi = " << mi);
+            publish_state(dq_opt, vel_obj, mi_obj);
 
             return success;
         }
@@ -155,6 +161,24 @@ class IKOptimizer {
                     dq_lb(i) *= (del_q_lb - SAFETY_DIST(i))
                               / (INFLUENCE_DIST(i) - SAFETY_DIST(i));
                 }
+            }
+        }
+
+    private:
+        typedef realtime_tools::RealtimePublisher<mm_msgs::OptimizationState> StatePublisher;
+        typedef std::unique_ptr<StatePublisher> StatePublisherPtr;
+
+        StatePublisherPtr state_pub;
+
+        void publish_state(const JointVector& dq_opt, double vel_obj,
+                           double mi_obj) {
+            if (state_pub->trylock()) {
+                state_pub->msg_.labels = { "vel", "mi" };
+                state_pub->msg_.objectives = { vel_obj, mi_obj };
+                state_pub->msg_.result = std::vector<double>(dq_opt.data(), dq_opt.data() + dq_opt.size());
+
+                state_pub->msg_.header.stamp = ros::Time::now();
+                state_pub->unlockAndPublish();
             }
         }
 }; // class IKOptimizer
