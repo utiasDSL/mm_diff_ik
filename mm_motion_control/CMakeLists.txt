@@ -51,7 +51,7 @@ include_directories(
 # Executables
 
 add_executable(mm_control_node
-  src/mm_control_node.cpp src/control.cpp
+  src/mm_control_node.cpp src/control.cpp src/interp.cpp
 )
 target_link_libraries(mm_control_node
   ${catkin_LIBRARIES}
@@ -65,12 +65,12 @@ target_link_libraries(joint_state_mux
   ${catkin_LIBRARIES}
 )
 
-add_executable(pose_publisher
-  src/pose_publisher.cpp
-)
-target_link_libraries(pose_publisher
-  ${catkin_LIBRARIES}
-)
+# add_executable(pose_publisher
+#   src/pose_publisher.cpp
+# )
+# target_link_libraries(pose_publisher
+#   ${catkin_LIBRARIES}
+# )
 
 # Tests
 

@@ -135,6 +135,9 @@ bool IKControlNode::init(ros::NodeHandle& nh) {
     pose_cmd_sub = nh.subscribe("/pose_cmd", 1,
             &IKControlNode::pose_cmd_cb, this);
 
+    pose_traj_sub = nh.subscribe("/pose_traj", 1,
+            &IKControlNode::pose_traj_cb, this);
+
     mm_joint_states_sub = nh.subscribe("/mm_joint_states", 1,
             &IKControlNode::mm_joint_states_cb, this);
 
@@ -147,46 +150,61 @@ bool IKControlNode::init(ros::NodeHandle& nh) {
     dq_act = JointVector::Zero();
 
     pose_received = false;
+    traj_active = false;
 }
 
 // Control loop.
 void IKControlNode::loop(const double hz) {
     ros::Rate rate(hz);
 
-    ROS_INFO("Control loop started, waiting for pose command...");
-
-    // Wait until we have a pose command to send any commands
-    while (ros::ok() && !pose_received) {
-        ros::spinOnce();
-        rate.sleep();
-    }
-
-    ROS_INFO("First pose command received.");
-
-    controller.tick();
-    rate.sleep();
+    // ROS_INFO("Control loop started, waiting for trajectory...");
+    //
+    // // Wait until we have a pose command to send any commands
+    // while (ros::ok() && !traj_active) {
+    //     ros::spinOnce();
+    //     rate.sleep();
+    // }
+    //
+    // ROS_INFO("First pose command received.");
+    //
+    // controller.tick();
+    // rate.sleep();
+    ROS_INFO("Control loop started, waiting for trajectory...");
 
     while (ros::ok()) {
         ros::spinOnce();
+
+        if (!traj_active) {
+            publish_joint_speeds(JointVector::Zero());
+            controller.tick();
+            rate.sleep();
+            continue;
+        }
 
         // Sample interpolated trajectory.
         Vector3d pos_des;
         Vector3d v_ff;
         double now = ros::Time::now().toSec();
 
-        // Send zero velocity command if we fall outside interpolation range.
-        if (!trajectory.sample(now, pos_des, v_ff)) {
-            ROS_WARN("outside of sampling window");
-            publish_joint_speeds(JointVector::Zero());
+        if (!trajectory.sample(now, pos_des, v_ff, quat_des)) {
+            ROS_INFO("Trajectory ended.");
+            traj_active = false;
             continue;
         }
 
-        Quaterniond quat_des;
-        if (!slerp.sample(now, quat_des)) {
-            ROS_WARN("outside of sampling window");
-            publish_joint_speeds(JointVector::Zero());
-            continue;
-        }
+        // // Send zero velocity command if we fall outside interpolation range.
+        // if (!lerp.sample(now, pos_des, v_ff)) {
+        //     ROS_WARN("outside of sampling window");
+        //     publish_joint_speeds(JointVector::Zero());
+        //     continue;
+        // }
+        //
+        // Quaterniond quat_des;
+        // if (!slerp.sample(now, quat_des)) {
+        //     ROS_WARN("outside of sampling window");
+        //     publish_joint_speeds(JointVector::Zero());
+        //     continue;
+        // }
 
         JointVector dq_cmd;
         bool success = controller.update(pos_des, quat_des, v_ff, w_ff, q_act, dq_cmd);
@@ -195,6 +213,7 @@ void IKControlNode::loop(const double hz) {
             // commands are garbage in this case).
             ROS_WARN("Optimization failed");
             publish_joint_speeds(JointVector::Zero());
+            rate.sleep();
             continue;
         }
 
@@ -257,10 +276,19 @@ void IKControlNode::pose_cmd_cb(const mm_msgs::PoseTrajectoryPoint& msg) {
     double t2 = now + time_from_start;
 
     // Interpolate the trajectory, from which we sample later.
-    trajectory.interpolate(t1, t2, pos_act, pos_des, v_act, v_des);
+    lerp.interpolate(t1, t2, pos_act, pos_des, v_act, v_des);
     slerp.interpolate(t1, t2, quat_act, quat_des);
 
     pose_received = true;
+}
+
+
+// An entire trajectory is sent
+// Single point method is a special case
+void IKControlNode::pose_traj_cb(const mm_msgs::PoseTrajectory& msg) {
+    trajectory.init(msg, 0.1); // TODO hardcoded for now
+    traj_active = true;
+    ROS_INFO("Trajectory started.");
 }
 
 

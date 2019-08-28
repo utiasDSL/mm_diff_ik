@@ -3,9 +3,16 @@
 #include <Eigen/Eigen>
 #include <ros/ros.h>
 #include <tf/transform_datatypes.h>
+#include <mm_msgs/PoseTrajectoryPoint.h>
+#include <mm_msgs/PoseTrajectory.h>
 
 
 namespace mm {
+
+
+void pose_traj_point_to_eigen(const mm_msgs::PoseTrajectoryPoint& msg,
+                              Eigen::Vector3d& p, Eigen::Quaterniond& q,
+                              Eigen::Vector3d& v, Eigen::Vector3d& w);
 
 template <unsigned int N>
 class CubicInterp {
@@ -53,15 +60,18 @@ class CubicInterp {
             dT << 3*t*t, 2*t, 1, 0;
             x = C.transpose() * T;
             dx = C.transpose() * dT;
-
-            // true if t falls within the interpolation range, false otherwise
-            return t >= t1 && t <= t2;
+            return inrange(t);
         }
 
         // Last point in the range.
         void last(VectorNd& x, VectorNd& dx) {
             x = x2;
             dx = dx2;
+        }
+
+        // True if t falls within the interpolation range, false otherwise
+        bool inrange(const double t) {
+            return t >= t1 && t <= t2;
         }
 
     private:
@@ -102,6 +112,57 @@ class QuaternionInterp {
         double t1, t2;
 
 }; // class QuaternionInterp
+
+
+class PoseTrajectoryInterp {
+    public:
+        PoseTrajectoryInterp() {}
+
+        bool init(mm_msgs::PoseTrajectory traj, double dt) {
+            t0 = ros::Time::now().toSec();
+            this->dt = dt;
+            waypoints = traj.points; // TODO does this work?
+            return true;
+        }
+
+        bool sample(const double t, Eigen::Vector3d& p, Eigen::Vector3d& v,
+                    Eigen::Quaterniond& q) {
+            // If we are no longer between the current two points, we must
+            // reinterpolate between the next two.
+            if (!lerp.inrange(t)) {
+                // Determine new points assuming constant waypoint step time.
+                int idx = int((t - t0) / dt);
+                mm_msgs::PoseTrajectoryPoint wp1 = waypoints[idx];
+                mm_msgs::PoseTrajectoryPoint wp2 = waypoints[idx+1];
+
+                double t1 = t0 + wp1.time_from_start.toSec();
+                double t2 = t0 + wp2.time_from_start.toSec();
+
+                Eigen::Vector3d p1, v1, w1;
+                Eigen::Quaterniond q1;
+                pose_traj_point_to_eigen(wp1, p1, q1, v1, w1);
+
+                Eigen::Vector3d p2, v2, w2;
+                Eigen::Quaterniond q2;
+                pose_traj_point_to_eigen(wp2, p2, q2, v2, w2);
+
+                lerp.interpolate(t1, t2, p1, p2, v1, v2);
+                slerp.interpolate(t1, t2, q1, q2);
+
+            }
+            bool inrange = lerp.sample(t, p, v);
+            slerp.sample(t, q);
+            return inrange;
+        }
+
+    private:
+        double t0; // start time
+        double dt; // time step
+        std::vector<mm_msgs::PoseTrajectoryPoint> waypoints;
+        CubicInterp<3> lerp;
+        QuaternionInterp slerp;
+
+}; // class PoseTrajectoryInterp
 
 
 // class PoseInterp {

@@ -92,6 +92,8 @@ class IKControlNode {
         // Subsribe to desired end effector pose.
         ros::Subscriber pose_cmd_sub;
 
+        ros::Subscriber pose_traj_sub;
+
         // Subscribe to current joint values of the robot.
         ros::Subscriber mm_joint_states_sub;
 
@@ -122,20 +124,27 @@ class IKControlNode {
         // Cubic polynomial trajectory, interpolated between current state
         // and commanded pose.
         // TODO we need sane defaults for this
-        CubicInterp<3> trajectory;
+        CubicInterp<3> lerp;
 
         // Spherical linear interpolation for quaternions.
         QuaternionInterp slerp;
 
+        PoseTrajectoryInterp trajectory;
+
         // Set to true once a pose command has been received. Before that,
         // we don't want to send any commands.
         bool pose_received;
+
+        bool traj_active;
 
 
         /** FUNCTIONS **/
 
         // Takes a single Pose trajectory point to control toward.
         void pose_cmd_cb(const mm_msgs::PoseTrajectoryPoint& msg);
+
+        // Take an entire trajectory.
+        void pose_traj_cb(const mm_msgs::PoseTrajectory& msg);
 
         // Update state of robot joints.
         void mm_joint_states_cb(const sensor_msgs::JointState& msg);
