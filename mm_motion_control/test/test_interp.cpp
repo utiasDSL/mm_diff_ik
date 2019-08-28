@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <gtest/gtest.h>
+#include <iostream>
 
 #include "mm_motion_control/interp.h"
 
@@ -88,6 +89,31 @@ TEST(InterpolationTestSuite, testInterpMultiDimensional) {
     // Midpoint
     EXPECT_TRUE((x_sample - x_expected).norm() < EPS);
     EXPECT_TRUE((dx_sample - dx_expected).norm() < EPS);
+}
+
+
+TEST(InterpolationTestSuite, testInterpBigTime) {
+    double t1 = 1e6;
+    double t2 = t1 + 0.1;
+
+    Vector3d v; v << 0.05, 0, 0;
+
+    Vector3d x1 = Vector3d::Zero();
+    Vector3d x2 = x1 + 0.1*v;
+
+    CubicInterp<3> interp;
+    interp.interpolate(t1, t2, x1, x2, v, v);
+
+    double t = t1 + 0.05;
+    Vector3d x_sample, v_sample;
+    interp.sample(t, x_sample, v_sample);
+
+    Vector3d x_expected; x_expected << 0.0025, 0, 0;
+    Vector3d v_expected; v_expected << 0.05,   0, 0;
+
+    // Midpoint
+    EXPECT_TRUE((x_sample - x_expected).norm() < EPS);
+    EXPECT_TRUE((v_sample - v_expected).norm() < EPS);
 }
 
 

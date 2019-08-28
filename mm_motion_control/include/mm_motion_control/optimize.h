@@ -27,14 +27,18 @@ namespace mm {
 
 // Distances for the velocity damper constraints.
 static const double M_PI_6 = M_PI / 6.0;
-static const JointVector INFLUENCE_DIST(
-        (JointVector() << 0.5, 0.5, M_PI_6, M_PI_6, M_PI_6, M_PI_6, M_PI_6, M_PI_6, M_PI_6).finished());
-static const JointVector SAFETY_DIST = 0.2 * INFLUENCE_DIST;
+static const JointVector INFLUENCE_DIST((JointVector() <<
+    0.5, 0.5, M_PI_6,                               /* base */
+    M_PI_4, M_PI_4, M_PI_4, M_PI_4, M_PI_4, M_PI_4  /* arm */
+).finished());
+
+static const JointVector SAFETY_DIST = 0.25 * INFLUENCE_DIST;
 
 // Make the joint true if a position limit should be enforced, false otherwise.
 static const bool POSITIION_LIMITED[] = {
     false, false, false,               /* base */
-    true, true, true, true, true, true /* arm  */};
+    true, true, true, true, true, true /* arm  */
+};
 
 
 // For numerical differentiation
@@ -83,7 +87,7 @@ class IKOptimizer {
             /* EQUALITY CONSTRAINTS */
 
             // Track the reference velocity.
-            // TODO relaxation (see Dufour and Suleiman, 2018)
+            // TODO relaxation (see Dufour and Suleiman, 2017)
             JacobianMatrix J;
             Kinematics::jacobian(q, J);
 
@@ -109,8 +113,6 @@ class IKOptimizer {
             Eigen::QuadProgDense qp(NUM_JOINTS, 6, 2*NUM_JOINTS);
             bool success = qp.solve(Q, C, Aeq, Beq, Aineq, Bineq);
             dq_opt = qp.result();
-
-            // TODO we should publish this
 
             // Examine objective function values
             double vel_obj = dq_opt.transpose() * W * dq_opt; // want to minimize
@@ -148,16 +150,22 @@ class IKOptimizer {
         void velocity_damper_limits(const JointVector& q, JointVector& dq_lb,
                                     JointVector& dq_ub) {
             for (int i = 0; i < NUM_JOINTS; ++i) {
+                // Upper bound
                 double del_q_ub = POSITION_LIMITS_UPPER(i) - q(i);
                 dq_ub(i) = VELOCITY_LIMITS_UPPER(i);
+
                 if (POSITIION_LIMITED[i] && del_q_ub <= INFLUENCE_DIST(i)) {
+                    ROS_WARN_STREAM("Joint " << i << " within influence distance of upper bound.");
                     dq_ub(i) *= (del_q_ub - SAFETY_DIST(i))
                               / (INFLUENCE_DIST(i) - SAFETY_DIST(i));
                 }
 
+                // Lower bound
                 double del_q_lb = q(i) - POSITION_LIMITS_LOWER(i);
                 dq_lb(i) = VELOCITY_LIMITS_LOWER(i);
+
                 if (POSITIION_LIMITED[i] && del_q_lb <= INFLUENCE_DIST(i)) {
+                    ROS_WARN_STREAM("Joint " << i << " within influence distance of lower bound.");
                     dq_lb(i) *= (del_q_lb - SAFETY_DIST(i))
                               / (INFLUENCE_DIST(i) - SAFETY_DIST(i));
                 }

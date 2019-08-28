@@ -6,6 +6,8 @@
 #include <mm_msgs/PoseTrajectoryPoint.h>
 #include <mm_msgs/PoseTrajectory.h>
 
+#include <iostream>
+
 
 namespace mm {
 
@@ -30,6 +32,7 @@ class CubicInterp {
                          VectorNd& dx1, VectorNd& dx2) {
             this->t1 = t1;
             this->t2 = t2;
+            double dt = t2 - t1;
 
             this->x1 = x1;
             this->x2 = x2;
@@ -37,10 +40,10 @@ class CubicInterp {
             this->dx2 = dx2;
 
             Matrix4d A;
-            A << t1*t1*t1, t1*t1, t1, 1,
-                 t2*t2*t2, t2*t2, t2, 1,
-                 3*t1*t1,  2*t1,  1,  0,
-                 3*t2*t2,  2*t2,  1,  0;
+            A << 0, 0, 0, 1,
+                 dt*dt*dt, dt*dt, dt, 1,
+                 0,  0,  1,  0,
+                 3*dt*dt,  2*dt,  1,  0;
 
             Matrix4Nd B;
             B << x1.transpose(),
@@ -55,11 +58,15 @@ class CubicInterp {
 
         // Sample the interpolated trajectory at time t.
         bool sample(const double t, VectorNd& x, VectorNd& dx) {
+            double ta = t - t1;
+
             Vector4d T, dT;
-            T  << t*t*t, t*t, t, 1;
-            dT << 3*t*t, 2*t, 1, 0;
+            T  << ta*ta*ta, ta*ta, ta, 1;
+            dT << 3*ta*ta, 2*ta, 1, 0;
+
             x = C.transpose() * T;
             dx = C.transpose() * dT;
+
             return inrange(t);
         }
 
@@ -119,9 +126,10 @@ class PoseTrajectoryInterp {
         PoseTrajectoryInterp() {}
 
         bool init(mm_msgs::PoseTrajectory traj, double dt) {
+            // TODO we should just have dt in the message itself
             t0 = ros::Time::now().toSec();
             this->dt = dt;
-            waypoints = traj.points; // TODO does this work?
+            waypoints = traj.points;
             return true;
         }
 

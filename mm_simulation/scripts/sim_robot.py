@@ -74,6 +74,7 @@ class RobotSim(object):
 
 def main():
     rospy.init_node('mm_robot_sim')
+    dt = 0.01
 
     q = np.zeros(9)
     dq = np.zeros(9)
@@ -85,7 +86,7 @@ def main():
 
     while not rospy.is_shutdown():
         sim.step()
-        rospy.sleep(0.05)
+        rospy.sleep(dt)
 
 
 if __name__ == '__main__':

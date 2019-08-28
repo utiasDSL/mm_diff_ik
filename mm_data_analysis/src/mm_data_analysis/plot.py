@@ -52,6 +52,55 @@ def plot_pose_error(pose_msgs):
     plt.ylabel('Error (rad)')
 
 
+def plot_pose_actual_vs_desired(pose_msgs):
+    t = parse_time(pose_msgs)
+    pds = [msg.desired.position for msg in pose_msgs]
+    qds = [msg.desired.orientation for msg in pose_msgs]
+    pas = [msg.actual.position for msg in pose_msgs]
+    qas = [msg.actual.orientation for msg in pose_msgs]
+
+    pdx = [p.x for p in pds]
+    pdy = [p.y for p in pds]
+    pdz = [p.z for p in pds]
+
+    qdx = [q.x for q in qds]
+    qdy = [q.y for q in qds]
+    qdz = [q.z for q in qds]
+
+    pax = [p.x for p in pas]
+    pay = [p.y for p in pas]
+    paz = [p.z for p in pas]
+
+    qax = [q.x for q in qas]
+    qay = [q.y for q in qas]
+    qaz = [q.z for q in qas]
+
+    plt.figure()
+    plt.plot(t, pdx, 'r', label='xd')
+    plt.plot(t, pdy, 'g', label='yd')
+    plt.plot(t, pdz, 'b', label='zd')
+
+    plt.plot(t, pax, 'r--', label='xd')
+    plt.plot(t, pay, 'g--', label='yd')
+    plt.plot(t, paz, 'b--', label='zd')
+
+    plt.grid()
+    plt.legend()
+    plt.title('Linear End Effector Desired Pose')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Distance (m)')
+
+    plt.figure()
+    plt.plot(t, qdx, label='x')
+    plt.plot(t, qdy, label='y')
+    plt.plot(t, qdz, label='z')
+    plt.grid()
+    plt.legend()
+    plt.title('Rotational End Effector Desired Pose')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Distance (rad)')
+
+
 def plot_manipulability(mm_joint_states_msgs):
     t = parse_time(mm_joint_states_msgs)
     qs = np.array([msg.position for msg in mm_joint_states_msgs])
