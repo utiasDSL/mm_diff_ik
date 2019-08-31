@@ -158,19 +158,6 @@ bool IKControlNode::init(ros::NodeHandle& nh) {
 // Control loop.
 void IKControlNode::loop(const double hz) {
     ros::Rate rate(hz);
-
-    // ROS_INFO("Control loop started, waiting for trajectory...");
-    //
-    // // Wait until we have a pose command to send any commands
-    // while (ros::ok() && !traj_active) {
-    //     ros::spinOnce();
-    //     rate.sleep();
-    // }
-    //
-    // ROS_INFO("First pose command received.");
-    //
-    // controller.tick();
-    // rate.sleep();
     ROS_INFO("Control loop started, waiting for trajectory...");
 
     while (ros::ok()) {
@@ -184,29 +171,15 @@ void IKControlNode::loop(const double hz) {
         }
 
         // Sample interpolated trajectory.
-        Vector3d pos_des;
-        Vector3d v_ff;
+        Quaterniond quat_des;
+        Vector3d pos_des, v_ff, w_ff;
         double now = ros::Time::now().toSec();
 
-        if (!trajectory.sample(now, pos_des, v_ff, quat_des)) {
+        if (!trajectory.sample(now, pos_des, v_ff, quat_des, w_ff)) {
             ROS_INFO("Trajectory ended.");
             traj_active = false;
             continue;
         }
-
-        // // Send zero velocity command if we fall outside interpolation range.
-        // if (!lerp.sample(now, pos_des, v_ff)) {
-        //     ROS_WARN("outside of sampling window");
-        //     publish_joint_speeds(JointVector::Zero());
-        //     continue;
-        // }
-        //
-        // Quaterniond quat_des;
-        // if (!slerp.sample(now, quat_des)) {
-        //     ROS_WARN("outside of sampling window");
-        //     publish_joint_speeds(JointVector::Zero());
-        //     continue;
-        // }
 
         JointVector dq_cmd;
         bool success = controller.update(pos_des, quat_des, v_ff, w_ff, q_act, dq_cmd);
@@ -252,43 +225,43 @@ void IKControlNode::publish_joint_speeds(const JointVector& dq_cmd) {
 
 // We do interpolation whenever a new point comes in.
 void IKControlNode::pose_cmd_cb(const mm_msgs::PoseTrajectoryPoint& msg) {
-    // Desired linear position and velocity.
-    Vector3d pos_des, v_des;
-    pos_des << msg.pose.position.x, msg.pose.position.y, msg.pose.position.z;
-    v_des << msg.velocity.linear.x, msg.velocity.linear.y, msg.velocity.linear.z;
-
-    // Desired rotation and angular velocity.
-    quat_des = Quaterniond(msg.pose.orientation.w, msg.pose.orientation.x,
-                           msg.pose.orientation.y, msg.pose.orientation.z);
-    w_ff(0) = msg.velocity.angular.x;
-    w_ff(1) = msg.velocity.angular.y;
-    w_ff(2) = msg.velocity.angular.z;
-
-    // Actual pose.
-    Vector3d pos_act = w_T_e_act.translation();
-    Quaterniond quat_act = Quaterniond(w_T_e_act.rotation());
-    Vector3d v_act = dw_T_e_act.topRows<3>();
-    Vector3d w_act = dw_T_e_act.bottomRows<3>();
-
-    // Time
-    double time_from_start = msg.time_from_start.toSec();
-    double now = ros::Time::now().toSec();
-
-    double t1 = now;
-    double t2 = now + time_from_start;
-
-    // Interpolate the trajectory, from which we sample later.
-    lerp.interpolate(t1, t2, pos_act, pos_des, v_act, v_des);
-    slerp.interpolate(t1, t2, quat_act, quat_des);
-
-    pose_received = true;
+    // // Desired linear position and velocity.
+    // Vector3d pos_des, v_des;
+    // pos_des << msg.pose.position.x, msg.pose.position.y, msg.pose.position.z;
+    // v_des << msg.velocity.linear.x, msg.velocity.linear.y, msg.velocity.linear.z;
+    //
+    // // Desired rotation and angular velocity.
+    // quat_des = Quaterniond(msg.pose.orientation.w, msg.pose.orientation.x,
+    //                        msg.pose.orientation.y, msg.pose.orientation.z);
+    // w_ff(0) = msg.velocity.angular.x;
+    // w_ff(1) = msg.velocity.angular.y;
+    // w_ff(2) = msg.velocity.angular.z;
+    //
+    // // Actual pose.
+    // Vector3d pos_act = w_T_e_act.translation();
+    // Quaterniond quat_act = Quaterniond(w_T_e_act.rotation());
+    // Vector3d v_act = dw_T_e_act.topRows<3>();
+    // Vector3d w_act = dw_T_e_act.bottomRows<3>();
+    //
+    // // Time
+    // double time_from_start = msg.time_from_start.toSec();
+    // double now = ros::Time::now().toSec();
+    //
+    // double t1 = now;
+    // double t2 = now + time_from_start;
+    //
+    // // Interpolate the trajectory, from which we sample later.
+    // lerp.interpolate(t1, t2, pos_act, pos_des, v_act, v_des);
+    // slerp.interpolate(t1, t2, quat_act, quat_des);
+    //
+    // pose_received = true;
 }
 
 
 // An entire trajectory is sent
 // Single point method is a special case
 void IKControlNode::pose_traj_cb(const mm_msgs::PoseTrajectory& msg) {
-    trajectory.init(msg, 0.1); // TODO hardcoded for now
+    trajectory.init(msg);
     traj_active = true;
     ROS_INFO("Trajectory started.");
 }

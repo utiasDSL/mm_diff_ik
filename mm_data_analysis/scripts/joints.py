@@ -15,6 +15,7 @@ def main():
     joint_msgs = [msg for _, msg, _ in bag.read_messages('/mm_joint_states')]
 
     mmplt.plot_joints(joint_msgs)
+    #mmplt.plot_manipulability(joint_msgs)
     plt.show()
 
     # IPython.embed()

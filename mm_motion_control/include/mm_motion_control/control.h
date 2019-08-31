@@ -116,10 +116,10 @@ class IKControlNode {
 
         // Orientation is not currently interpolated, and for best results
         // should probably be constant throughout a trajectory.
-        Eigen::Quaterniond quat_des;
+        // Eigen::Quaterniond quat_des;
 
         // Feedforward rotational velocity.
-        Eigen::Vector3d w_ff;
+        // Eigen::Vector3d w_ff;
 
         // Cubic polynomial trajectory, interpolated between current state
         // and commanded pose.

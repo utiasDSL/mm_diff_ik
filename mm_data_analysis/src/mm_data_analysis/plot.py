@@ -6,7 +6,12 @@ import rospy
 import matplotlib.pyplot as plt
 import numpy as np
 
+from mm_kinematics import ThingKinematics
+
 import IPython
+
+
+JOINT_NAMES = ['qx', 'qy', 'qt', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6']
 
 
 def stamp_to_float(stamp):
@@ -107,8 +112,14 @@ def plot_manipulability(mm_joint_states_msgs):
     t = parse_time(mm_joint_states_msgs)
     qs = np.array([msg.position for msg in mm_joint_states_msgs])
 
+    # calculate MI at each timestep
+    kin = ThingKinematics()
+    mi = np.zeros(len(t))
+    for i in xrange(len(mi)):
+        mi[i] = kin.manipulability(qs[i,:])
+
     plt.figure()
-    plt.plot()
+    plt.plot(t, mi)
     plt.grid()
     plt.legend()
     plt.title('Manipulability Index')
@@ -119,13 +130,20 @@ def plot_manipulability(mm_joint_states_msgs):
 def plot_joints(mm_joint_states_msgs, idx=range(9)):
     t = parse_time(mm_joint_states_msgs)
     qs = np.array([msg.position for msg in mm_joint_states_msgs])
-    # qs = qs[:,idx]
 
     plt.figure()
+
     for i in idx:
-        plt.plot(t, qs[:,i], label='q{}'.format(i+1))
+        plt.plot(t, qs[:,i], label=JOINT_NAMES[i])
+
     plt.grid()
     plt.legend()
     plt.title('Joint Positions')
     plt.xlabel('Time (s)')
     plt.ylabel('Angle (rad)')
+
+
+def plot_joint_magnitudes(mm_joint_states_msgs):
+    # TODO I want to look at magnitude of base vs arm joint movement here
+    # this is effectively the velocity
+    pass

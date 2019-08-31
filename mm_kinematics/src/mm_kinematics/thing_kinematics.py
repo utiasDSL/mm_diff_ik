@@ -145,6 +145,8 @@ class ThingKinematics(object):
         Ja = J[:,3:]
 
         m2 = np.linalg.det(Ja.dot(Ja.T))
+
+        # handle numerical errors pushing us slightly negative
         if m2 < 0:
             m2 = 0
         m = np.sqrt(m2)

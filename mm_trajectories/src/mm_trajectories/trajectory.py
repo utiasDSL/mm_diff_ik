@@ -81,7 +81,7 @@ class SineTrajectory(object):
 
     def sample_linear(self, t):
         v = 0.05
-        w = 0.1
+        w = 0.2
 
         x = self.p0[0] + v * (t - self.t0)
         y = self.p0[1] + np.sin(w*(t - self.t0))

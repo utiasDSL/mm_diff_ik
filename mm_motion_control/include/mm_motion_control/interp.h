@@ -125,16 +125,15 @@ class PoseTrajectoryInterp {
     public:
         PoseTrajectoryInterp() {}
 
-        bool init(mm_msgs::PoseTrajectory traj, double dt) {
-            // TODO we should just have dt in the message itself
+        bool init(mm_msgs::PoseTrajectory trajectory) {
             t0 = ros::Time::now().toSec();
-            this->dt = dt;
-            waypoints = traj.points;
+            dt = trajectory.dt.toSec();
+            waypoints = trajectory.points;
             return true;
         }
 
         bool sample(const double t, Eigen::Vector3d& p, Eigen::Vector3d& v,
-                    Eigen::Quaterniond& q) {
+                    Eigen::Quaterniond& q, Eigen::Vector3d& w) {
             // If we are no longer between the current two points, we must
             // reinterpolate between the next two.
             if (!lerp.inrange(t)) {
@@ -143,8 +142,8 @@ class PoseTrajectoryInterp {
                 mm_msgs::PoseTrajectoryPoint wp1 = waypoints[idx];
                 mm_msgs::PoseTrajectoryPoint wp2 = waypoints[idx+1];
 
-                double t1 = t0 + wp1.time_from_start.toSec();
-                double t2 = t0 + wp2.time_from_start.toSec();
+                double t1 = t0 + dt * idx;
+                double t2 = t0 + dt * (idx + 1);
 
                 Eigen::Vector3d p1, v1, w1;
                 Eigen::Quaterniond q1;
@@ -157,18 +156,32 @@ class PoseTrajectoryInterp {
                 lerp.interpolate(t1, t2, p1, p2, v1, v2);
                 slerp.interpolate(t1, t2, q1, q2);
 
+                w_prev = w1;
             }
+
             bool inrange = lerp.sample(t, p, v);
             slerp.sample(t, q);
+            w = w_prev;
             return inrange;
         }
 
     private:
         double t0; // start time
         double dt; // time step
+
+        // List of waypoints defining the entire trajectory.
         std::vector<mm_msgs::PoseTrajectoryPoint> waypoints;
+
+        // Cubic interpolation for the linear component.
         CubicInterp<3> lerp;
+
+        // Spherical linear interpolation (slerp) for the angular component.
         QuaternionInterp slerp;
+
+        // Assume angular velocity is constant throughout the
+        // trajectory. Indeed, if it is not, then we should be doing
+        // something more complicated than slerp.
+        Eigen::Vector3d w_prev;
 
 }; // class PoseTrajectoryInterp
 

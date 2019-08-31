@@ -31,7 +31,7 @@ def launch_pose_traj():
     traj.t0 = 0  # TODO not clean
     waypoints = []
     t = 0
-    tf = 240  # 4 minutes
+    tf = 30
 
     while t < tf:
         p, v = traj.sample_linear(t)
@@ -64,6 +64,7 @@ def launch_pose_traj():
 
     msg = PoseTrajectory()
     msg.points = waypoints
+    msg.dt = dt
     pose_traj_pub.publish(msg)
 
 
