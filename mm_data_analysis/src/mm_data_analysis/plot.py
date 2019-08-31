@@ -6,6 +6,8 @@ import rospy
 import matplotlib.pyplot as plt
 import numpy as np
 
+import IPython
+
 
 def stamp_to_float(stamp):
     ''' Convert a ros timestamp message to a float in seconds. '''
@@ -117,10 +119,11 @@ def plot_manipulability(mm_joint_states_msgs):
 def plot_joints(mm_joint_states_msgs, idx=range(9)):
     t = parse_time(mm_joint_states_msgs)
     qs = np.array([msg.position for msg in mm_joint_states_msgs])
-    # TODO need to figure out the masking
+    # qs = qs[:,idx]
 
     plt.figure()
-    plt.plot()
+    for i in idx:
+        plt.plot(t, qs[:,i], label='q{}'.format(i+1))
     plt.grid()
     plt.legend()
     plt.title('Joint Positions')

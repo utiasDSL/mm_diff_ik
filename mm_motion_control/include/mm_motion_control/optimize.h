@@ -68,18 +68,36 @@ class IKOptimizer {
             /* OBJECTIVE */
 
             // Minimize velocity objective.
-            JointMatrix W = JointMatrix::Identity(); // norm weighting
+            JointMatrix Q1 = JointMatrix::Identity(); // norm weighting
+            JointVector C1 = JointVector::Zero();
 
             // Manipulability objective.
             JointVector dm;
             JointMatrix Hm = JointMatrix::Zero();
-            linearize_manipulability2(q, dm, Hm);
-            // linearize_manipulability1(q, dm);
+            //linearize_manipulability2(q, dm, Hm);
+            linearize_manipulability1(q, dm);
 
-            double alpha = 1.0;//1000.0; // weighting of manipulability objective
+            JointMatrix Q2 = -dt * dt * Hm;
+            JointVector C2 = -dt * dm;
 
-            JointMatrix Q = W - alpha * dt * dt * Hm;
-            JointVector C = -alpha * dt * dm;
+            // Avoid joint limits objective.
+            JointMatrix Q3 = dt * dt * JointMatrix::Identity();
+            Q3(0,0) = 0;
+            Q3(1,1) = 0;
+            Q3(2,2) = 0;
+            JointVector C3 = dt * (2*q - (POSITION_LIMITS_UPPER + POSITION_LIMITS_LOWER));
+            C3(0) = 0;
+            C3(1) = 0;
+            C3(2) = 0;
+
+            // w1=0.1, w2=0, w3=1.0 worked well for line with no orientation control
+
+            double w1 = 1.0;  // velocity
+            double w2 = 0.0;  // manipulability
+            double w3 = 0.0; // limits
+
+            JointMatrix Q = w1*Q1 + w2*Q2 + w3*Q3;
+            JointVector C = w1*C1 + w2*C2 + w3*C3;
 
             // JointMatrix Q = W;
             // JointVector C = JointVector::Zero();
@@ -115,7 +133,7 @@ class IKOptimizer {
             dq_opt = qp.result();
 
             // Examine objective function values
-            double vel_obj = dq_opt.transpose() * W * dq_opt; // want to minimize
+            double vel_obj = dq_opt.transpose() * Q1 * dq_opt; // want to minimize
 
             double mi = Kinematics::manipulability(q);
             double mi_obj_quad = dt * dt * dq_opt.transpose() * Hm * dq_opt;
@@ -123,7 +141,7 @@ class IKOptimizer {
 
             // This is what actually gets considering in the optimization
             // problem.
-            double mi_obj = alpha * (mi_obj_quad + mi_obj_lin); // want to maximize
+            double mi_obj = w1 * (mi_obj_quad + mi_obj_lin); // want to maximize
 
             publish_state(dq_opt, vel_obj, mi_obj);
 

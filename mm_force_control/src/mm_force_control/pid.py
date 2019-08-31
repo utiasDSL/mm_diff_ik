@@ -3,18 +3,14 @@ import numpy as np
 from utils import bound_array
 
 
-class ForcePID(object):
+class PID(object):
     ''' PID controller for force. '''
-    def __init__(self, Kp, Ki, Kd, set_point=0, ucl=None, lcl=None, reverse_output=False):
+    def __init__(self, Kp, Ki, Kd, set_point=0, reverse_output=False):
         self.Kp = Kp
         self.Ki = Ki
         self.Kd = Kd
 
         self.I_term = 0
-
-        # upper and lower bounds on the control output
-        # self.ucl = ucl
-        # self.lcl = lcl
 
         self.set_point = set_point
         self.reverse_output = reverse_output
@@ -22,9 +18,13 @@ class ForcePID(object):
         self.last_error = 0
 
         # saturate the I term at this value
+        # use to limit the amount by which the EE is allowed to deviate from
+        # the reference trajectory due to force perturbation
         self.windup_guard = 1000 * np.ones(3)  # 50
 
         # exponential decay on the I term: I = (1-decay)*I
+        # we need this if we want to return to the reference trajectory after
+        # force perturbation
         self.decay = 0  # 0.1
 
     def update(self, feedback, set_point=None):
@@ -54,23 +54,13 @@ class ForcePID(object):
         self.last_error = error
         self.last_time = current_time
 
-        raw_output = self.Kp * P_term + self.Ki * self.I_term + self.Kd * D_term
-
-        # apply bounds
-        # if self.ucl and raw_output > self.ucl:
-        #     output = self.ucl
-        # elif self.lcl and raw_output < self.lcl:
-        #     output = self.lcl
-        # else:
-        #     output = raw_output
-        output = raw_output
+        output = self.Kp * P_term + self.Ki * self.I_term + self.Kd * D_term
 
         # decay on the I term
         self.I_term -= self.decay * self.I_term
 
+        # TODO why do we have this?
         if self.reverse_output:
             output = -output
-
-        # print('I_term = {} out = {}'.format(self.I_term, output))
 
         return output

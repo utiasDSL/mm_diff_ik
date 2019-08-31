@@ -26,7 +26,7 @@ namespace mm {
 
 // Controller gain.
 Matrix3d LINEAR_GAIN = Matrix3d::Identity();
-Matrix3d ROTATIONAL_GAIN = Matrix3d::Identity();
+Matrix3d ROTATIONAL_GAIN = 0.05*Matrix3d::Identity();
 
 
 // Populate Pose message from Eigen types.
@@ -82,6 +82,10 @@ bool IKController::update(const Vector3d& pos_des, const Quaterniond& quat_des,
     Vector3d rot_err;
     rot_err << quat_err.x(), quat_err.y(), quat_err.z();
 
+    // Eigen::AngleAxisd aa(quat_err);
+    // Vector3d rot_err = aa.axis() * wrap_to_pi(aa.angle());
+    // ROS_INFO_STREAM(rot_err);
+
     // Velocity command in task space: P control with velocity feedforward.
     // At the moment we assume zero rotational feedforward.
     Vector3d v = Kv * pos_err + v_ff;
@@ -130,8 +134,6 @@ void IKController::publish_state(const ros::Time& time,
 
 
 bool IKControlNode::init(ros::NodeHandle& nh) {
-    // TODO later we probably want to allow multiple pose waypoints for
-    // when we're not doing force servoing
     pose_cmd_sub = nh.subscribe("/pose_cmd", 1,
             &IKControlNode::pose_cmd_cb, this);
 

@@ -31,7 +31,7 @@ def launch_pose_traj():
     traj.t0 = 0  # TODO not clean
     waypoints = []
     t = 0
-    tf = 30
+    tf = 240  # 4 minutes
 
     while t < tf:
         p, v = traj.sample_linear(t)
