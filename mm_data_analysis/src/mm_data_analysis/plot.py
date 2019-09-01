@@ -1,28 +1,16 @@
 #!/usr/bin/env python2
 from __future__ import print_function
 
-
-import rospy
 import matplotlib.pyplot as plt
 import numpy as np
 
 from mm_kinematics import ThingKinematics
+from mm_data_analysis.util import parse_time, vec3_msg_to_np
 
 import IPython
 
 
 JOINT_NAMES = ['qx', 'qy', 'qt', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6']
-
-
-def stamp_to_float(stamp):
-    ''' Convert a ros timestamp message to a float in seconds. '''
-    return rospy.Time(secs=stamp.secs, nsecs=stamp.nsecs).to_time()
-
-
-def parse_time(msgs):
-    t = np.array([stamp_to_float(msg.header.stamp) for msg in msgs])
-    t -= t[0]
-    return t
 
 
 def plot_pose_error(pose_msgs):
@@ -147,3 +135,36 @@ def plot_joint_magnitudes(mm_joint_states_msgs):
     # TODO I want to look at magnitude of base vs arm joint movement here
     # this is effectively the velocity
     pass
+
+
+def plot_force_state(force_state_msgs):
+    t = parse_time(force_state_msgs)
+
+    f_raw = vec3_msg_to_np([msg.force_raw for msg in force_state_msgs])
+    f_filt = vec3_msg_to_np([msg.force_filtered for msg in force_state_msgs])
+    f_world = vec3_msg_to_np([msg.force_world for msg in force_state_msgs])
+    p_off = vec3_msg_to_np([msg.position_offset for msg in force_state_msgs])
+
+    plt.figure()
+    plt.subplot(311)
+    plt.title('Force in x')
+    plt.plot(t, f_raw[:,0], label='Raw')
+    plt.plot(t, f_filt[:,0], label='Filtered')
+    plt.grid()
+    plt.legend()
+
+    plt.subplot(312)
+    plt.title('Force in y')
+    plt.plot(t, f_raw[:,1], label='Raw')
+    plt.plot(t, f_filt[:,1], label='Filtered')
+    plt.grid()
+    plt.legend()
+
+    plt.subplot(313)
+    plt.title('Force in z')
+    plt.plot(t, f_raw[:,2], label='Raw')
+    plt.plot(t, f_filt[:,2], label='Filtered')
+    plt.grid()
+    plt.legend()
+
+    plt.xlabel('Time (s)')

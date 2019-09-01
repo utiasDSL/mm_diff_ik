@@ -40,7 +40,7 @@ class StationaryTrajectory(object):
     def __init__(self, p0, quat0):
         self.p0 = p0
         self.quat0 = quat0
-        self.t0 = rospy.get_time()
+        self.t0 = 0  # TODO just remove
 
     def sample_linear(self, t):
         return self.p0, np.zeros(3)
@@ -54,7 +54,7 @@ class LineTrajectory(object):
     def __init__(self, p0, quat0):
         self.p0 = p0
         self.quat0 = quat0
-        self.t0 = rospy.get_time()
+        self.t0 = 0
 
     def sample_linear(self, t):
         v = 0.05
@@ -77,7 +77,7 @@ class SineTrajectory(object):
     def __init__(self, p0, quat0):
         self.p0 = p0
         self.quat0 = quat0
-        self.t0 = rospy.get_time()
+        self.t0 = 0
 
     def sample_linear(self, t):
         v = 0.05
@@ -102,7 +102,7 @@ class RotationalTrajectory(object):
     def __init__(self, p0, quat0):
         self.p0 = p0
         self.quat0 = quat0
-        self.t0 = rospy.get_time()
+        self.t0 = 0
 
     def sample_linear(self, t):
         # Positions do not change
@@ -118,4 +118,3 @@ class RotationalTrajectory(object):
         quat = tfs.quaternion_multiply(dq, self.quat0)
 
         return quat, w * axis
-

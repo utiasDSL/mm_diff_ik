@@ -1,6 +1,6 @@
 import rospy
 import numpy as np
-from utils import bound_array
+from mm_force_control.util import bound_array
 
 
 class PID(object):
