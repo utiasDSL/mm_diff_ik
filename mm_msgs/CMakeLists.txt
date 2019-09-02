@@ -41,6 +41,8 @@ add_message_files(
   PoseControlState.msg
   OptimizationState.msg
   ForceControlState.msg
+  Obstacle.msg
+  Obstacles.msg
 )
 
 ## Generate services in the 'srv' folder
