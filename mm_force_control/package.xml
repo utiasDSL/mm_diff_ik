@@ -6,9 +6,15 @@
   <maintainer email="adam.heins@robotics.utias.utoronto.ca">Adam Heins</maintainer>
   <license>TODO</license>
 
+  <depend>roscpp</depend>
+  <depend>cmake_modules</depend>
+  <depend>geometry_msgs</depend>
+  <depend>mm_kinematics</depend>
+  <depend>mm_msgs</depend>
+  <depend>mm_math_util</depend>
+
   <exec_depend>python-numpy</exec_depend>
-  <exec_depend>mm_kinematics</exec_depend>
-  <exec_depend>mm_msgs</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
 
   <buildtool_depend>catkin</buildtool_depend>
 </package>
