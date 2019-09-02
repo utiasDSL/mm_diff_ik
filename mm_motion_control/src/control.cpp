@@ -135,9 +135,6 @@ void IKController::publish_state(const ros::Time& time,
 
 
 bool IKControlNode::init(ros::NodeHandle& nh) {
-    pose_cmd_sub = nh.subscribe("/pose_cmd", 1,
-            &IKControlNode::pose_cmd_cb, this);
-
     pose_traj_sub = nh.subscribe("/pose_traj", 1,
             &IKControlNode::pose_traj_cb, this);
 
@@ -156,7 +153,6 @@ bool IKControlNode::init(ros::NodeHandle& nh) {
     dq_act = JointVector::Zero();
     pos_offset = Eigen::Vector3d::Zero();
 
-    pose_received = false;
     traj_active = false;
 }
 
@@ -236,41 +232,6 @@ void IKControlNode::update_forward_kinematics() {
     Kinematics::calc_w_T_e(q_act, w_T_e_act);
 
     Kinematics::forward_vel(q_act, dq_act, dw_T_e_act);
-}
-
-
-// We do interpolation whenever a new point comes in.
-void IKControlNode::pose_cmd_cb(const mm_msgs::PoseTrajectoryPoint& msg) {
-    // // Desired linear position and velocity.
-    // Vector3d pos_des, v_des;
-    // pos_des << msg.pose.position.x, msg.pose.position.y, msg.pose.position.z;
-    // v_des << msg.velocity.linear.x, msg.velocity.linear.y, msg.velocity.linear.z;
-    //
-    // // Desired rotation and angular velocity.
-    // quat_des = Quaterniond(msg.pose.orientation.w, msg.pose.orientation.x,
-    //                        msg.pose.orientation.y, msg.pose.orientation.z);
-    // w_ff(0) = msg.velocity.angular.x;
-    // w_ff(1) = msg.velocity.angular.y;
-    // w_ff(2) = msg.velocity.angular.z;
-    //
-    // // Actual pose.
-    // Vector3d pos_act = w_T_e_act.translation();
-    // Quaterniond quat_act = Quaterniond(w_T_e_act.rotation());
-    // Vector3d v_act = dw_T_e_act.topRows<3>();
-    // Vector3d w_act = dw_T_e_act.bottomRows<3>();
-    //
-    // // Time
-    // double time_from_start = msg.time_from_start.toSec();
-    // double now = ros::Time::now().toSec();
-    //
-    // double t1 = now;
-    // double t2 = now + time_from_start;
-    //
-    // // Interpolate the trajectory, from which we sample later.
-    // lerp.interpolate(t1, t2, pos_act, pos_des, v_act, v_des);
-    // slerp.interpolate(t1, t2, quat_act, quat_des);
-    //
-    // pose_received = true;
 }
 
 

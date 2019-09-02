@@ -119,34 +119,14 @@ class IKControlNode {
         // Position offset from the force controller.
         Eigen::Vector3d pos_offset;
 
-        // Orientation is not currently interpolated, and for best results
-        // should probably be constant throughout a trajectory.
-        // Eigen::Quaterniond quat_des;
-
-        // Feedforward rotational velocity.
-        // Eigen::Vector3d w_ff;
-
-        // Cubic polynomial trajectory, interpolated between current state
-        // and commanded pose.
-        // TODO we need sane defaults for this
-        CubicInterp<3> lerp;
-
-        // Spherical linear interpolation for quaternions.
-        QuaternionInterp slerp;
-
+        // Trajectory interpolator.
         PoseTrajectoryInterp trajectory;
 
-        // Set to true once a pose command has been received. Before that,
-        // we don't want to send any commands.
-        bool pose_received; // unused
-
+        // True if we currently have a trajectory to follow, false otherwise.
         bool traj_active;
 
 
         /** FUNCTIONS **/
-
-        // Takes a single Pose trajectory point to control toward.
-        void pose_cmd_cb(const mm_msgs::PoseTrajectoryPoint& msg);
 
         // Take an entire trajectory.
         void pose_traj_cb(const mm_msgs::PoseTrajectory& msg);
