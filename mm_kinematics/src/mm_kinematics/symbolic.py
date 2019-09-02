@@ -2,10 +2,10 @@ import re
 import numpy as np
 import sympy as sym
 
-from util import dh_tf, dh_tf_np, R_t_from_T, _as_np
+from util import dh_tf, R_t_from_T, _as_np
 
 
-class ThingKinematics(object):
+class SymbolicKinematics(object):
     ''' Kinematics for the Thing mobile manipulator. '''
     def __init__(self):
         self._calc_sym_transforms()
@@ -124,18 +124,17 @@ class ThingKinematics(object):
             'd1': 0.1273, 'a2': -0.612, 'a3': -0.5723, 'd4': 0.163941, 'd5': 0.1157, 'd6': 0.0922,
         }
 
-    def calc_fk_chain(self, q):
+    def forward_chain(self, q):
         ''' Calculate all transforms in the kinematic chain. '''
         d = self._sub_dict(q)
         return [_as_np(T0i.subs(d)) for T0i in self.T0]
 
-    def calc_fk(self, q):
+    def forward(self, q):
         ''' Calculate the transform of the EE. '''
         d = self._sub_dict(q)
         return _as_np(self.T0[-1].subs(d))
 
-
-    def calc_jac(self, q):
+    def jacobian(self, q):
         ''' Calculate the Jacobian. '''
         d = self._sub_dict(q)
         return _as_np(self.J_sym.subs(d))

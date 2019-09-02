@@ -1,5 +1,7 @@
 import numpy as np
 
+import IPython
+
 
 px = 0.27
 py = 0.01
@@ -57,21 +59,21 @@ def forward(q):
     Ts = _calc_chain(q)
     w_T_e = np.eye(4)
     for T in Ts:
-        w_T_e *= T
+        w_T_e = w_T_e.dot(T)
     return w_T_e
 
 
-def forward_chain(self, q):
-    Ts = self._calc_chain(q)
+def forward_chain(q):
+    Ts = _calc_chain(q)
     w_T_ = [None] * 12
 
     w_T_[0] = Ts[0]
     for i in xrange(1, len(w_T_)):
-        w_T_[i] = w_T_[i-1] * Ts[i]
+        w_T_[i] = w_T_[i-1].dot(Ts[i])
     return w_T_
 
 
-def _jacobians(self, q):
+def _jacobians(q):
     # Base joints
     xb = q[0]
     yb = q[1]
@@ -102,7 +104,7 @@ def _jacobians(self, q):
         [0, 1, Jb12],
         [0, 0, 0],
         [0, 0, 0],
-        [0, 0, 0]
+        [0, 0, 0],
         [0, 0, 1]])
 
     # Arm

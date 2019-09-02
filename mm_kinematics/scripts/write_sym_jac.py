@@ -1,9 +1,9 @@
 #!/usr/bin/env python2
-from mm_kinematics import ThingKinematics
+from mm_kinematics.symbolic import SymbolicKinematics
 
 
 def write_sym_jac():
-    kin = ThingKinematics()
+    kin = SymbolicKinematics()
     kin.write_sym_jac('jac.txt', fmt='py')
 
 

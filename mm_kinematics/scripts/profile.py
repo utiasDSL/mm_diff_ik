@@ -4,22 +4,23 @@ from __future__ import print_function
 import timeit
 import numpy as np
 
-from mm_kinematics import ThingKinematics
+from mm_kinematics.symbolic import SymbolicKinematics
+import mm_kinematics.kinematics as kinematics
 
 
-kin = ThingKinematics()
+sym_kin = SymbolicKinematics()
 
 
 def test_sym():
     # TODO could handle more range later
     q = np.random.random(9)
-    P = kin.calc_fk(q)
+    P = sym_kin.calc_fk(q)
     return P
 
 
 def test_np():
     q = np.random.random(9)
-    P = kin.calc_fk_np(q)
+    P = kinematics.forward(q)
     return P
 
 
@@ -35,8 +36,8 @@ def main():
 
     r = r_sym / r_np
 
-    print('Symbolic  = {}s/call'.format(r_sym))
-    print('Numerical = {}s/call'.format(r_np))
+    print('Symbolic  = {}s/call ({} calls)'.format(r_sym, N_sym))
+    print('Numerical = {}s/call ({} calls)'.format(r_np, N_np))
     print('Numerical is {}x faster than symbolic'.format(r))
 
 
