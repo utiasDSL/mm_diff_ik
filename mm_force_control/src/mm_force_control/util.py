@@ -1,4 +1,3 @@
-from collections import deque
 import rospy
 import tf2_ros
 import numpy as np
@@ -9,21 +8,9 @@ def bound_array(a, lb, ub):
     return np.minimum(np.maximum(a, lb), ub)
 
 
-class AveragingFilter(object):
-    ''' Simple low-pass averaging filter. '''
-    def __init__(self, max_size):
-        self.max_size = max_size
-        self.data = deque()
-
-    def filter(self, value):
-        self.data.append(value)
-        if len(self.data) > self.max_size:
-            self.data.popleft()
-
-        total = 0
-        for datum in self.data:
-            total += datum
-        return total / len(self.data)
+def apply_transform(T, v):
+    ''' Apply 4x4 homogeneous transform T to 3d vector v. '''
+    return T.dot(np.append(v, 1))[:3]
 
 
 class TransformLookup(object):
