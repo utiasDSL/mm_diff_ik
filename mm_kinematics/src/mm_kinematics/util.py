@@ -11,6 +11,15 @@ def dh_tf(q, a, d, alpha):
         [0,           0,                          0,                         1]])
 
 
+def dh_tf_np(q, a, d, alpha):
+    ''' Numerical transformation matrix from D-H parameters. '''
+    return np.array([
+        [np.cos(q), -np.sin(q)*np.cos(alpha),  np.sin(q)*np.sin(alpha), a*np.cos(q)],
+        [np.sin(q),  np.cos(q)*np.cos(alpha), -np.cos(q)*np.sin(alpha), a*np.sin(q)],
+        [0,          np.sin(alpha),            np.cos(alpha),           d],
+        [0,          0,                        0,                       1]])
+
+
 def R_t_from_T(T):
     ''' Extract rotation and translation from transform. '''
     R = T[0:3, 0:3]

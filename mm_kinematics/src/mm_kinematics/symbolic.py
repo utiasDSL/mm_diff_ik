@@ -2,7 +2,7 @@ import re
 import numpy as np
 import sympy as sym
 
-from util import dh_tf, R_t_from_T, _as_np
+from util import dh_tf, dh_tf_np, R_t_from_T, _as_np
 
 
 class ThingKinematics(object):
@@ -134,6 +134,7 @@ class ThingKinematics(object):
         d = self._sub_dict(q)
         return _as_np(self.T0[-1].subs(d))
 
+
     def calc_jac(self, q):
         ''' Calculate the Jacobian. '''
         d = self._sub_dict(q)
@@ -152,13 +153,20 @@ class ThingKinematics(object):
         m = np.sqrt(m2)
         return m
 
-    def write_sym_jac(self, fname):
+    def write_sym_jac(self, fname, fmt='c++'):
         ''' Write symbolic Jacobian out to a file. '''
+        # fmt can be c++ or py
+
         def sin_repl(m):
             return 's' + m.group(1)
 
         def cos_repl(m):
             return 'c' + m.group(1)
+
+        if fmt == 'c++':
+            msg = '{}({},{}) = {};\n'
+        else:
+            msg = '{}[{},{}] = {}\n'
 
         # Generate the string version of the Jacobian
         J = np.empty((6, 9), dtype=object)
@@ -173,9 +181,9 @@ class ThingKinematics(object):
             f.write('Base\n')
             for i in range(6):
                 for j in range(3):
-                    f.write('Jb({},{}) = {};\n'.format(i, j, J[i,j]))
+                    f.write(msg.format('Jb', i, j, J[i,j]))
 
             f.write('\nArm\n')
             for i in range(6):
                 for j in range(6):
-                    f.write('Ja({},{}) = {};\n'.format(i, j, J[i,j+3]))
+                    f.write(msg.format('Ja', i, j, J[i,j+3]))
