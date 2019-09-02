@@ -19,7 +19,7 @@ FORCE_THRESHOLD = 5  # Force required for force control to be used
 CONTACT_FORCE = 5  # Desired contact force, when contact is detected
 MAX_INPUT_FORCE = 10  # Maximum force value that can input to the PID controller
 
-HZ = 100  # Control loop rate (Hz)
+HZ = 20  # Control loop rate (Hz)
 
 N_BIAS = 100  # Number of samples to use for force bias estimation.
 
@@ -127,8 +127,8 @@ class ForceControlNode(object):
             set_point = comp * np.sign(f) * CONTACT_FORCE
 
             # Bound force input so it can only be between +-FORCE_THRESHOLD
-            # f_in = util.bound_array(f * comp, -MAX_INPUT_FORCE, MAX_INPUT_FORCE)
-            f_in = f
+            f_in = util.bound_array(f * comp, -MAX_INPUT_FORCE, MAX_INPUT_FORCE)
+            # f_in = f
 
             p_off = self.pid.update(f_in, set_point=set_point)
 

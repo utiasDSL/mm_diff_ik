@@ -9,7 +9,6 @@
 #include <geometry_msgs/Vector3Stamped.h>
 #include <sensor_msgs/JointState.h>
 
-#include <mm_msgs/PoseTrajectoryPoint.h>
 #include <mm_msgs/PoseTrajectory.h>
 #include <mm_msgs/PoseControlState.h>
 #include <mm_kinematics/kinematics.h>
@@ -27,7 +26,7 @@ namespace mm {
 
 // Controller gain.
 Matrix3d LINEAR_GAIN = Matrix3d::Identity();
-Matrix3d ROTATIONAL_GAIN = 0.05*Matrix3d::Identity();
+Matrix3d ROTATIONAL_GAIN = 0*Matrix3d::Identity();
 
 
 // Populate Pose message from Eigen types.
@@ -155,6 +154,7 @@ bool IKControlNode::init(ros::NodeHandle& nh) {
 
     traj_active = false;
 }
+
 
 // Control loop.
 void IKControlNode::loop(const double hz) {

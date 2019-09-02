@@ -6,12 +6,12 @@ from mpl_toolkits.mplot3d import Axes3D
 
 from sensor_msgs.msg import JointState
 
-from mm_kinematics import ThingKinematics, R_t_from_T
+from mm_kinematics.util import R_t_from_T
+import mm_kinematics.kinematics as kinematics
 
 
 class RobotPlotter(object):
     def __init__(self):
-        self.kin = ThingKinematics()
         self.joint_state_sub = rospy.Subscriber('/joint_states', JointState,
                                                 self._joint_state_cb)
 
@@ -46,16 +46,16 @@ class RobotPlotter(object):
         self.q = np.array(msg.position)
 
     def _calc_positions(self):
-        Ts = self.kin.calc_fk_chain(self.q)
+        Ts = kinematics.forward_chain(self.q)
         w_T_b = Ts[3]
         w_T_e = Ts[-1]
 
         _, w_p_b = R_t_from_T(w_T_b)
         _, w_p_e = R_t_from_T(w_T_e)
 
-        xs = [T[0,3] for T in Ts[4:]]
-        ys = [T[1,3] for T in Ts[4:]]
-        zs = [T[2,3] for T in Ts[4:]]
+        xs = [T[0,3] for T in Ts[3:]]
+        ys = [T[1,3] for T in Ts[3:]]
+        zs = [T[2,3] for T in Ts[3:]]
 
         return w_p_b, w_p_e, xs, ys, zs
 

@@ -26,6 +26,8 @@ class CubicInterp {
 
         CubicInterp() {
             C = Matrix4Nd::Zero();
+            t1 = 0;
+            t2 = 0;
         }
 
         void interpolate(double t1, double t2, VectorNd& x1, VectorNd& x2,
@@ -129,11 +131,18 @@ class PoseTrajectoryInterp {
             t0 = ros::Time::now().toSec();
             dt = trajectory.dt.toSec();
             waypoints = trajectory.points;
+            tf = t0 + (waypoints.size()-1) * dt;
+            w_prev = Eigen::Vector3d::Zero();
             return true;
         }
 
         bool sample(const double t, Eigen::Vector3d& p, Eigen::Vector3d& v,
                     Eigen::Quaterniond& q, Eigen::Vector3d& w) {
+            // Check if we're past the end of the trajectory.
+            if (t > tf) {
+                return false;
+            }
+
             // If we are no longer between the current two points, we must
             // reinterpolate between the next two.
             if (!lerp.inrange(t)) {
@@ -159,14 +168,15 @@ class PoseTrajectoryInterp {
                 w_prev = w1;
             }
 
-            bool inrange = lerp.sample(t, p, v);
+            lerp.sample(t, p, v);
             slerp.sample(t, q);
             w = w_prev;
-            return inrange;
+            return true;
         }
 
     private:
         double t0; // start time
+        double tf; // end time
         double dt; // time step
 
         // List of waypoints defining the entire trajectory.
@@ -185,24 +195,5 @@ class PoseTrajectoryInterp {
 
 }; // class PoseTrajectoryInterp
 
-
-// class PoseInterp {
-//     public:
-//         PoseInterp() {}
-//
-//         void interpolate() {
-//
-//         }
-//
-//         bool sample(const double t, Eigen::Vector3d& p, Eigen::Vector3d& v,
-//                     Eigen::Quaterniond& q) {
-//             lerp.sample(
-//         }
-//
-//     private:
-//         CubicInterp<3> lerp;
-//         QuaternionInterp slerp;
-//
-// }; // class PoseInterp
 
 } // namespace mm

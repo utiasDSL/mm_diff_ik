@@ -4,7 +4,7 @@ from __future__ import print_function
 import matplotlib.pyplot as plt
 import numpy as np
 
-from mm_kinematics import ThingKinematics
+import mm_kinematics.kinematics as kinematics
 from mm_data_analysis.util import parse_time, vec3_msg_to_np
 
 import IPython
@@ -101,10 +101,9 @@ def plot_manipulability(mm_joint_states_msgs):
     qs = np.array([msg.position for msg in mm_joint_states_msgs])
 
     # calculate MI at each timestep
-    kin = ThingKinematics()
     mi = np.zeros(len(t))
     for i in xrange(len(mi)):
-        mi[i] = kin.manipulability(qs[i,:])
+        mi[i] = kinematics.manipulability(qs[i,:])
 
     plt.figure()
     plt.plot(t, mi)

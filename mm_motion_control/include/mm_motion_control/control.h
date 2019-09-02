@@ -3,20 +3,20 @@
 #include <Eigen/Eigen>
 #include <ros/ros.h>
 #include <realtime_tools/realtime_publisher.h>
-#include <tf/transform_datatypes.h>
 
 #include <trajectory_msgs/JointTrajectory.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/JointState.h>
 
-#include <mm_msgs/PoseTrajectoryPoint.h>
 #include <mm_msgs/PoseTrajectory.h>
 #include <mm_msgs/PoseControlState.h>
 #include <mm_kinematics/kinematics.h>
 
 #include "mm_motion_control/optimize.h"
 #include "mm_motion_control/interp.h"
+
+#include <geometry_msgs/Vector3.h>
 
 
 namespace mm {
@@ -89,9 +89,8 @@ class IKControlNode {
     private:
         /** VARIABLES **/
 
-        // Subsribe to desired end effector pose.
-        ros::Subscriber pose_cmd_sub;  // Single commands (currently unused)
-        ros::Subscriber pose_traj_sub; // Full trajectories.
+        // Subsribe to desired end effector pose trajectories.
+        ros::Subscriber pose_traj_sub;
 
         // Subscribe to current joint values of the robot.
         ros::Subscriber mm_joint_states_sub;

@@ -8,8 +8,10 @@ import tf.transformations as tfs
 
 from mm_msgs.msg import PoseTrajectoryPoint, PoseTrajectory
 
+import mm_kinematics.kinematics as kinematics
 from mm_trajectories import JointInitializer, StationaryTrajectory, LineTrajectory, SineTrajectory, RotationalTrajectory
-from mm_kinematics import ThingKinematics
+
+import IPython
 
 
 def build_waypoint(t, p, v, q, w):
@@ -36,44 +38,20 @@ def build_waypoint(t, p, v, q, w):
     return waypoint
 
 
-def launch_point_traj():
-    ''' Launch a trajectory to a single point in space. '''
-    pose_traj_pub = rospy.Publisher('/pose_traj', PoseTrajectory, queue_size=10)
-    tf = 5
-
-    q0, _ = JointInitializer.wait_for_msg(0.1)
-    qf = np.zeros(9)
-    # TODO get this from real platform
-
-    kin = ThingKinematics()
-
-    T0 = kin.calc_fk(q0)
-    p0 = tfs.translation_from_matrix(T0)
-    quat0 = tfs.quaternion_from_matrix(T0)
-
-    Tf = kin.calc_fk(qf)
-    pf = tfs.translation_from_matrix(Tf)
-    quatf = tfs.quaternion_from_matrix(Tf)
-
-    wp1 = build_waypoint(0,  p0, np.zeros(3), quat0, np.zeros(3))
-    wp2 = build_waypoint(tf, pf, np.zeros(3), quatf, np.zeros(3))
-
-    msg = PoseTrajectory()
-    msg.points = [wp1, wp2]
-    msg.dt = rospy.Duration(tf)
-    pose_traj_pub.publish(msg)
-
-
 def launch_pose_traj():
     pose_traj_pub = rospy.Publisher('/pose_traj', PoseTrajectory, queue_size=10)
+
+    # Need to wait a second between setting up the publisher and actually using
+    # it to publish a message.
+    rospy.sleep(1.0)
+
     dt = 0.1
 
     # wait until current joint state is received
     q0, dq0 = JointInitializer.wait_for_msg(dt)
 
     # calculate initial EE position and velocity
-    kin = ThingKinematics()
-    T0 = kin.calc_fk(q0)
+    T0 = kinematics.forward(q0)
     p0 = tfs.translation_from_matrix(T0)
     quat0 = tfs.quaternion_from_matrix(T0)
 
@@ -95,8 +73,38 @@ def launch_pose_traj():
         t += dt
 
     msg = PoseTrajectory()
+    msg.header.stamp = rospy.Time.now()
     msg.points = waypoints
-    msg.dt = dt
+    msg.dt = rospy.Duration(dt)
+
+    pose_traj_pub.publish(msg)
+
+
+def launch_point_traj():
+    ''' Launch a trajectory to a single point in space. '''
+    pose_traj_pub = rospy.Publisher('/pose_traj', PoseTrajectory, queue_size=10)
+    rospy.sleep(1.0)
+
+    tf = 5
+
+    q0, _ = JointInitializer.wait_for_msg(0.1)
+    qf = np.zeros(9)
+    # TODO get this from real platform
+
+    T0 = kinematics.forward(q0)
+    p0 = tfs.translation_from_matrix(T0)
+    quat0 = tfs.quaternion_from_matrix(T0)
+
+    Tf = kinematics.forward(qf)
+    pf = tfs.translation_from_matrix(Tf)
+    quatf = tfs.quaternion_from_matrix(Tf)
+
+    wp1 = build_waypoint(0,  p0, np.zeros(3), quat0, np.zeros(3))
+    wp2 = build_waypoint(tf, pf, np.zeros(3), quatf, np.zeros(3))
+
+    msg = PoseTrajectory()
+    msg.points = [wp1, wp2]
+    msg.dt = rospy.Duration(tf)
     pose_traj_pub.publish(msg)
 
 
@@ -109,8 +117,7 @@ def launch_pose_cmds():
     q0, dq0 = JointInitializer.wait_for_msg(dt)
 
     # calculate initial EE position and velocity
-    kin = ThingKinematics()
-    T0 = kin.calc_fk(q0)
+    T0 = kinematics.forward(q0)
     p0 = tfs.translation_from_matrix(T0)
     quat0 = tfs.quaternion_from_matrix(T0)
 
