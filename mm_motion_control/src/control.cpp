@@ -11,6 +11,7 @@
 
 #include <mm_msgs/PoseTrajectory.h>
 #include <mm_msgs/PoseControlState.h>
+#include <mm_msgs/Obstacles.h>
 #include <mm_kinematics/kinematics.h>
 #include <mm_math_util/wrap.h>
 
@@ -143,6 +144,9 @@ bool IKControlNode::init(ros::NodeHandle& nh) {
     force_position_offset_sub = nh.subscribe("/force_control/position_offset",
             1, &IKControlNode::pos_offset_cb, this);
 
+    obstacle_sub = nh.subscribe("/obstacles", 1, &IKControlNode::obstacle_cb,
+                                this);
+
     ur10_joint_vel_pub = nh.advertise<trajectory_msgs::JointTrajectory>("/ur_driver/joint_speed", 1);
     rb_joint_vel_pub = nh.advertise<geometry_msgs::Twist>("/ridgeback_velocity_controller/cmd_vel", 1);
 
@@ -257,6 +261,11 @@ void IKControlNode::pos_offset_cb(const geometry_msgs::Vector3Stamped& msg) {
     pos_offset(0) = msg.vector.x;
     pos_offset(1) = msg.vector.y;
     pos_offset(2) = msg.vector.z;
+}
+
+
+void IKControlNode::obstacle_cb(const mm_msgs::Obstacles& msg) {
+    // TODO need to store the obstacles - what format to use?
 }
 
 } // namespace mm

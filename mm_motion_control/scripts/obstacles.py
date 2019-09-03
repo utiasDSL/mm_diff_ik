@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 import rospy
 
 from vicon_bridge.msg import Markers
