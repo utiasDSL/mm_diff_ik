@@ -2,6 +2,9 @@
 
 <launch>
   <!-- Start Robotiq force-torque sensor -->
+  <!-- Note that this must be run onboard the robot. -->
   <node name="ft_sensor" pkg="robotiq_force_torque_sensor" type="rq_sensor" respawn="true" output="screen" />
 
+  <!-- Launch force controller. -->
+  <node name="mm_force_control_node" pkg="mm_force_control" type="force_control.py" output="screen" />
 </launch>

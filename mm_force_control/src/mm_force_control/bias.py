@@ -16,7 +16,7 @@ class FTBiasEstimator(object):
                                        WrenchStamped, self.ft_cb)
 
     def ft_cb(self, msg):
-        if self.count < self.N:
+        if not self.done():
             data = np.array([msg.wrench.force.x, msg.wrench.force.y,
                              msg.wrench.force.z, msg.wrench.torque.x,
                              msg.wrench.torque.y, msg.wrench.torque.z])
@@ -27,14 +27,13 @@ class FTBiasEstimator(object):
             # unsubscribe from the sensor
             self.ft_sub.unregister()
 
-    def listen(self, dt=0.1):
+    def estimate(self, dt=0.1):
         ''' Block until the required number of messages have been received. '''
-        while self.count < self.N and not rospy.is_shutdown():
+        rospy.loginfo('Estimating FT sensor bias...')
+        while not self.done() and not rospy.is_shutdown():
             rospy.sleep(dt)
         self.bias = self.sum / self.N
+        rospy.loginfo('FT bias estimate with {} measurements = {}'.format(self.bias, self.N))
 
-    def unbias(self, force, torque):
-        ''' Apply bias correction to force and torque measurements. '''
-        f = force - self.bias[:3]
-        t = torque - self.bias[3:]
-        return f, t
+    def done(self):
+        return self.count >= self.N

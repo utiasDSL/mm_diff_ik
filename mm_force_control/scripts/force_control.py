@@ -26,25 +26,30 @@ N_BIAS = 100  # Number of samples to use for force bias estimation.
 # Controller gains
 Kp = np.zeros(3)
 Kd = np.zeros(3)
-Ki = 0.02 * np.zeros(3)
+Ki = 0.02 * np.ones(3)  # good for HI demo
 
 # Transform from EE frame to force torque sensor frame.
 # <node pkg="tf" type="static_transform_publisher" name="FT300_static"
 # args="0.02 0.0 0.0 -1.57 0 -1.57 ur10_arm_ee_link
 # robotiq_force_torque_frame_id 100" />
-f_T_e = tfs.translation_matrix([0.02, 0, 0]).dot(tfs.euler_matrix(-np.pi/2, 0, -np.pi/2))
-e_T_f = tfs.inverse_matrix(f_T_e)
+# f_T_e = tfs.translation_matrix([0.02, 0, 0]).dot(tfs.euler_matrix(-np.pi/2, 0, -np.pi/2))
+# e_T_f = tfs.inverse_matrix(f_T_e)
+
+# T1 = tfs.euler_matrix(-np.pi/2, 0, 0)
+# T2 = tfs.euler_matrix(0, 0, -np.pi/2)
+# e_T_f = tfs.translation_matrix([0.02, 0, 0]).dot(T2.dot(T1))
+# e_T_f = tfs.translation_matrix([0.02, 0, 0]).dot(tfs.euler_matrix(-np.pi/2, 0, -np.pi/2))
+e_T_f = tfs.translation_matrix([0.02, 0, 0])
 
 
 class ForceControlNode(object):
-    def __init__(self):
+    def __init__(self, bias=np.zeros(3)):
         self.pid = PID(Kp, Ki, Kd, set_point=np.zeros(3))
-        self.bias = FTBiasEstimator(N_BIAS)
-
         self.smoother = ExponentialSmoother(tau=0.1, x0=np.zeros(3))
 
+        self.bias = bias
         self.force_raw = np.zeros(3)
-        self.force = np.zeros(3)
+        self.force_filt = np.zeros(3)
         self.q = np.zeros(9)
         self.time_prev = rospy.Time.now().to_sec()
 
@@ -66,12 +71,15 @@ class ForceControlNode(object):
 
     def force_cb(self, msg):
         f = msg.wrench.force
-        self.force_raw, _ = self.bias.unbias(np.array([f.x, f.y, f.z]),
-                                             np.zeros(3))
+        self.force_raw = np.array([f.x, f.y, f.z]) - self.bias
+
         now = rospy.Time.now().to_sec()
         dt = now - self.time_prev
         self.time_prev = now
 
+        # We do filtering in the callback (instead of the control loop) so we
+        # can include the maximum number of messages in the filter (for best
+        # accuracy)
         self.force_filt = self.smoother.next(self.force_raw, dt)
 
     def joint_states_cb(self, msg):
@@ -109,32 +117,35 @@ class ForceControlNode(object):
         self.p_off_pub.publish(msg)
 
     def loop(self, hz):
-        rospy.loginfo('Force control started. Estimating FT sensor bias...')
-        self.bias.listen()
-        rospy.loginfo('Estimated FT bias = {}. Control loop started.'.format(self.bias.bias))
-
         rate = rospy.Rate(hz)
+        rospy.loginfo('Force control loop started.')
 
         while not rospy.is_shutdown():
             # Transform force to the world frame
             w_T_e = kinematics.forward(self.q)
             w_T_f = w_T_e.dot(e_T_f)
-            f = util.apply_transform(w_T_f, self.force_filt)
+            w_R_f = w_T_f[:3,:3]
+            force_world = w_R_f.dot(self.force_filt)
 
             # Force control. Steer toward CONTACT_FORCE if FORCE_THRESHOLD is
             # exceeded.
-            comp = np.abs(f) > FORCE_THRESHOLD
-            set_point = comp * np.sign(f) * CONTACT_FORCE
+            comp = np.abs(force_world) > FORCE_THRESHOLD
+            set_point = comp * np.sign(force_world) * CONTACT_FORCE
 
             # Bound force input so it can only be between +-FORCE_THRESHOLD
-            f_in = util.bound_array(f * comp, -MAX_INPUT_FORCE, MAX_INPUT_FORCE)
-            # f_in = f
+            force_in = util.bound_array(force_world * comp, -MAX_INPUT_FORCE,
+                                        MAX_INPUT_FORCE)
 
-            p_off = self.pid.update(f_in, set_point=set_point)
+            # Reverse input so that output offset pushes back against applied
+            # force.
+            force_in = -force_in
+
+            p_off = self.pid.update(force_in, set_point=set_point)
+            # p_off = np.zeros(3)
 
             now = rospy.Time.now()
             self.publish_position_offset(now, p_off)
-            self.publish_state(now, self.force_raw, self.force_filt, f, p_off)
+            self.publish_state(now, self.force_raw, self.force_filt, force_world, p_off)
 
             rate.sleep()
 
@@ -142,5 +153,10 @@ class ForceControlNode(object):
 if __name__ == '__main__':
     rospy.init_node('mm_force_control_node')
 
-    node = ForceControlNode()
+    # Listen to initial force measurements to estimate sensor bias.
+    bias_estimator = FTBiasEstimator(N_BIAS)
+    bias_estimator.estimate()
+    force_bias = bias_estimator.bias[:3]
+
+    node = ForceControlNode(bias=force_bias)
     node.loop(HZ)
