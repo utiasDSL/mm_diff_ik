@@ -48,7 +48,8 @@ def launch_pose_traj():
     dt = 0.1
 
     # wait until current joint state is received
-    q0, dq0 = JointInitializer.wait_for_msg(dt)
+    # q0, dq0 = JointInitializer.wait_for_msg(dt)
+    q0 = np.zeros(9)
 
     # calculate initial EE position and velocity
     T0 = kinematics.forward(q0)
@@ -57,12 +58,14 @@ def launch_pose_traj():
 
     print('Trajectory initialized with initial position\n= {}'.format(list(p0)))
 
-    traj = LineTrajectory(p0, quat0)
+    # TODO could use a better way to specify a stationary trajectory probably
+    traj = StationaryTrajectory(p0, quat0)
     waypoints = []
     t = 0
     tf = 30
 
-    while t < tf:
+    N = int(tf / dt) + 1
+    for _ in xrange(N):
         p, v = traj.sample_linear(t)
         q, w = traj.sample_rotation(t)
 
