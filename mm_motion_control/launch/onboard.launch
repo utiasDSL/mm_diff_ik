@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<!-- Single launch file for all onboard nodes. -->
+
+<launch>
+  <!-- Launch motion controller. -->
+  <include file="$(find mm_motion_control)/launch/mm_motion_control.launch" />
+
+  <!-- Start Robotiq force-torque sensor -->
+  <node name="ft_sensor" pkg="robotiq_force_torque_sensor" type="rq_sensor" respawn="true" output="screen" />
+</launch>
