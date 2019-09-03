@@ -32,15 +32,16 @@ typedef Eigen::Matrix<double, 6, NUM_JOINTS>      JacobianMatrix;
 // base: -0.75pi : 0.75pi
 // shoulder: -1.25pi : -0.25pi
 // elbow: -pi : pi
-// w1: -pi : pi
-// w2: -pi : pi
-// w3: -pi : pi
+// w1: -2pi : 2pi
+// w2: -2pi : 2pi
+// w3: -2pi : 2pi
+static const double TWO_PI = 2.0*M_PI;
 const JointVector POSITION_LIMITS_LOWER(
         (JointVector() << -4.0, -4.0, -M_PI,
-                          -0.75*M_PI, -1.25*M_PI, -M_PI, -M_PI, -M_PI, -M_PI).finished());
+                          -0.75*M_PI, -1.25*M_PI, -M_PI, -TWO_PI, -TWO_PI, -TWO_PI).finished());
 const JointVector POSITION_LIMITS_UPPER(
         (JointVector() << 4.0, 4.0, M_PI,
-                          0.75*M_PI, -0.25*M_PI, M_PI, M_PI, M_PI, M_PI).finished());
+                          0.75*M_PI, -0.25*M_PI, M_PI, TWO_PI, TWO_PI, TWO_PI).finished());
 
 // Joint velocity limits
 const JointVector VELOCITY_LIMITS_UPPER(
