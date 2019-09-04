@@ -4,14 +4,12 @@
   <version>0.0.0</version>
   <description>Messages for mobile manipulator.</description>
   <maintainer email="adam.heins@robotics.utias.utoronto.ca">Adam Heins</maintainer>
-
-  <!-- One license tag required, multiple allowed, one license per tag -->
-  <!-- Commonly used license strings: -->
-  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
   <license>TODO</license>
 
   <depend>geometry_msgs</depend>
   <depend>message_generation</depend>
+
+  <exec_depend>rospy</exec_depend>
 
   <buildtool_depend>catkin</buildtool_depend>
 </package>
