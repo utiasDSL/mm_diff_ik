@@ -9,6 +9,7 @@ using namespace Eigen;
 
 namespace mm {
 
+
 bool ViconEstimatorNode::init(ros::NodeHandle& nh) {
     vicon_thing_base_sub = nh.subscribe(
             "/vicon/ThingBase/ThingBase", 1,
@@ -25,6 +26,7 @@ bool ViconEstimatorNode::init(ros::NodeHandle& nh) {
     filter_lin_vel.init(0.045, Vector2d::Zero());
     filter_rot_vel.init(0.025, 0);
 }
+
 
 void ViconEstimatorNode::loop(const double hz) {
     ros::Rate rate(hz);
@@ -98,6 +100,35 @@ void ViconEstimatorNode::publish_joint_states() {
     rb_joint_states.velocity.push_back(vyaw);
 
     rb_joint_states_pub.publish(rb_joint_states);
+}
+
+
+bool ViconEstimatorNodeSim::init(ros::NodeHandle& nh) {
+    rb_joint_states_pub = nh.advertise<sensor_msgs::JointState>(
+            "/rb_joint_states", 1);
+}
+
+void ViconEstimatorNodeSim::loop(const double hz) {
+    ros::Rate rate(hz);
+
+    while (ros::ok()) {
+        ros::spinOnce();
+
+        sensor_msgs::JointState rb_joint_states;
+        rb_joint_states.header.stamp = ros::Time::now();
+
+        rb_joint_states.position.push_back(0); // x
+        rb_joint_states.position.push_back(0); // y
+        rb_joint_states.position.push_back(0); // yaw
+
+        rb_joint_states.velocity.push_back(0);
+        rb_joint_states.velocity.push_back(0);
+        rb_joint_states.velocity.push_back(0);
+
+        rb_joint_states_pub.publish(rb_joint_states);
+
+        rate.sleep();
+    }
 }
 
 } // namespace mm

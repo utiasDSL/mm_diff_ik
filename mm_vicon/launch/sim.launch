@@ -1,0 +1,4 @@
+<launch>
+  <!-- Simulate Vicon by always publishes zero for base joints. -->
+  <node pkg="mm_vicon" type="vicon_estimator_node_sim" name="mm_vicon_estimator_node" output="screen" />
+</launch>

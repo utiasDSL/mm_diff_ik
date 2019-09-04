@@ -58,9 +58,16 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(vicon_estimator_node
-  src/main.cpp src/estimator.cpp)
-
+  src/real.cpp src/estimator.cpp
+)
 target_link_libraries(vicon_estimator_node
+  ${catkin_LIBRARIES}
+)
+
+add_executable(vicon_estimator_node_sim
+  src/sim.cpp src/estimator.cpp
+)
+target_link_libraries(vicon_estimator_node_sim
   ${catkin_LIBRARIES}
 )
 
