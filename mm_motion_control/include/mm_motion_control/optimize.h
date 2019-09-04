@@ -173,7 +173,8 @@ class IKOptimizer {
                 dq_ub(i) = VELOCITY_LIMITS_UPPER(i);
 
                 if (POSITIION_LIMITED[i] && del_q_ub <= INFLUENCE_DIST(i)) {
-                    ROS_WARN_STREAM("Joint " << i << " within influence distance of upper bound.");
+                    ROS_WARN_STREAM("Joint " << JOINT_NAMES[i]
+                            << " within influence distance of upper bound.");
                     dq_ub(i) *= (del_q_ub - SAFETY_DIST(i))
                               / (INFLUENCE_DIST(i) - SAFETY_DIST(i));
                 }
@@ -183,7 +184,8 @@ class IKOptimizer {
                 dq_lb(i) = VELOCITY_LIMITS_LOWER(i);
 
                 if (POSITIION_LIMITED[i] && del_q_lb <= INFLUENCE_DIST(i)) {
-                    ROS_WARN_STREAM("Joint " << i << " within influence distance of lower bound.");
+                    ROS_WARN_STREAM("Joint " << JOINT_NAMES[i]
+                            << " within influence distance of lower bound.");
                     dq_lb(i) *= (del_q_lb - SAFETY_DIST(i))
                               / (INFLUENCE_DIST(i) - SAFETY_DIST(i));
                 }

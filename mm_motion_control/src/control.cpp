@@ -242,9 +242,15 @@ void IKControlNode::update_forward_kinematics() {
 // An entire trajectory is sent
 // Single point method is a special case
 void IKControlNode::pose_traj_cb(const mm_msgs::PoseTrajectory& msg) {
-    trajectory.init(msg);
+    trajectory.follow(msg);
     traj_active = true;
     ROS_INFO("Trajectory started.");
+}
+
+void IKControlNode::stationary_traj_cb(const geometry_msgs::PoseStamped& msg) {
+    trajectory.stay_at(msg.pose);
+    traj_active = true;
+    ROS_INFO("Maintaining current pose.");
 }
 
 
@@ -265,7 +271,8 @@ void IKControlNode::pos_offset_cb(const geometry_msgs::Vector3Stamped& msg) {
 
 
 void IKControlNode::obstacle_cb(const mm_msgs::Obstacles& msg) {
-    // TODO need to store the obstacles - what format to use?
+    // TODO need to store the obstacles - what format to use? just store the
+    // message or a custom thing?
 }
 
 } // namespace mm

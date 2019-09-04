@@ -5,8 +5,7 @@
 #include <tf/transform_datatypes.h>
 #include <mm_msgs/PoseTrajectoryPoint.h>
 #include <mm_msgs/PoseTrajectory.h>
-
-#include <iostream>
+#include <geometry_msgs/Pose.h>
 
 
 namespace mm {
@@ -123,21 +122,71 @@ class QuaternionInterp {
 }; // class QuaternionInterp
 
 
-class PoseTrajectoryInterp {
+// TODO rename without interp---this doesn't do the raw interpolation processing!
+// + actual interpolation code should be moved to the mm_math_util package
+class PoseTrajectory {
     public:
-        PoseTrajectoryInterp() {}
+        PoseTrajectory() {}
 
-        bool init(mm_msgs::PoseTrajectory trajectory) {
+        // Follow a trajectory of waypoints.
+        bool follow(mm_msgs::PoseTrajectory trajectory) {
             t0 = ros::Time::now().toSec();
             dt = trajectory.dt.toSec();
             waypoints = trajectory.points;
             tf = t0 + (waypoints.size()-1) * dt;
             w_prev = Eigen::Vector3d::Zero();
+            stationary = false;
+
             return true;
         }
 
+        // Stay at a single pose.
+        bool stay_at(const geometry_msgs::Pose pose) {
+            mm_msgs::PoseTrajectoryPoint waypoint;
+            waypoint.pose = pose;
+
+            waypoints.clear();
+            waypoints.push_back(waypoint);
+
+            stationary = true;
+        }
+
+        // Sample the trajectory at time t.
         bool sample(const double t, Eigen::Vector3d& p, Eigen::Vector3d& v,
                     Eigen::Quaterniond& q, Eigen::Vector3d& w) {
+            if (stationary) {
+                pose_traj_point_to_eigen(waypoints.back(), p, q, v, w);
+            } else {
+                return interpolate(t, p, v, q, w);
+            }
+            return true;
+        }
+
+    private:
+        double t0; // start time
+        double tf; // end time
+        double dt; // time step
+
+        // List of waypoints defining the entire trajectory.
+        std::vector<mm_msgs::PoseTrajectoryPoint> waypoints;
+
+        // Cubic interpolation for the linear component.
+        CubicInterp<3> lerp;
+
+        // Spherical linear interpolation (slerp) for the angular component.
+        QuaternionInterp slerp;
+
+        // Assume angular velocity is constant throughout the
+        // trajectory. Indeed, if it is not, then we should be doing
+        // something more complicated than slerp.
+        Eigen::Vector3d w_prev;
+
+        bool stationary;
+
+        /* FUNCTIONS */
+
+        bool interpolate(const double t, Eigen::Vector3d& p, Eigen::Vector3d& v,
+                         Eigen::Quaterniond& q, Eigen::Vector3d& w) {
             // Check if we're past the end of the trajectory.
             if (t > tf) {
                 return false;
@@ -174,26 +223,7 @@ class PoseTrajectoryInterp {
             return true;
         }
 
-    private:
-        double t0; // start time
-        double tf; // end time
-        double dt; // time step
-
-        // List of waypoints defining the entire trajectory.
-        std::vector<mm_msgs::PoseTrajectoryPoint> waypoints;
-
-        // Cubic interpolation for the linear component.
-        CubicInterp<3> lerp;
-
-        // Spherical linear interpolation (slerp) for the angular component.
-        QuaternionInterp slerp;
-
-        // Assume angular velocity is constant throughout the
-        // trajectory. Indeed, if it is not, then we should be doing
-        // something more complicated than slerp.
-        Eigen::Vector3d w_prev;
-
-}; // class PoseTrajectoryInterp
+}; // class PoseTrajectory
 
 
 } // namespace mm

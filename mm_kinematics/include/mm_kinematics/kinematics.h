@@ -48,6 +48,8 @@ const JointVector VELOCITY_LIMITS_UPPER(
         (JointVector() << 1.0, 1.0, 2.0, 2.16, 2.16, 3.15, 3.2, 3.2, 3.2).finished());
 const JointVector VELOCITY_LIMITS_LOWER = -VELOCITY_LIMITS_UPPER;
 
+const std::string JOINT_NAMES[] = { "qx", "qy", "qt", "q1", "q2", "q3", "q4", "q5", "q6" };
+
 
 class Kinematics {
     public:
