@@ -93,6 +93,8 @@ class IKControlNode {
         // Subsribe to desired end effector pose trajectories.
         ros::Subscriber pose_traj_sub;
 
+        ros::Subscriber point_traj_sub;
+
         // Subscribe to current joint values of the robot.
         ros::Subscriber mm_joint_states_sub;
 
@@ -136,7 +138,7 @@ class IKControlNode {
 
         // Receive a command to keep the EE in place (but the motion control
         // loop is still running so it can respond to e.g. applied forces).
-        void stationary_traj_cb(const geometry_msgs::PoseStamped& msg);
+        void point_traj_cb(const geometry_msgs::PoseStamped& msg);
 
         // Update state of robot joints.
         void mm_joint_states_cb(const sensor_msgs::JointState& msg);

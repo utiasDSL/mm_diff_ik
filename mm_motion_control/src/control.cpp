@@ -135,8 +135,11 @@ void IKController::publish_state(const ros::Time& time,
 
 
 bool IKControlNode::init(ros::NodeHandle& nh) {
-    pose_traj_sub = nh.subscribe("/pose_traj", 1,
+    pose_traj_sub = nh.subscribe("/trajectory/poses", 1,
             &IKControlNode::pose_traj_cb, this);
+
+    point_traj_sub = nh.subscribe("/trajectory/point", 1,
+            &IKControlNode::point_traj_cb, this);
 
     mm_joint_states_sub = nh.subscribe("/mm_joint_states", 1,
             &IKControlNode::mm_joint_states_cb, this);
@@ -247,7 +250,7 @@ void IKControlNode::pose_traj_cb(const mm_msgs::PoseTrajectory& msg) {
     ROS_INFO("Trajectory started.");
 }
 
-void IKControlNode::stationary_traj_cb(const geometry_msgs::PoseStamped& msg) {
+void IKControlNode::point_traj_cb(const geometry_msgs::PoseStamped& msg) {
     trajectory.stay_at(msg.pose);
     traj_active = true;
     ROS_INFO("Maintaining current pose.");
