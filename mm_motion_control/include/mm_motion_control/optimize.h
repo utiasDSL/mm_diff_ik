@@ -13,6 +13,8 @@
 #include <mm_kinematics/kinematics.h>
 #include <mm_math_util/differentiation.h>
 
+#include "mm_motion_control/obstacle.h"
+
 
 // eigen-quadprog API:
 //
@@ -45,6 +47,10 @@ static const bool POSITIION_LIMITED[] = {
 // NOTE pushing this down to even 1e-5 makes the numerical Hessian fail
 static const double STEP_SIZE = 1e-3;
 
+static const double OBS_SAFETY_DIST = 0.2;
+static const double OBS_INFLUENCE_DIST = 0.4;
+static const double OBS_COEFF = 1.0;
+
 
 class IKOptimizer {
     public:
@@ -63,7 +69,8 @@ class IKOptimizer {
         //
         // Returns true if optimization problem was solved successfully
         // (i.e. constraints satisified).
-        bool solve(const JointVector& q, const Vector6d& ee_vel, double dt,
+        bool solve(const JointVector& q, const Vector6d& ee_vel,
+                   const std::vector<ObstacleModel>& obstacles, double dt,
                    JointVector& dq_opt) {
             /* OBJECTIVE */
 
@@ -120,16 +127,30 @@ class IKOptimizer {
             JointVector dq_lb, dq_ub;
             velocity_damper_limits(q, dq_lb, dq_ub);
 
-            Eigen::Matrix<double, 2*NUM_JOINTS, NUM_JOINTS> Aineq;
-            Aineq << -JointMatrix::Identity(), JointMatrix::Identity();
+            Eigen::Matrix<double, 2*NUM_JOINTS, NUM_JOINTS> A_lim;
+            A_lim << -JointMatrix::Identity(), JointMatrix::Identity();
 
-            Eigen::Matrix<double, 2*NUM_JOINTS, 1> Bineq;
-            Bineq << -dq_lb, dq_ub;
+            Eigen::Matrix<double, 2*NUM_JOINTS, 1> b_lim;
+            b_lim << -dq_lb, dq_ub;
+
+            // Obstacle constraints.
+            Eigen::MatrixXd A_obs;
+            Eigen::VectorXd b_obs;
+            Eigen::Vector2d pb(q[0], q[1]);
+            int num_obs = obstacle_limits(pb, obstacles, A_obs, b_obs);
+
+            int num_ineq = 2*NUM_JOINTS + num_obs;
+
+            Eigen::MatrixXd Aineq(num_ineq, NUM_JOINTS);
+            Aineq << A_lim, A_obs;
+
+            Eigen::VectorXd bineq(num_ineq);
+            bineq << b_lim, b_obs;
 
             // Solve the QP.
             // Arguments: # variables, # eq constraints, # ineq constraints
-            Eigen::QuadProgDense qp(NUM_JOINTS, 6, 2*NUM_JOINTS);
-            bool success = qp.solve(Q, C, Aeq, Beq, Aineq, Bineq);
+            Eigen::QuadProgDense qp(NUM_JOINTS, 6, num_ineq);
+            bool success = qp.solve(Q, C, Aeq, Beq, Aineq, bineq);
             dq_opt = qp.result();
 
             // Examine objective function values
@@ -192,9 +213,66 @@ class IKOptimizer {
             }
         }
 
+        // Calculate obstacle avoidance objective.
+        int obstacle_limits(const Eigen::Vector2d& pb,
+                            const std::vector<ObstacleModel>& obstacles,
+                            Eigen::MatrixXd& A, Eigen::VectorXd& b) {
+            // Only consider obstacles within the influence distance.
+            std::vector<ObstacleModel> close_obstacles;
+            filter_obstacles(pb, obstacles, close_obstacles);
+
+            int num_obs = close_obstacles.size();
+            A.resize(num_obs, NUM_JOINTS);
+            b.resize(num_obs);
+
+            // Start with all coefficients as zero, though not really necessary
+            // for b.
+            A.setZero();
+            b.setZero();
+
+            for (int i = 0; i < close_obstacles.size(); ++i) {
+                Eigen::Vector2d n = close_obstacles[i].centre() - pb;
+                double d = n.norm() - BASE_RADIUS - close_obstacles[i].radius();
+                n.normalize();
+
+                double limit = OBS_COEFF * (d - OBS_SAFETY_DIST)
+                    / (OBS_INFLUENCE_DIST - OBS_SAFETY_DIST);
+
+                A(i,0) = n(0);
+                A(i,1) = n(1);
+                b(i)   = limit;
+            }
+
+            return num_obs;
+        }
+
+        // Returns true if the obstacle is within the influence distance of the
+        // base, false otherwise.
+        // TODO probably move this to obstacle.h
+        bool obstacle_is_close(const Eigen::Vector2d& pb,
+                               const ObstacleModel& obstacle) {
+            Eigen::Vector2d n = obstacle.centre() - pb;
+            double d = n.norm() - BASE_RADIUS - obstacle.radius();
+            return d < OBS_INFLUENCE_DIST;
+        }
+
+        // Filter out obstacles that are not close enough to influence the
+        // optimization problem.
+        void filter_obstacles(const Eigen::Vector2d& pb,
+                              const std::vector<ObstacleModel>& obstacles,
+                              std::vector<ObstacleModel>& close_obstacles) {
+            for (int i = 0; i < obstacles.size(); ++i) {
+                if (obstacle_is_close(pb, obstacles[i])) {
+                    close_obstacles.push_back(obstacles[i]);
+                }
+            }
+        }
+
     private:
         typedef realtime_tools::RealtimePublisher<mm_msgs::OptimizationState> StatePublisher;
         typedef std::unique_ptr<StatePublisher> StatePublisherPtr;
+
+        // typedef Eigen::Matrix<double, Eigen::Dynamic, 2> MatrixX2d;
 
         StatePublisherPtr state_pub;
 

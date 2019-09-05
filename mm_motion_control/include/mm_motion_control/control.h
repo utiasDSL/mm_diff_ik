@@ -16,6 +16,7 @@
 
 #include "mm_motion_control/optimize.h"
 #include "mm_motion_control/interp.h"
+#include "mm_motion_control/obstacle.h"
 
 #include <geometry_msgs/Vector3.h>
 
@@ -43,6 +44,7 @@ class IKController {
                     const Eigen::Vector3d& v_ff,
                     const Eigen::Vector3d& w_ff,
                     const JointVector& q_act,
+                    const std::vector<ObstacleModel> obstacles,
                     JointVector& dq_cmd);
 
         // Reset the stored previous time to current time.
@@ -126,6 +128,8 @@ class IKControlNode {
 
         // Trajectory interpolator.
         PoseTrajectory trajectory;
+
+        std::vector<ObstacleModel> obstacles;
 
         // True if we currently have a trajectory to follow, false otherwise.
         bool traj_active;

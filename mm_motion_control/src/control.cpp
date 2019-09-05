@@ -18,6 +18,7 @@
 #include "mm_motion_control/optimize.h"
 #include "mm_motion_control/interp.h"
 #include "mm_motion_control/control.h"
+#include "mm_motion_control/obstacle.h"
 
 
 using namespace Eigen;
@@ -61,7 +62,9 @@ void IKController::tick() {
 
 bool IKController::update(const Vector3d& pos_des, const Quaterniond& quat_des,
                           const Vector3d& v_ff, const Vector3d& w_ff,
-                          const JointVector& q_act, JointVector& dq_cmd) {
+                          const JointVector& q_act,
+                          const std::vector<ObstacleModel> obstacles,
+                          JointVector& dq_cmd) {
     // Calculate actual pose using forward kinematics.
     Affine3d ee_pose_act;
     Kinematics::forward(q_act, ee_pose_act);
@@ -101,7 +104,7 @@ bool IKController::update(const Vector3d& pos_des, const Quaterniond& quat_des,
     time_prev = now.toSec();
 
     // Optimize to solve IK problem.
-    bool success = optimizer.solve(q_act, vel_cmd, dt, dq_cmd);
+    bool success = optimizer.solve(q_act, vel_cmd, obstacles, dt, dq_cmd);
 
     publish_state(now, pos_act, quat_act, pos_des, quat_des, pos_err, quat_err);
 
@@ -193,7 +196,8 @@ void IKControlNode::loop(const double hz) {
         pos_des += pos_offset;
 
         JointVector dq_cmd;
-        bool success = controller.update(pos_des, quat_des, v_ff, w_ff, q_act, dq_cmd);
+        bool success = controller.update(pos_des, quat_des, v_ff, w_ff, q_act,
+                                         obstacles, dq_cmd);
         if (!success) {
             // Send zero velocity command if optimization fails (the velocity
             // commands are garbage in this case).
@@ -274,8 +278,10 @@ void IKControlNode::pos_offset_cb(const geometry_msgs::Vector3Stamped& msg) {
 
 
 void IKControlNode::obstacle_cb(const mm_msgs::Obstacles& msg) {
-    // TODO need to store the obstacles - what format to use? just store the
-    // message or a custom thing?
+    obstacles.clear();
+    for (int i = 0; i < msg.obstacles.size(); ++i) {
+        obstacles.push_back(ObstacleModel(msg.obstacles[i]));
+    }
 }
 
 } // namespace mm

@@ -44,7 +44,7 @@ e_T_f = tfs.translation_matrix([0.02, 0, 0])
 
 class ForceControlNode(object):
     def __init__(self, bias=np.zeros(3)):
-        self.pid = PID(Kp, Ki, Kd, set_point=np.zeros(3))
+        self.pid = PID(Kp, Ki, Kd, desired=np.zeros(3))
         self.smoother = ExponentialSmoother(tau=0.1, x0=np.zeros(3))
 
         self.bias = bias
@@ -130,7 +130,7 @@ class ForceControlNode(object):
             # Force control. Steer toward CONTACT_FORCE if FORCE_THRESHOLD is
             # exceeded.
             comp = np.abs(force_world) > FORCE_THRESHOLD
-            set_point = comp * np.sign(force_world) * CONTACT_FORCE
+            desired = comp * np.sign(force_world) * CONTACT_FORCE
 
             # Bound force input so it can only be between +-FORCE_THRESHOLD
             force_in = util.bound_array(force_world * comp, -MAX_INPUT_FORCE,
@@ -140,11 +140,10 @@ class ForceControlNode(object):
             # force.
             force_in = -force_in
 
-            p_off = self.pid.update(force_in, set_point=set_point)
-            # p_off = np.zeros(3)
+            p_off = self.pid.update(force_in, desired=desired)
 
             now = rospy.Time.now()
-            self.publish_position_offset(now, p_off)
+            self.publish_position_offset(now, np.zeros(3)) # TODO
             self.publish_state(now, self.force_raw, self.force_filt, force_world, p_off)
 
             rate.sleep()

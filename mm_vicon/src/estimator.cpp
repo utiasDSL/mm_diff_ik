@@ -119,7 +119,7 @@ void ViconEstimatorNodeSim::loop(const double hz) {
 
         rb_joint_states.position.push_back(0); // x
         rb_joint_states.position.push_back(0); // y
-        rb_joint_states.position.push_back(0); // yaw
+        rb_joint_states.position.push_back(-M_PI_2); // yaw
 
         rb_joint_states.velocity.push_back(0);
         rb_joint_states.velocity.push_back(0);

@@ -50,6 +50,8 @@ const JointVector VELOCITY_LIMITS_LOWER = -VELOCITY_LIMITS_UPPER;
 
 const std::string JOINT_NAMES[] = { "qx", "qy", "qt", "q1", "q2", "q3", "q4", "q5", "q6" };
 
+const double BASE_RADIUS = 0.5; // m
+
 
 class Kinematics {
     public:
