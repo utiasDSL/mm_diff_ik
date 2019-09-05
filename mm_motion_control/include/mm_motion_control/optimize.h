@@ -47,10 +47,6 @@ static const bool POSITIION_LIMITED[] = {
 // NOTE pushing this down to even 1e-5 makes the numerical Hessian fail
 static const double STEP_SIZE = 1e-3;
 
-static const double OBS_SAFETY_DIST = 0.2;
-static const double OBS_INFLUENCE_DIST = 0.4;
-static const double OBS_COEFF = 1.0;
-
 
 class IKOptimizer {
     public:
@@ -246,23 +242,13 @@ class IKOptimizer {
             return num_obs;
         }
 
-        // Returns true if the obstacle is within the influence distance of the
-        // base, false otherwise.
-        // TODO probably move this to obstacle.h
-        bool obstacle_is_close(const Eigen::Vector2d& pb,
-                               const ObstacleModel& obstacle) {
-            Eigen::Vector2d n = obstacle.centre() - pb;
-            double d = n.norm() - BASE_RADIUS - obstacle.radius();
-            return d < OBS_INFLUENCE_DIST;
-        }
-
         // Filter out obstacles that are not close enough to influence the
         // optimization problem.
         void filter_obstacles(const Eigen::Vector2d& pb,
                               const std::vector<ObstacleModel>& obstacles,
                               std::vector<ObstacleModel>& close_obstacles) {
             for (int i = 0; i < obstacles.size(); ++i) {
-                if (obstacle_is_close(pb, obstacles[i])) {
+                if (obstacles[i].in_range(pb)) {
                     close_obstacles.push_back(obstacles[i]);
                 }
             }
@@ -271,8 +257,6 @@ class IKOptimizer {
     private:
         typedef realtime_tools::RealtimePublisher<mm_msgs::OptimizationState> StatePublisher;
         typedef std::unique_ptr<StatePublisher> StatePublisherPtr;
-
-        // typedef Eigen::Matrix<double, Eigen::Dynamic, 2> MatrixX2d;
 
         StatePublisherPtr state_pub;
 

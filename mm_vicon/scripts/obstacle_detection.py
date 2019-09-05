@@ -7,7 +7,7 @@ from mm_msgs.msg import Obstacle, Obstacles
 
 # Radius around obstacle centres
 R = 0.3
-HZ = 0.1
+HZ = 10
 
 
 class ObstacleDetectionNode(object):

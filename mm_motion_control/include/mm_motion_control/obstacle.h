@@ -8,6 +8,12 @@
 
 namespace mm {
 
+
+const double OBS_SAFETY_DIST = 0.2;
+const double OBS_INFLUENCE_DIST = 0.4;
+const double OBS_COEFF = 1.0;
+
+
 class ObstacleModel {
     public:
         // Initialize from centre point and radius.
@@ -29,6 +35,14 @@ class ObstacleModel {
 
         double radius() const {
             return r;
+        }
+
+        // Returns true if the obstacle is within the influence distance of the
+        // base, false otherwise.
+        bool in_range(const Eigen::Vector2d& pb) const {
+            Eigen::Vector2d n = p - pb;
+            double d = n.norm() - BASE_RADIUS - r;
+            return d < OBS_INFLUENCE_DIST;
         }
 
     private:
