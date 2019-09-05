@@ -13,15 +13,13 @@ import mm_msgs.conversions as conversions
 from mm_trajectories.util import JointInitializer
 
 
-def launch(trajectory, duration):
+def launch(trajectory, duration, dt=0.1):
     traj_pub = rospy.Publisher('/trajectory/poses', PoseTrajectory,
                                queue_size=10)
 
     # Need to wait a second between setting up the publisher and actually using
     # it to publish a message.
     rospy.sleep(1.0)
-
-    dt = 0.1
 
     # wait until current joint state is received
     q0, dq0 = JointInitializer.wait_for_msg(dt)
@@ -34,7 +32,7 @@ def launch(trajectory, duration):
     print('Launched {} with duration of {} seconds.'.format(
         type(trajectory).__name__, duration))
 
-    traj = trajectory(p0, quat0)
+    traj = trajectory(p0, quat0, duration)
     waypoints = []
     t = 0
     tf = duration
@@ -58,22 +56,22 @@ def launch(trajectory, duration):
     traj_pub.publish(msg)
 
 
-class StationaryTrajectory(object):
-    ''' No movement from initial pose. '''
-    def __init__(self, p0, quat0):
-        self.p0 = p0
-        self.quat0 = quat0
-
-    def sample_linear(self, t):
-        return self.p0, np.zeros(3)
-
-    def sample_rotation(self, t):
-        return self.quat0, np.zeros(3)
+# class StationaryTrajectory(object):
+#     ''' No movement from initial pose. '''
+#     def __init__(self, p0, quat0):
+#         self.p0 = p0
+#         self.quat0 = quat0
+#
+#     def sample_linear(self, t):
+#         return self.p0, np.zeros(3)
+#
+#     def sample_rotation(self, t):
+#         return self.quat0, np.zeros(3)
 
 
 class LineTrajectory(object):
     ''' Straight line in x-direction. '''
-    def __init__(self, p0, quat0):
+    def __init__(self, p0, quat0, duration):
         self.p0 = p0
         self.quat0 = quat0
         self.t0 = 0
@@ -94,9 +92,9 @@ class LineTrajectory(object):
         return self.quat0, np.zeros(3)
 
 
-class SineTrajectory(object):
+class SineXYTrajectory(object):
     ''' Move forward while the EE traces a sine wave in the x-y plane. '''
-    def __init__(self, p0, quat0):
+    def __init__(self, p0, quat0, duration):
         self.p0 = p0
         self.quat0 = quat0
         self.t0 = 0
@@ -119,12 +117,35 @@ class SineTrajectory(object):
         return self.quat0, np.zeros(3)
 
 
-class RotationalTrajectory(object):
-    ''' Rotate the EE about the z-axis with no linear movement. '''
-    def __init__(self, p0, quat0):
+class SineYZTrajectory(object):
+    ''' Move sideways while the EE traces a sine wave in the y-z plane. '''
+    def __init__(self, p0, quat0, duration):
         self.p0 = p0
         self.quat0 = quat0
-        self.t0 = 0
+
+    def sample_linear(self, t):
+        v = 0.05
+        w = 0.2
+
+        x = self.p0[0]
+        y = self.p0[1] + v * t
+        z = self.p0[2] + np.sin(w * t)
+
+        dx = 0
+        dy = v
+        dz = w * np.cos(w * t)
+
+        return np.array([x, y, z]), np.array([dx, dy, dz])
+
+    def sample_rotation(self, t):
+        return self.quat0, np.zeros(3)
+
+
+class RotationalTrajectory(object):
+    ''' Rotate the EE about the z-axis with no linear movement. '''
+    def __init__(self, p0, quat0, duration):
+        self.p0 = p0
+        self.quat0 = quat0
 
     def sample_linear(self, t):
         # Positions do not change
@@ -142,9 +163,70 @@ class RotationalTrajectory(object):
         return quat, w * axis
 
 
+# TODO need to deal with API difference in launch
+# could just shittily define R here and pass duration in to all of them
 class CircleTrajectory(object):
-    pass
+    def __init__(self, p0, quat0, duration):
+        self.p0 = p0
+        self.quat0 = quat0
+        self.w = 2 * np.pi / duration
+
+    def sample_linear(self, t):
+        R = 0.3
+
+        x = self.p0[0]
+        y = self.p0[1] + R * np.cos(self.w * t) - R
+        z = self.p0[2] + R * np.sin(self.w * t)
+
+        dx = 0
+        dy = -self.w * R * np.sin(self.w * t)
+        dz =  self.w * R * np.cos(self.w * t)
+
+        return np.array([x, y, z]), np.array([dx, dy, dz])
+
+    def sample_rotational(self, t):
+        return self.p0, np.zeros(3)
 
 
 class SquareTrajectory(object):
-    pass
+    def __init__(self, p0, quat0, duration):
+        self.p0 = p0
+        self.quat0 = quat0
+
+    def sample_linear(self, t):
+        R = 1
+
+        x = self.p0[0]
+        y = self.p0[1]
+        z = self.p0[2]
+
+        dx = dy = dz = 0
+
+        # Total distance travelled is 8 * R; d is the current distance
+        # travelled
+        v = 8 * R / self.duration
+        d = v * t
+
+        if t < self.duration / 8.0:
+            y -= d
+            dy = -v
+        elif t < self.duration * 3.0 / 8.0:
+            x -= d - R
+            y -= R
+            dx = -v
+        elif t < self.duration * 5.0 / 8.0:
+            x -= 2*R
+            y += d - 4*R
+            dy = v
+        elif t < self.duration * 7.0 / 8.0:
+            x += d - 7*R
+            y += R
+            dx = v
+        else:
+            y += 8*R - d
+            dy = -v
+
+        return np.array([x, y, z]), np.array([dx, dy, dz])
+
+    def sample_rotational(self, t):
+        pass
