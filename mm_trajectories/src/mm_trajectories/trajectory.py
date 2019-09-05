@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-from __future__ import print_function
+from __future__ import print_function, division
 
 import rospy
 import numpy as np
@@ -184,14 +184,15 @@ class CircleTrajectory(object):
 
         return np.array([x, y, z]), np.array([dx, dy, dz])
 
-    def sample_rotational(self, t):
-        return self.p0, np.zeros(3)
+    def sample_rotation(self, t):
+        return self.quat0, np.zeros(3)
 
 
 class SquareTrajectory(object):
     def __init__(self, p0, quat0, duration):
         self.p0 = p0
         self.quat0 = quat0
+        self.duration = duration
 
     def sample_linear(self, t):
         R = 1
@@ -228,5 +229,5 @@ class SquareTrajectory(object):
 
         return np.array([x, y, z]), np.array([dx, dy, dz])
 
-    def sample_rotational(self, t):
-        pass
+    def sample_rotation(self, t):
+        return self.quat0, np.zeros(3)

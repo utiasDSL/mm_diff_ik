@@ -7,7 +7,7 @@ import tf.transformations as tfs
 
 from sensor_msgs.msg import JointState
 
-from mm_msgs.msg import Obstacles
+from mm_msgs.msg import Obstacles, PoseTrajectory
 import mm_kinematics.kinematics as kinematics
 
 
@@ -18,6 +18,9 @@ class RobotPlotter(object):
 
         self.obstacle_sub = rospy.Subscriber('/obstacles', Obstacles,
                                              self._obstacle_cb)
+
+        self.traj_sub = rospy.Subscriber('/trajectory/poses', PoseTrajectory,
+                                         self._traj_cb)
 
     def start(self, q0):
         ''' Launch the plot. '''
@@ -35,6 +38,10 @@ class RobotPlotter(object):
 
         self.q = q0
         self.obstacles = []
+        self.x_traj = []
+        self.y_traj = []
+        self.z_traj = []
+        self.traj_changed = False
 
         w_p_b, w_p_e, xs, ys, zs = self._calc_arm_positions()
         x_obs, y_obs, z_obs = self._calc_obs_positions()
@@ -48,6 +55,8 @@ class RobotPlotter(object):
 
         self.obs_plot, = self.ax.plot(x_obs, y_obs, zs=z_obs, marker='o', c='k')
 
+        self.traj_plot, = self.ax.plot(self.x_traj, self.y_traj, zs=self.z_traj, c='k')
+
         self.ax.legend()
 
     def _joint_state_cb(self, msg):
@@ -56,6 +65,12 @@ class RobotPlotter(object):
 
     def _obstacle_cb(self, msg):
         self.obstacles = msg.obstacles
+
+    def _traj_cb(self, msg):
+        self.x_traj = [point.pose.position.x for point in msg.points]
+        self.y_traj = [point.pose.position.y for point in msg.points]
+        self.z_traj = [point.pose.position.z for point in msg.points]
+        self.traj_changed = True
 
     def _calc_arm_positions(self):
         Ts = kinematics.forward_chain(self.q)
@@ -98,6 +113,12 @@ class RobotPlotter(object):
         self.obs_plot.set_xdata(x_obs)
         self.obs_plot.set_ydata(y_obs)
         self.obs_plot.set_3d_properties(z_obs)
+
+        if self.traj_changed:
+            self.traj_plot.set_xdata(self.x_traj)
+            self.traj_plot.set_ydata(self.y_traj)
+            self.traj_plot.set_3d_properties(self.z_traj)
+            self.traj_changed = False
 
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
