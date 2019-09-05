@@ -2,8 +2,60 @@
 
 from __future__ import print_function
 
+import rospy
 import numpy as np
 import tf.transformations as tfs
+
+from mm_msgs.msg import PoseTrajectory
+
+import mm_kinematics.kinematics as kinematics
+import mm_msgs.conversions as conversions
+from mm_trajectories.util import JointInitializer
+
+
+def launch(trajectory, duration):
+    traj_pub = rospy.Publisher('/trajectory/poses', PoseTrajectory,
+                               queue_size=10)
+
+    # Need to wait a second between setting up the publisher and actually using
+    # it to publish a message.
+    rospy.sleep(1.0)
+
+    dt = 0.1
+
+    # wait until current joint state is received
+    q0, dq0 = JointInitializer.wait_for_msg(dt)
+
+    # calculate initial EE position and velocity
+    T0 = kinematics.forward(q0)
+    p0 = tfs.translation_from_matrix(T0)
+    quat0 = tfs.quaternion_from_matrix(T0)
+
+    print('Launched {} with duration of {} seconds.'.format(
+        type(trajectory).__name__, duration))
+
+    traj = trajectory(p0, quat0)
+    waypoints = []
+    t = 0
+    tf = duration
+
+    N = int(tf / dt) + 1
+    for _ in xrange(N):
+        p, v = traj.sample_linear(t)
+        q, w = traj.sample_rotation(t)
+
+        waypoint = conversions.waypoint_msg(t, p, v, q, w)
+
+        waypoints.append(waypoint)
+
+        t += dt
+
+    msg = PoseTrajectory()
+    msg.header.stamp = rospy.Time.now()
+    msg.points = waypoints
+    msg.dt = rospy.Duration(dt)
+
+    traj_pub.publish(msg)
 
 
 class StationaryTrajectory(object):
@@ -11,7 +63,6 @@ class StationaryTrajectory(object):
     def __init__(self, p0, quat0):
         self.p0 = p0
         self.quat0 = quat0
-        self.t0 = 0  # TODO just remove
 
     def sample_linear(self, t):
         return self.p0, np.zeros(3)
@@ -89,3 +140,11 @@ class RotationalTrajectory(object):
         quat = tfs.quaternion_multiply(dq, self.quat0)
 
         return quat, w * axis
+
+
+class CircleTrajectory(object):
+    pass
+
+
+class SquareTrajectory(object):
+    pass
