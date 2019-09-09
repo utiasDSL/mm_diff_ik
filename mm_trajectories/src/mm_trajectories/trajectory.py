@@ -77,7 +77,7 @@ class LineTrajectory(object):
         self.t0 = 0
 
     def sample_linear(self, t):
-        v = 0.05
+        v = 0.2
 
         x = self.p0[0] + v * (t - self.t0)
         y = self.p0[1]
@@ -163,8 +163,6 @@ class RotationalTrajectory(object):
         return quat, w * axis
 
 
-# TODO need to deal with API difference in launch
-# could just shittily define R here and pass duration in to all of them
 class CircleTrajectory(object):
     def __init__(self, p0, quat0, duration):
         self.p0 = p0
@@ -172,7 +170,7 @@ class CircleTrajectory(object):
         self.w = 2 * np.pi / duration
 
     def sample_linear(self, t):
-        R = 0.3
+        R = 0.5
 
         x = self.p0[0]
         y = self.p0[1] + R * np.cos(self.w * t) - R

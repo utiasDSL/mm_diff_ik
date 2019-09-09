@@ -143,7 +143,8 @@ class ForceControlNode(object):
             p_off = self.pid.update(force_in, desired=desired)
 
             now = rospy.Time.now()
-            self.publish_position_offset(now, np.zeros(3)) # TODO
+            # self.publish_position_offset(now, np.zeros(3))
+            self.publish_position_offset(now, p_off)
             self.publish_state(now, self.force_raw, self.force_filt, force_world, p_off)
 
             rate.sleep()
