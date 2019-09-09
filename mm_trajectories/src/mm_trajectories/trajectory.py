@@ -13,6 +13,25 @@ import mm_msgs.conversions as conversions
 from mm_trajectories.util import JointInitializer
 
 
+def create_waypoints(traj, duration, dt):
+    waypoints = []
+    t = 0
+    tf = duration
+
+    N = int(tf / dt) + 1
+    for _ in xrange(N):
+        p, v = traj.sample_linear(t)
+        q, w = traj.sample_rotation(t)
+
+        waypoint = conversions.waypoint_msg(t, p, v, q, w)
+
+        waypoints.append(waypoint)
+
+        t += dt
+
+    return waypoints
+
+
 def launch(trajectory, duration, dt=0.1):
     traj_pub = rospy.Publisher('/trajectory/poses', PoseTrajectory,
                                queue_size=10)
@@ -33,20 +52,7 @@ def launch(trajectory, duration, dt=0.1):
         type(trajectory).__name__, duration))
 
     traj = trajectory(p0, quat0, duration)
-    waypoints = []
-    t = 0
-    tf = duration
-
-    N = int(tf / dt) + 1
-    for _ in xrange(N):
-        p, v = traj.sample_linear(t)
-        q, w = traj.sample_rotation(t)
-
-        waypoint = conversions.waypoint_msg(t, p, v, q, w)
-
-        waypoints.append(waypoint)
-
-        t += dt
+    waypoints = create_waypoints(traj, duration, dt)
 
     msg = PoseTrajectory()
     msg.header.stamp = rospy.Time.now()
@@ -69,25 +75,24 @@ def trapezoidal_velocity(v_max, t, t_acc, duration):
 
 class LineTrajectory(object):
     ''' Straight line in x-direction. '''
-    def __init__(self, p0, quat0, duration):
-        self.p0 = p0
+    def __init__(self, p0, quat0, duration, dt=0.1):
+        self.p = p0
         self.quat0 = quat0
-        self.duration
+        self.duration = duration
         self.t_acc = 0.1 * self.duration  # TODO may need tuning
+        self.dt = dt
 
     def sample_linear(self, t):
         # v_max = 0.5  # for speed
         v_max = 0.1  # for obstacles
         v = trapezoidal_velocity(v_max, t, self.t_acc, self.duration)
 
-        x = self.p0[0] + v * t
-        y = self.p0[1]
-        z = self.p0[2]
+        self.p[0] += v * self.dt
 
         dx = v
         dy = dz = 0
 
-        return np.array([x, y, z]), np.array([dx, dy, dz])
+        return self.p, np.array([dx, dy, dz])
 
     def sample_rotation(self, t):
         return self.quat0, np.zeros(3)
@@ -95,60 +100,65 @@ class LineTrajectory(object):
 
 class SineXYTrajectory(object):
     ''' Move forward while the EE traces a sine wave in the x-y plane. '''
-    def __init__(self, p0, quat0, duration):
-        self.p0 = p0
+    def __init__(self, p0, quat0, duration, dt=0.1):
+        self.p = p0
         self.quat0 = quat0
         self.duration = duration
         self.t_acc = 0.1 * duration
+        self.dt = dt
 
     def sample_linear(self, t):
         # v = 0.25 and w = 1.0 are as aggressive as I want to go, but they are
         # quite impressive
-        v_max = 0.25  # linear velocity
+        v_max = 0.1  # linear velocity
         A_max = 1.0  # sine amplitude
-        w = 1.0  # sine frequency
+        w = 0.25  # sine frequency
 
         v = trapezoidal_velocity(v_max, t, self.t_acc, self.duration)
         A = trapezoidal_velocity(A_max, t, self.t_acc, self.duration)
 
-        x = self.p0[0] + v * t
-        y = self.p0[1] + A * np.sin(w * t)
-        z = self.p0[2]
+        # self.p += np.array([v * t, , 0])
+        self.p[0] += v * self.dt
+        self.p[1] = A * np.sin(w * t)
+
+        # x = self.p0[0] + v * t
+        # y = self.p0[1] + A * np.sin(w * t)
+        # z = self.p0[2]
 
         dx = v
         dy = w * A * np.cos(w * t)
         dz = 0
 
-        return np.array([x, y, z]), np.array([dx, dy, dz])
+        return self.p, np.array([dx, dy, dz])
 
     def sample_rotation(self, t):
         return self.quat0, np.zeros(3)
 
 
-class SineYZTrajectory(object):
-    ''' Move sideways while the EE traces a sine wave in the y-z plane. '''
-    # TODO this trajectory doesn't work that well and as such isn't very
-    # interesting
-    def __init__(self, p0, quat0, duration):
-        self.p0 = p0
-        self.quat0 = quat0
-
-    def sample_linear(self, t):
-        v = 0.1
-        w = 0.1
-
-        x = self.p0[0]
-        y = self.p0[1] + v * t
-        z = self.p0[2] + np.sin(w * t)
-
-        dx = 0
-        dy = v
-        dz = w * np.cos(w * t)
-
-        return np.array([x, y, z]), np.array([dx, dy, dz])
-
-    def sample_rotation(self, t):
-        return self.quat0, np.zeros(3)
+# class SineYZTrajectory(object):
+#     ''' Move sideways while the EE traces a sine wave in the y-z plane. '''
+#     # TODO this trajectory doesn't work that well and as such isn't very
+#     # interesting
+#     def __init__(self, p0, quat0, duration):
+#         self.p0 = p0
+#         self.quat0 = quat0
+#
+#     def sample_linear(self, t):
+#         v = 0.1
+#         w = 0.1
+#
+#         x = self.p0[0]
+#         y = self.p0[1] + v * t
+#         z = self.p0[2] + np.sin(w * t)
+#
+#         dx = 0
+#         dy = v
+#         dz = w * np.cos(w * t)
+#
+#         return np.array([x, y, z]), np.array([dx, dy, dz])
+#
+#     def sample_rotation(self, t):
+#         return self.quat0, np.zeros(3)
 
 
 class RotationalTrajectory(object):
@@ -206,6 +216,32 @@ class CircleTrajectory(object):
         return self.quat0, np.zeros(3)
 
 
+class SpiralTrajectory(object):
+    def __init__(self, p0, quat0, duration, dt=0.1):
+        self.p0 = p0
+        self.quat0 = quat0
+        self.duration = duration
+        self.w = 0.5
+
+    def sample_linear(self, t):
+        v = 0.05
+        r = 0.01
+        R = r * t
+
+        x = v * t
+        y = self.p0[1] + R * np.cos(self.w * t) - R
+        z = self.p0[2] + R * np.sin(self.w * t)
+
+        dx = 0
+        dy = -self.w * R * np.sin(self.w * t)
+        dz =  self.w * R * np.cos(self.w * t)
+
+        return np.array([x, y, z]), np.array([dx, dy, dz])
+
+    def sample_rotation(self, t):
+        return self.quat0, np.zeros(3)
+
+
 class SquareTrajectory(object):
     def __init__(self, p0, quat0, duration):
         self.p0 = p0
@@ -230,17 +266,17 @@ class SquareTrajectory(object):
             y -= d
             dy = -v
         elif t < self.duration * 3.0 / 8.0:
-            x -= d - R
+            x += d - R
             y -= R
-            dx = -v
+            dx = v
         elif t < self.duration * 5.0 / 8.0:
-            x -= 2*R
+            x += 2*R
             y += d - 4*R
             dy = v
         elif t < self.duration * 7.0 / 8.0:
-            x += d - 7*R
+            x -= d - 7*R
             y += R
-            dx = v
+            dx = -v
         else:
             y += 8*R - d
             dy = -v
