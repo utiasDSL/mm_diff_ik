@@ -27,24 +27,15 @@ N_BIAS = 100  # Number of samples to use for force bias estimation.
 Kp = np.zeros(3)
 Kd = np.zeros(3)
 Ki = 0.02 * np.ones(3)  # good for HI demo
+DECAY = 0
 
-# Transform from EE frame to force torque sensor frame.
-# <node pkg="tf" type="static_transform_publisher" name="FT300_static"
-# args="0.02 0.0 0.0 -1.57 0 -1.57 ur10_arm_ee_link
-# robotiq_force_torque_frame_id 100" />
-# f_T_e = tfs.translation_matrix([0.02, 0, 0]).dot(tfs.euler_matrix(-np.pi/2, 0, -np.pi/2))
-# e_T_f = tfs.inverse_matrix(f_T_e)
-
-# T1 = tfs.euler_matrix(-np.pi/2, 0, 0)
-# T2 = tfs.euler_matrix(0, 0, -np.pi/2)
-# e_T_f = tfs.translation_matrix([0.02, 0, 0]).dot(T2.dot(T1))
-# e_T_f = tfs.translation_matrix([0.02, 0, 0]).dot(tfs.euler_matrix(-np.pi/2, 0, -np.pi/2))
+# Transform from EE frame to force torque sensor frame - just a small offset.
 e_T_f = tfs.translation_matrix([0.02, 0, 0])
 
 
 class ForceControlNode(object):
     def __init__(self, bias=np.zeros(3)):
-        self.pid = PID(Kp, Ki, Kd, desired=np.zeros(3))
+        self.pid = PID(Kp, Ki, Kd, decay=DECAY, desired=np.zeros(3))
         self.smoother = ExponentialSmoother(tau=0.1, x0=np.zeros(3))
 
         self.bias = bias
