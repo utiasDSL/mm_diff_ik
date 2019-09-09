@@ -6,7 +6,7 @@ from mm_msgs.msg import Obstacle, Obstacles
 
 
 # Radius around obstacle centres
-R = 0.3
+R = 0.1
 HZ = 10
 
 
@@ -30,6 +30,8 @@ class Square(object):
         return True
 
 
+# For obstacles to register, they must be within all INCLUDE squares but not in
+# any EXCLUDE squares.
 INCLUDES = [Square([0, 0], 4)]
 EXCLUDES = []
 

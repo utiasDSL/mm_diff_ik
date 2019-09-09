@@ -77,7 +77,7 @@ class LineTrajectory(object):
         self.t0 = 0
 
     def sample_linear(self, t):
-        v = 0.2
+        v = 0.5
 
         x = self.p0[0] + v * (t - self.t0)
         y = self.p0[1]
@@ -97,18 +97,17 @@ class SineXYTrajectory(object):
     def __init__(self, p0, quat0, duration):
         self.p0 = p0
         self.quat0 = quat0
-        self.t0 = 0
 
     def sample_linear(self, t):
-        v = 0.05
-        w = 0.2
+        v = 0.25
+        w = 1.0
 
-        x = self.p0[0] + v * (t - self.t0)
-        y = self.p0[1] + np.sin(w*(t - self.t0))
+        x = self.p0[0] + v * t
+        y = self.p0[1] + np.sin(w * t)
         z = self.p0[2]
 
         dx = v
-        dy = w * np.cos(w*(t-self.t0))
+        dy = w * np.cos(w * t)
         dz = 0
 
         return np.array([x, y, z]), np.array([dx, dy, dz])
@@ -124,8 +123,8 @@ class SineYZTrajectory(object):
         self.quat0 = quat0
 
     def sample_linear(self, t):
-        v = 0.05
-        w = 0.2
+        v = 0.1
+        w = 0.1
 
         x = self.p0[0]
         y = self.p0[1] + v * t
@@ -167,18 +166,28 @@ class CircleTrajectory(object):
     def __init__(self, p0, quat0, duration):
         self.p0 = p0
         self.quat0 = quat0
-        self.w = 2 * np.pi / duration
+        self.duration = duration
+        self.w = 2 * np.pi / (duration / 2.0)
 
     def sample_linear(self, t):
-        R = 0.5
+        R = 0.3
 
         x = self.p0[0]
-        y = self.p0[1] + R * np.cos(self.w * t) - R
-        z = self.p0[2] + R * np.sin(self.w * t)
-
         dx = 0
-        dy = -self.w * R * np.sin(self.w * t)
-        dz =  self.w * R * np.cos(self.w * t)
+
+        if t < self.duration / 2.0:
+            y = self.p0[1] + R * np.cos(self.w * t) - R
+            z = self.p0[2] + R * np.sin(self.w * t)
+
+            dy = -self.w * R * np.sin(self.w * t)
+            dz =  self.w * R * np.cos(self.w * t)
+        else:
+            # y is negated, z stays the same
+            y = self.p0[1] - R * np.cos(self.w * t) + R
+            z = self.p0[2] + R * np.sin(self.w * t)
+
+            dy = self.w * R * np.sin(self.w * t)
+            dz = self.w * R * np.cos(self.w * t)
 
         return np.array([x, y, z]), np.array([dx, dy, dz])
 
@@ -193,7 +202,7 @@ class SquareTrajectory(object):
         self.duration = duration
 
     def sample_linear(self, t):
-        R = 1
+        R = 0.5
 
         x = self.p0[0]
         y = self.p0[1]
