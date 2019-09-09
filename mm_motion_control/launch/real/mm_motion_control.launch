@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<!-- Bring up the UR10 driver and controller node. Ridgeback controller is
+     already launched on startup of the Thing. -->
+
+ <launch>
+  <!-- Launch UR10. -->
+  <include file="$(find mm_motion_control)/launch/real/ur10.launch" />
+
+  <!-- Combine base and arm joint_state messages into a single one. -->
+  <node pkg="mm_motion_control" type="joint_state_mux" name="joint_state_mux_node" output="screen" />
+
+  <!-- Start the controller. -->
+  <node pkg="mm_motion_control" type="mm_control_node" name="mm_control_node" output="screen" />
+</launch>

@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- Bring up the UR10 driver and controller node. Ridgeback controller is
-     already launched on startup of the Thing. -->
+<!-- Launch UR10 driver. -->
 
 <launch>
   <arg name="robot_ip" default="192.168.131.17"/>
@@ -25,10 +24,4 @@
     <param name="prefix" value="$(arg prefix)" />
     <remap from="/joint_states" to="/ur10_joint_states" />
   </node>
-
-  <!-- Combine base and arm joint_state messages into a single one. -->
-  <node pkg="mm_motion_control" type="joint_state_mux" name="joint_state_mux_node" output="screen" />
-
-  <!-- Start the controller. -->
-  <node pkg="mm_motion_control" type="mm_control_node" name="mm_control_node" output="screen" />
 </launch>

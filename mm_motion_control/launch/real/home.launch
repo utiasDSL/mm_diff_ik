@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+
+<!-- Send the MM to the home position -->
+
+<launch>
+  <include file="$(find mm_motion_control)/launch/real/ur10.launch" />
+  <node pkg="mm_motion_control" type="joint_state_mux" name="joint_state_mux_node" output="screen" />
+  <node pkg="mm_motion_control" type="home" name="home_trajectory_node" output="screen" />
+</launch>

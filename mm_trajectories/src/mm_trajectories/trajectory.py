@@ -56,17 +56,15 @@ def launch(trajectory, duration, dt=0.1):
     traj_pub.publish(msg)
 
 
-# class StationaryTrajectory(object):
-#     ''' No movement from initial pose. '''
-#     def __init__(self, p0, quat0):
-#         self.p0 = p0
-#         self.quat0 = quat0
-#
-#     def sample_linear(self, t):
-#         return self.p0, np.zeros(3)
-#
-#     def sample_rotation(self, t):
-#         return self.quat0, np.zeros(3)
+def trapezoidal_velocity(v_max, t, t_acc, duration):
+    ''' Trapezoidal velocity profile '''
+    if t < t_acc:
+        v = t * v_max / t_acc
+    elif t >= t_acc and t < duration - t_acc:
+        v = v_max
+    else:
+        v = (duration - t) * v_max / t_acc
+    return v
 
 
 class LineTrajectory(object):
@@ -74,12 +72,15 @@ class LineTrajectory(object):
     def __init__(self, p0, quat0, duration):
         self.p0 = p0
         self.quat0 = quat0
-        self.t0 = 0
+        self.duration
+        self.t_acc = 0.1 * self.duration  # TODO may need tuning
 
     def sample_linear(self, t):
-        v = 0.5
+        # v_max = 0.5  # for speed
+        v_max = 0.1  # for obstacles
+        v = trapezoidal_velocity(v_max, t, self.t_acc, self.duration)
 
-        x = self.p0[0] + v * (t - self.t0)
+        x = self.p0[0] + v * t
         y = self.p0[1]
         z = self.p0[2]
 
@@ -97,17 +98,25 @@ class SineXYTrajectory(object):
     def __init__(self, p0, quat0, duration):
         self.p0 = p0
         self.quat0 = quat0
+        self.duration = duration
+        self.t_acc = 0.1 * duration
 
     def sample_linear(self, t):
-        v = 0.25
-        w = 1.0
+        # v = 0.25 and w = 1.0 are as aggressive as I want to go, but they are
+        # quite impressive
+        v_max = 0.25  # linear velocity
+        A_max = 1.0  # sine amplitude
+        w = 1.0  # sine frequency
+
+        v = trapezoidal_velocity(v_max, t, self.t_acc, self.duration)
+        A = trapezoidal_velocity(A_max, t, self.t_acc, self.duration)
 
         x = self.p0[0] + v * t
-        y = self.p0[1] + np.sin(w * t)
+        y = self.p0[1] + A * np.sin(w * t)
         z = self.p0[2]
 
         dx = v
-        dy = w * np.cos(w * t)
+        dy = w * A * np.cos(w * t)
         dz = 0
 
         return np.array([x, y, z]), np.array([dx, dy, dz])
@@ -118,6 +127,8 @@ class SineXYTrajectory(object):
 
 class SineYZTrajectory(object):
     ''' Move sideways while the EE traces a sine wave in the y-z plane. '''
+    # TODO this trajectory doesn't work that well and as such isn't very
+    # interesting
     def __init__(self, p0, quat0, duration):
         self.p0 = p0
         self.quat0 = quat0
