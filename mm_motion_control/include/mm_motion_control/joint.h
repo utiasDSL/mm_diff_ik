@@ -51,6 +51,9 @@ class JointControlNode {
                 rate.sleep();
             }
 
+            // TODO hack to temporarily fix joint state initialization issue
+            ros::Duration(1.0).sleep();
+
             ROS_INFO("Joint control loop started, going home...");
 
             while (ros::ok()) {
