@@ -72,6 +72,9 @@ class IKOptimizer {
 
             // Minimize velocity objective.
             JointMatrix Q1 = JointMatrix::Identity(); // norm weighting
+            // Q1(0,0) = 10;
+            // Q1(1,1) = 10;
+            // Q1(2,2) = 10;
             JointVector C1 = JointVector::Zero();
 
             // Manipulability objective.
