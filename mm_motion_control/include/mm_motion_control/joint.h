@@ -17,6 +17,10 @@ namespace mm {
 
 const static JointMatrix K = JointMatrix::Identity();
 
+const static JointVector HOME((JointVector()
+            << -1.0, 0.0, 0.0,
+                0.0, -0.75*M_PI, -M_PI_2, -0.75*M_PI, -M_PI_2, M_PI_2).finished());
+
 
 class JointControlNode {
     public:
