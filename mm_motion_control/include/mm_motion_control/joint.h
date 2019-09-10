@@ -52,7 +52,8 @@ class JointControlNode {
             }
 
             // TODO hack to temporarily fix joint state initialization issue
-            ros::Duration(1.0).sleep();
+            // should no longer be necessary---will test
+            // ros::Duration(1.0).sleep();
 
             ROS_INFO("Joint control loop started, going home...");
 
