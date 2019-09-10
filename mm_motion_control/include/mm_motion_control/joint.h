@@ -15,11 +15,12 @@
 
 namespace mm {
 
-const static JointMatrix K = 0.25*JointMatrix::Identity();
+const static JointMatrix K = 0.5*JointMatrix::Identity();
 
 const static JointVector HOME((JointVector()
             << -1.0, 0.0, 0.0,
                 0.0, -0.75*M_PI, -M_PI_2, -0.75*M_PI, -M_PI_2, M_PI_2).finished());
+const static double MAX_DQ = 0.2;
 
 
 class JointControlNode {
@@ -68,6 +69,16 @@ class JointControlNode {
                 }
 
                 JointVector dq_cmd = K * q_err;
+
+                // Bound commands for base joints, which could be quite large.
+                for (int i = 0; i < 3; ++i) {
+                    if (dq_cmd(i) > MAX_DQ) {
+                        dq_cmd(i) = MAX_DQ;
+                    } else if (dq_cmd(i) < -MAX_DQ) {
+                        dq_cmd(i) = -MAX_DQ;
+                    }
+                }
+
                 publish_joint_speeds(dq_cmd);
 
                 rate.sleep();
