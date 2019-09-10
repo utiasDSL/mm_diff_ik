@@ -76,7 +76,7 @@ def trapezoidal_velocity(v_max, t, t_acc, duration):
 class LineTrajectory(object):
     ''' Straight line in x-direction. '''
     def __init__(self, p0, quat0, duration, dt=0.1):
-        self.p = p0
+        self.p0 = p0
         self.quat0 = quat0
         self.duration = duration
         self.t_acc = 0.1 * self.duration  # TODO may need tuning
@@ -85,14 +85,16 @@ class LineTrajectory(object):
     def sample_linear(self, t):
         # v_max = 0.5  # for speed
         v_max = 0.1  # for obstacles
-        v = trapezoidal_velocity(v_max, t, self.t_acc, self.duration)
+        #v = trapezoidal_velocity(v_max, t, self.t_acc, self.duration)
+        v = v_max
 
-        self.p[0] += v * self.dt
+        p = self.p0 + np.array([v * t, 0, 0])
+        # self.p[0] += v * self.dt
 
         dx = v
         dy = dz = 0
 
-        return self.p, np.array([dx, dy, dz])
+        return p, np.array([dx, dy, dz])
 
     def sample_rotation(self, t):
         return self.quat0, np.zeros(3)
@@ -101,7 +103,7 @@ class LineTrajectory(object):
 class SineXYTrajectory(object):
     ''' Move forward while the EE traces a sine wave in the x-y plane. '''
     def __init__(self, p0, quat0, duration, dt=0.1):
-        self.p = p0
+        self.p0 = p0
         self.quat0 = quat0
         self.duration = duration
         self.t_acc = 0.1 * duration
@@ -112,14 +114,17 @@ class SineXYTrajectory(object):
         # quite impressive
         v_max = 0.1  # linear velocity
         A_max = 1.0  # sine amplitude
-        w = 0.25  # sine frequency
+        # w = 0.25  # sine frequency
+        w = 2 * np.pi / self.duration
 
-        v = trapezoidal_velocity(v_max, t, self.t_acc, self.duration)
-        A = trapezoidal_velocity(A_max, t, self.t_acc, self.duration)
+        # v = trapezoidal_velocity(v_max, t, self.t_acc, self.duration)
+        # A = trapezoidal_velocity(A_max, t, self.t_acc, self.duration)
+        v = v_max
+        A = A_max
 
-        # self.p += np.array([v * t, , 0])
-        self.p[0] += v * self.dt
-        self.p[1] = A * np.sin(w * t)
+        p = self.p0 + np.array([v * t, A * np.sin(w * t), 0])
+        # self.p[0] += v * self.dt
+        # self.p[1] = A * np.sin(w * t)
 
         # x = self.p0[0] + v * t
         # y = self.p0[1] + A * np.sin(w * t)
@@ -129,7 +134,7 @@ class SineXYTrajectory(object):
         dy = w * A * np.cos(w * t)
         dz = 0
 
-        return self.p, np.array([dx, dy, dz])
+        return p, np.array([dx, dy, dz])
 
     def sample_rotation(self, t):
         return self.quat0, np.zeros(3)
@@ -221,20 +226,20 @@ class SpiralTrajectory(object):
         self.p0 = p0
         self.quat0 = quat0
         self.duration = duration
-        self.w = 0.5
 
     def sample_linear(self, t):
-        v = 0.05
+        v = 0.1
+        w = 0.5
         r = 0.01
         R = r * t
 
         x = v * t
-        y = self.p0[1] + R * np.cos(self.w * t) - R
-        z = self.p0[2] + R * np.sin(self.w * t)
+        y = self.p0[1] + R * np.cos(w * t) - R
+        z = self.p0[2] + R * np.sin(w * t)
 
-        dx = 0
-        dy = -self.w * R * np.sin(self.w * t)
-        dz =  self.w * R * np.cos(self.w * t)
+        dx = v
+        dy = -r*w*t*np.cos(w*t)*np.sin(w*t) - r
+        dz = r*w*t*np.sin(w*t)*np.cos(w*t)
 
         return np.array([x, y, z]), np.array([dx, dy, dz])
 

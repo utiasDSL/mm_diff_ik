@@ -36,15 +36,15 @@ def plot_pose_error(pose_msgs):
     plt.xlabel('Time (s)')
     plt.ylabel('Error (m)')
 
-    plt.figure()
-    plt.plot(t, qx, label='x')
-    plt.plot(t, qy, label='y')
-    plt.plot(t, qz, label='z')
-    plt.grid()
-    plt.legend()
-    plt.title('Rotational End Effector Pose Error')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Error (rad)')
+    # plt.figure()
+    # plt.plot(t, qx, label='x')
+    # plt.plot(t, qy, label='y')
+    # plt.plot(t, qz, label='z')
+    # plt.grid()
+    # plt.legend()
+    # plt.title('Rotational End Effector Pose Error')
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Error (rad)')
 
 
 def plot_pose_actual_vs_desired(pose_msgs):
@@ -85,15 +85,15 @@ def plot_pose_actual_vs_desired(pose_msgs):
     plt.xlabel('Time (s)')
     plt.ylabel('Position (m)')
 
-    plt.figure()
-    plt.plot(t, qdx, label='x')
-    plt.plot(t, qdy, label='y')
-    plt.plot(t, qdz, label='z')
-    plt.grid()
-    plt.legend()
-    plt.title('Rotational End Effector Desired Pose')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Distance (rad)')
+    # plt.figure()
+    # plt.plot(t, qdx, label='x')
+    # plt.plot(t, qdy, label='y')
+    # plt.plot(t, qdz, label='z')
+    # plt.grid()
+    # plt.legend()
+    # plt.title('Rotational End Effector Desired Pose')
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Distance (rad)')
 
 
 def plot_manipulability(mm_joint_states_msgs):
