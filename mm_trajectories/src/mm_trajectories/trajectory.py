@@ -226,20 +226,20 @@ class SpiralTrajectory(object):
         self.p0 = p0
         self.quat0 = quat0
         self.duration = duration
-        self.w = 0.5
 
     def sample_linear(self, t):
         v = 0.1
+        w = 0.5
         r = 0.01
         R = r * t
 
         x = v * t
-        y = self.p0[1] + R * np.cos(self.w * t) - R
-        z = self.p0[2] + R * np.sin(self.w * t)
+        y = self.p0[1] + R * np.cos(w * t) - R
+        z = self.p0[2] + R * np.sin(w * t)
 
-        dx = 0
-        dy = -self.w * R * np.sin(self.w * t)
-        dz =  self.w * R * np.cos(self.w * t)
+        dx = v
+        dy = -r*w*t*np.cos(w*t)*np.sin(w*t) - r
+        dz = r*w*t*np.sin(w*t)*np.cos(w*t)
 
         return np.array([x, y, z]), np.array([dx, dy, dz])
 
