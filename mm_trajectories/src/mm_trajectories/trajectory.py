@@ -49,7 +49,7 @@ def launch(trajectory, duration, dt=0.1):
     quat0 = tfs.quaternion_from_matrix(T0)
 
     print('Launched {} with duration of {} seconds.'.format(
-        type(trajectory).__name__, duration))
+        trajectory.name, duration))
 
     traj = trajectory(p0, quat0, duration)
     waypoints = create_waypoints(traj, duration, dt)
@@ -65,21 +65,25 @@ def launch(trajectory, duration, dt=0.1):
 def trapezoidal_velocity(v_max, t, t_acc, duration):
     ''' Trapezoidal velocity profile '''
     if t < t_acc:
-        v = t * v_max / t_acc
+        acc = v_max / t_acc
+        vel = t * acc
     elif t >= t_acc and t < duration - t_acc:
-        v = v_max
+        acc = 0
+        vel = v_max
     else:
-        v = (duration - t) * v_max / t_acc
-    return v
+        acc = -v_max / t_acc
+        vel = (duration - t) * v_max / t_acc
+    return vel, acc
 
 
 class LineTrajectory(object):
     ''' Straight line in x-direction. '''
     def __init__(self, p0, quat0, duration, dt=0.1):
+        self.name = 'Line'
         self.p0 = p0
         self.quat0 = quat0
         self.duration = duration
-        self.t_acc = 0.1 * self.duration  # TODO may need tuning
+        self.t_acc = 0.1 * self.duration
         self.dt = dt
 
     def sample_linear(self, t):
@@ -103,6 +107,7 @@ class LineTrajectory(object):
 class SineXYTrajectory(object):
     ''' Move forward while the EE traces a sine wave in the x-y plane. '''
     def __init__(self, p0, quat0, duration, dt=0.1):
+        self.name = 'Sine'
         self.p0 = p0
         self.quat0 = quat0
         self.duration = duration
@@ -140,35 +145,10 @@ class SineXYTrajectory(object):
         return self.quat0, np.zeros(3)
 
 
-# class SineYZTrajectory(object):
-#     ''' Move sideways while the EE traces a sine wave in the y-z plane. '''
-#     # TODO this trajectory doesn't work that well and as such isn't very
-#     # interesting
-#     def __init__(self, p0, quat0, duration):
-#         self.p0 = p0
-#         self.quat0 = quat0
-#
-#     def sample_linear(self, t):
-#         v = 0.1
-#         w = 0.1
-#
-#         x = self.p0[0]
-#         y = self.p0[1] + v * t
-#         z = self.p0[2] + np.sin(w * t)
-#
-#         dx = 0
-#         dy = v
-#         dz = w * np.cos(w * t)
-#
-#         return np.array([x, y, z]), np.array([dx, dy, dz])
-#
-#     def sample_rotation(self, t):
-#         return self.quat0, np.zeros(3)
-
-
 class RotationalTrajectory(object):
     ''' Rotate the EE about the z-axis with no linear movement. '''
     def __init__(self, p0, quat0, duration):
+        self.name = 'Rotational'
         self.p0 = p0
         self.quat0 = quat0
 
@@ -190,6 +170,7 @@ class RotationalTrajectory(object):
 
 class CircleTrajectory(object):
     def __init__(self, p0, quat0, duration):
+        self.name = 'Figure 8'
         self.p0 = p0
         self.quat0 = quat0
         self.duration = duration
@@ -223,6 +204,7 @@ class CircleTrajectory(object):
 
 class SpiralTrajectory(object):
     def __init__(self, p0, quat0, duration, dt=0.1):
+        self.name = 'Spiral'
         self.p0 = p0
         self.quat0 = quat0
         self.duration = duration
@@ -249,6 +231,7 @@ class SpiralTrajectory(object):
 
 class SquareTrajectory(object):
     def __init__(self, p0, quat0, duration):
+        self.name = 'Square'
         self.p0 = p0
         self.quat0 = quat0
         self.duration = duration
