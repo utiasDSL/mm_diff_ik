@@ -36,7 +36,7 @@ class JointControlNode {
                     "/ridgeback_velocity_controller/cmd_vel", 1);
 
             q_act = JointVector::Zero();
-            q_des = JointVector::Zero(); // TODO set based on real platform
+            q_des = HOME;
 
             joint_state_rec = false;
         }
