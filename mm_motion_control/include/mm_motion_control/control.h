@@ -76,7 +76,8 @@ class IKController {
                            const Eigen::Vector3d&    pos_des,
                            const Eigen::Quaterniond& quat_des,
                            const Eigen::Vector3d&    pos_err,
-                           const Eigen::Quaterniond& quat_err);
+                           const Eigen::Quaterniond& quat_err,
+                           const Eigen::Vector3d&    vel_des);
 }; // class IKController
 
 

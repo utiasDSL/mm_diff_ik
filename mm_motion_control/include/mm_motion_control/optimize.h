@@ -112,8 +112,8 @@ class IKOptimizer {
             JacobianMatrix J;
             Kinematics::jacobian(q, J);
 
-            Eigen::Matrix<double, 6, 9> Aeq = J;
-            Eigen::Matrix<double, 6, 1> Beq = ee_vel;
+            Eigen::Matrix<double, 3, 9> Aeq = J.topRows<3>();
+            Eigen::Matrix<double, 3, 1> Beq = ee_vel.topRows<3>();
 
             /* INEQUALITY CONSTRAINTS */
 
@@ -145,7 +145,7 @@ class IKOptimizer {
 
             // Solve the QP.
             // Arguments: # variables, # eq constraints, # ineq constraints
-            Eigen::QuadProgDense qp(NUM_JOINTS, 6, num_ineq);
+            Eigen::QuadProgDense qp(NUM_JOINTS, 3, num_ineq);
             bool success = qp.solve(Q, C, Aeq, Beq, Aineq, bineq);
             dq_opt = qp.result();
 

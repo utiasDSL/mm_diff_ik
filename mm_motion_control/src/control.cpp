@@ -106,7 +106,7 @@ bool IKController::update(const Vector3d& pos_des, const Quaterniond& quat_des,
     // Optimize to solve IK problem.
     bool success = optimizer.solve(q_act, vel_cmd, obstacles, dt, dq_cmd);
 
-    publish_state(now, pos_act, quat_act, pos_des, quat_des, pos_err, quat_err);
+    publish_state(now, pos_act, quat_act, pos_des, quat_des, pos_err, quat_err, v_ff);
 
     return success;
 }
@@ -118,7 +118,8 @@ void IKController::publish_state(const ros::Time& time,
                                  const Vector3d& pos_des,
                                  const Quaterniond& quat_des,
                                  const Vector3d& pos_err,
-                                 const Quaterniond& quat_err) {
+                                 const Quaterniond& quat_err,
+                                 const Vector3d& vel_des) {
     if (state_pub->trylock()) {
         geometry_msgs::Pose pose_act_msg, pose_des_msg, pose_err_msg;
 
@@ -129,6 +130,10 @@ void IKController::publish_state(const ros::Time& time,
         state_pub->msg_.actual = pose_act_msg;
         state_pub->msg_.desired = pose_des_msg;
         state_pub->msg_.error = pose_err_msg;
+
+        state_pub->msg_.twist_desired.linear.x = vel_des(0);
+        state_pub->msg_.twist_desired.linear.y = vel_des(1);
+        state_pub->msg_.twist_desired.linear.z = vel_des(2);
 
         state_pub->msg_.header.frame_id = "world";
         state_pub->msg_.header.stamp = time;

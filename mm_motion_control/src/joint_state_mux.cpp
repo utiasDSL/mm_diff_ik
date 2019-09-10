@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
   mm::JointStateMux mux;
   mux.init(nh);
 
-  ros::Rate rate(100);
+  ros::Rate rate(125);
 
   while (ros::ok()) {
     ros::spinOnce();
