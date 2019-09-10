@@ -233,13 +233,13 @@ class SpiralTrajectory(object):
         r = 0.01
         R = r * t
 
-        x = v * t
+        x = self.p0[0] + v * t
         y = self.p0[1] + R * np.cos(w * t) - R
         z = self.p0[2] + R * np.sin(w * t)
 
         dx = v
-        dy = -r*w*t*np.cos(w*t)*np.sin(w*t) - r
-        dz = r*w*t*np.sin(w*t)*np.cos(w*t)
+        dy = r*(np.cos(w*t) - w*t*np.sin(w*t) - 1)
+        dz = r*(np.sin(w*t) - w*t*np.sin(w*t))
 
         return np.array([x, y, z]), np.array([dx, dy, dz])
 
