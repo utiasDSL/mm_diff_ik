@@ -36,15 +36,15 @@ def plot_pose_error(pose_msgs):
     plt.xlabel('Time (s)')
     plt.ylabel('Error (m)')
 
-    plt.figure()
-    plt.plot(t, qx, label='x')
-    plt.plot(t, qy, label='y')
-    plt.plot(t, qz, label='z')
-    plt.grid()
-    plt.legend()
-    plt.title('Rotational End Effector Pose Error')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Error (rad)')
+    # plt.figure()
+    # plt.plot(t, qx, label='x')
+    # plt.plot(t, qy, label='y')
+    # plt.plot(t, qz, label='z')
+    # plt.grid()
+    # plt.legend()
+    # plt.title('Rotational End Effector Pose Error')
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Error (rad)')
 
 
 def plot_pose_actual_vs_desired(pose_msgs):
@@ -58,17 +58,17 @@ def plot_pose_actual_vs_desired(pose_msgs):
     pdy = [p.y for p in pds]
     pdz = [p.z for p in pds]
 
-    qdx = [q.x for q in qds]
-    qdy = [q.y for q in qds]
-    qdz = [q.z for q in qds]
+    # qdx = [q.x for q in qds]
+    # qdy = [q.y for q in qds]
+    # qdz = [q.z for q in qds]
 
     pax = [p.x for p in pas]
     pay = [p.y for p in pas]
     paz = [p.z for p in pas]
 
-    qax = [q.x for q in qas]
-    qay = [q.y for q in qas]
-    qaz = [q.z for q in qas]
+    # qax = [q.x for q in qas]
+    # qay = [q.y for q in qas]
+    # qaz = [q.z for q in qas]
 
     plt.figure()
     plt.plot(t, pdx, 'r', label='$x_d$')
@@ -79,21 +79,33 @@ def plot_pose_actual_vs_desired(pose_msgs):
     plt.plot(t, pay, 'g--', label='$y_a$')
     plt.plot(t, paz, 'b--', label='$z_a$')
 
+
     plt.grid()
     plt.legend()
     plt.title('End Effector Actual and Desired Position')
     plt.xlabel('Time (s)')
     plt.ylabel('Position (m)')
 
+    vx = [msg.twist_desired.linear.x for msg in pose_msgs]
+    vy = [msg.twist_desired.linear.y for msg in pose_msgs]
+    vz = [msg.twist_desired.linear.z for msg in pose_msgs]
+
     plt.figure()
-    plt.plot(t, qdx, label='x')
-    plt.plot(t, qdy, label='y')
-    plt.plot(t, qdz, label='z')
-    plt.grid()
+    plt.title('Feedforward velocity')
+    plt.plot(t, vx, label='vx')
+    plt.plot(t, vy, label='vy')
+    plt.plot(t, vz, label='vz')
     plt.legend()
-    plt.title('Rotational End Effector Desired Pose')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Distance (rad)')
+
+    # plt.figure()
+    # plt.plot(t, qdx, label='x')
+    # plt.plot(t, qdy, label='y')
+    # plt.plot(t, qdz, label='z')
+    # plt.grid()
+    # plt.legend()
+    # plt.title('Rotational End Effector Desired Pose')
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Distance (rad)')
 
 
 def plot_manipulability(mm_joint_states_msgs):
