@@ -34,18 +34,22 @@ def main():
 
     # rc('text', usetex=True)
 
-    font_size = 10
-    params = {
-       'axes.labelsize': font_size,
-       'font.size': font_size,
-       'legend.fontsize': font_size,
-       'xtick.labelsize': font_size,
-       'ytick.labelsize': font_size,
-       'figure.figsize': [6, 4]  # Set aspect ratio.
-    }
-    plt.rcParams.update(params)
+    # font_size = 10
+    # params = {
+    #    'axes.labelsize': font_size,
+    #    'font.size': font_size,
+    #    'legend.fontsize': font_size,
+    #    'xtick.labelsize': font_size,
+    #    'ytick.labelsize': font_size,
+    #    'figure.figsize': [6, 4]  # Set aspect ratio.
+    # }
+    # plt.rcParams.update(params)
 
-    fig = plt.figure(dpi=40)
+    fig = plt.figure(figsize=(3.25, 2.5))
+    plt.rcParams.update({'font.size': 8,
+                         'text.usetex': True,
+                         'text.latex.unicode': True})
+    # matplotlib.rcParams['text.latex.unicode']=True
     ax = fig.add_subplot(111, projection='3d')
 
     ax.zaxis.labelpad = 40
@@ -56,8 +60,6 @@ def main():
     plot_traj(square, ax, 'Square')
     plot_traj(spiral, ax, 'Spiral')
 
-    # ax.set_title('End Effector Trajectories')
-
     ax.set_xlim([-0, 3])
     ax.set_ylim([-1.0, 1.0])
     ax.set_zlim([-0.5, 0.5])
@@ -66,9 +68,18 @@ def main():
     ax.set_yticks([-1, 0, 1])
     ax.set_zticks([-0.5, 0, 0.5])
 
-    ax.set_xlabel('\nx [m]', fontweight='normal')
-    ax.set_ylabel('\ny [m]', fontweight='normal')
-    ax.set_zlabel('\nz [m]', fontweight='normal', linespacing=7)
+    # ax.tick_params(axis='z', which='major', pad=30)
+    ax.zaxis.set_tick_params(pad=50)
+
+    # ax.set_zticklabels(['$\\minus0.5$', '0', '0.5'])
+
+    # ax.set_xlabel('$x$ (m)', fontweight='normal')
+    # ax.set_ylabel('$y$ (m)', fontweight='normal')
+    # ax.set_zlabel('$z$ (m)', fontweight='normal', linespacing=7)
+
+    ax.annotate('$x$ (m)', (170, 15), xycoords='figure pixels')
+    ax.annotate('$y$ (m)', (40, 15), xycoords='figure pixels')
+    ax.annotate('$z$ (m)', (5, 70), xycoords='figure pixels')
 
     # set background colors to white
     ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
@@ -81,10 +92,11 @@ def main():
 
     ax.view_init(elev=37, azim=-135)
 
-    # ax.w_xaxis.set_label_coords(0, 0)
-    ax.legend()
+    ax.legend(labelspacing=0.1, borderpad=0.2, bbox_to_anchor=(0.5, 1))
 
-    fig.savefig('trajectories.pdf', bbox_inches='tight', pad_inches=0.2)
+    fig.tight_layout(pad=1)
+    fig.savefig('trajectories.pdf')
+    # fig.savefig('trajectories.pdf', bbox_inches='tight', pad_inches=0.2)
 
     plt.show()
 
