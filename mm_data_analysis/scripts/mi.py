@@ -79,25 +79,34 @@ def main():
         mi2.append(mi)
         f2.append(f)
 
-    plt.figure()
+    # figure size in inches - fixed to 3.25" width
+    fig = plt.figure(figsize=(3.25, 2))
+    plt.rcParams.update({'font.size': 8,
+                         'text.usetex': True})
+
+    cs = ['r', 'b', 'g', 'c', 'm', 'k']
+    plt.plot(t0, mi0, label='$\\alpha=0$', linewidth=2, c=cs[0])
     for i in xrange(len(t1)):
-        plt.plot(t1[i], mi1[i], label='$\\alpha={}$'.format(WEIGHTS[i]), linewidth=3)
-    plt.legend()
-    plt.title('First-order Approximation')
+        plt.plot(t1[i], mi1[i], label='$\\alpha={}$'.format(WEIGHTS[i]), linewidth=2, c=cs[i+1])
+
+    plt.legend(labelspacing=0, borderpad=0.1, ncol=2, loc=0)
+    # plt.title('First-order Approximation')
     plt.xlabel('Time (s)')
     plt.ylabel('Manipulability Index')
 
-    plt.figure()
-    for i in xrange(len(t1)):
-        plt.plot(t2[i], mi2[i], label='$\\alpha={}$'.format(WEIGHTS[i]), linewidth=3)
-    plt.legend()
-    plt.title('Second-order Approximation')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Manipulability Index')
+    # plt.figure()
+    # for i in xrange(len(t1)):
+    #     plt.plot(t2[i], mi2[i], label='$\\alpha={}$'.format(WEIGHTS[i]), linewidth=3)
+    # plt.legend()
+    # plt.title('Second-order Approximation')
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Manipulability Index')
 
     print('avg freq (1st) = {}'.format(np.mean(f1)))
     print('avg freq (2nd) = {}'.format(np.mean(f2)))
 
+    fig.tight_layout(pad=0.1)
+    fig.savefig('mi.pdf')
     plt.show()
 
 
