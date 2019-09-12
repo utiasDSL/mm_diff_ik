@@ -48,9 +48,6 @@ def launch(trajectory, duration, dt=0.1):
     p0 = tfs.translation_from_matrix(T0)
     quat0 = tfs.quaternion_from_matrix(T0)
 
-    print('Launched {} with duration of {} seconds.'.format(
-        trajectory.name, duration))
-
     traj = trajectory(p0, quat0, duration)
     waypoints = create_waypoints(traj, duration, dt)
 
@@ -60,6 +57,9 @@ def launch(trajectory, duration, dt=0.1):
     msg.dt = rospy.Duration(dt)
 
     traj_pub.publish(msg)
+
+    print('Launched {} with duration of {} seconds.'.format(
+        traj.name, duration))
 
 
 def trapezoidal_velocity(v_max, t, t_acc, duration):

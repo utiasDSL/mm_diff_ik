@@ -124,8 +124,9 @@ class ForceControlNode(object):
             desired = comp * np.sign(force_world) * CONTACT_FORCE
 
             # Bound force input so it can only be between +-FORCE_THRESHOLD
-            force_in = util.bound_array(force_world * comp, -MAX_INPUT_FORCE,
-                                        MAX_INPUT_FORCE)
+            # force_in = util.bound_array(force_world * comp, -MAX_INPUT_FORCE,
+            #                             MAX_INPUT_FORCE)
+            force_in = force_world * comp
 
             # Reverse input so that output offset pushes back against applied
             # force.

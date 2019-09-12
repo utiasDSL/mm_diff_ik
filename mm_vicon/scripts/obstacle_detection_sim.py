@@ -5,7 +5,7 @@ from mm_msgs.msg import Obstacle, Obstacles
 
 
 # Radius around obstacle centres
-R = 0.3
+R = 0.1
 HZ = 100
 
 
@@ -32,11 +32,16 @@ def main():
     rospy.init_node('obstacle_detection')
 
     o1 = Obstacle()
-    o1.centre.x = 1.0
-    o1.centre.y = 0.0
+    o1.centre.x = 0.0
+    o1.centre.y = -0.5
     o1.radius   = R
 
-    obstacles = [o1]
+    o2 = Obstacle()
+    o2.centre.x = 1.0
+    o2.centre.y = 0.5
+    o2.radius   = R
+
+    obstacles = [o1, o2]
 
     rospy.loginfo('Simulated obstacle detection started.')
     node = ObstacleDetectionNodeSim(obstacles)

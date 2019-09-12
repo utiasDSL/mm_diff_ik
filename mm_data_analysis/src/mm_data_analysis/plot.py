@@ -4,8 +4,7 @@ from __future__ import print_function
 import matplotlib.pyplot as plt
 import numpy as np
 
-import mm_kinematics.kinematics as kinematics
-from mm_data_analysis.util import parse_time, vec3_msg_to_np
+from mm_data_analysis.util import parse_time, vec3_msg_to_np, trim_to_traj
 
 import IPython
 
@@ -108,24 +107,6 @@ def plot_pose_actual_vs_desired(pose_msgs):
     # plt.ylabel('Distance (rad)')
 
 
-def plot_manipulability(mm_joint_states_msgs):
-    t = parse_time(mm_joint_states_msgs)
-    qs = np.array([msg.position for msg in mm_joint_states_msgs])
-
-    # calculate MI at each timestep
-    mi = np.zeros(len(t))
-    for i in xrange(len(mi)):
-        mi[i] = kinematics.manipulability(qs[i,:])
-
-    plt.figure()
-    plt.plot(t, mi)
-    plt.grid()
-    plt.legend()
-    plt.title('Manipulability Index')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Manipulability Index')
-
-
 def plot_joints(mm_joint_states_msgs, idx=range(9)):
     t = parse_time(mm_joint_states_msgs)
     qs = np.array([msg.position for msg in mm_joint_states_msgs])
@@ -182,21 +163,7 @@ def plot_force_raw_vs_filtered(force_state_msgs):
 
 
 def plot_forces(force_state_msgs, pose_msgs):
-    t0 = pose_msgs[0].header.stamp.to_sec()
-    tf = pose_msgs[-1].header.stamp.to_sec()
-
-    # first isolate the window of force readings during the trajectory
-    for i in xrange(len(force_state_msgs)):
-        if force_state_msgs[i].header.stamp.to_sec() > t0:
-            i_0 = i
-            break
-    for i in xrange(len(force_state_msgs)):
-        if force_state_msgs[i].header.stamp.to_sec() > tf:
-            i_f = i - 1
-            break
-
-    force_state_msgs = force_state_msgs[i_0:i_f+1]
-
+    force_state_msgs = trim_to_traj(force_state_msgs, pose_msgs)
     t_force = parse_time(force_state_msgs)
     f = vec3_msg_to_np([msg.force_world for msg in force_state_msgs])
 
