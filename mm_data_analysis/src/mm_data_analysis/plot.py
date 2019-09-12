@@ -167,59 +167,53 @@ def plot_forces(force_state_msgs, pose_msgs):
     t_force = parse_time(force_state_msgs)
     f = vec3_msg_to_np([msg.force_world for msg in force_state_msgs])
 
-    # font_size = 16
-    # params = {
-    #    'axes.labelsize': font_size,
-    #    'font.size': font_size,
-    #    'legend.fontsize': font_size,
-    #    'xtick.labelsize': font_size,
-    #    'ytick.labelsize': font_size,
-    # }
-    # plt.rcParams.update(params)
+    fig = plt.figure(figsize=(3.25, 3))
+    plt.rcParams.update({'font.size': 8,
+                         'text.usetex': True,
+                         'legend.fontsize': 8})
 
-    fig = plt.figure()
-
-    plt.subplot(311)
-    plt.plot(t_force, f[:,0], label='$f_x$', c='r', linewidth=2)
-    plt.plot(t_force, f[:,1], label='$f_y$', c='b', linewidth=2)
-    plt.plot(t_force, f[:,2], label='$f_z$', c='g', linewidth=2)
-    plt.plot([t_force[0], t_force[-1]], [5, 5], color='k', linestyle='dashed', linewidth=2)
-    plt.plot([t_force[0], t_force[-1]], [-5, -5], color='k', linestyle='dashed', linewidth=2)
-    plt.ylabel('Force (N)')
-    plt.xticks([])
+    plt.subplot(211)
+    ax = plt.gca()
+    plt.plot(t_force, f[:,0], label='$f_x$', c='r', linewidth=1)
+    plt.plot(t_force, f[:,1], label='$f_y$', c='b', linewidth=1)
+    plt.plot(t_force, f[:,2], label='$f_z$', c='g', linewidth=1)
+    plt.plot([t_force[0], t_force[-1]], [5, 5], color='k', linestyle='dashed', linewidth=1)
+    plt.plot([t_force[0], t_force[-1]], [-5, -5], color='k', linestyle='dashed', linewidth=1)
+    plt.ylabel('Force (N)', labelpad=0)
+    # plt.xticks([])
+    ax.set_xticklabels([])
     plt.yticks([-10, 0, 10, 20])
-    plt.legend()
+    plt.legend(labelspacing=0, borderpad=0.3, loc=2)
 
     t_pose = parse_time(pose_msgs)
     pds = vec3_msg_to_np([msg.desired.position for msg in pose_msgs])
-    pes = vec3_msg_to_np([msg.error.position for msg in pose_msgs])
+    # pes = vec3_msg_to_np([msg.error.position for msg in pose_msgs])
 
     x0 = pds[0,0]
     xf = pds[-1,0] - force_state_msgs[-1].position_offset.x
     y0 = pds[0,1]
     z0 = pds[0,2]
 
-    plt.subplot(312)
+    plt.subplot(212)
 
-    plt.plot(t_pose, pds[:,0], label='$x$', c='r', linewidth=2)
-    plt.plot(t_pose, pds[:,1], label='$y$', c='b', linewidth=2)
-    plt.plot(t_pose, pds[:,2], label='$z$', c='g', linewidth=2)
+    plt.plot(t_pose, pds[:,0], label='$x$', c='r', linewidth=1)
+    plt.plot(t_pose, pds[:,1], label='$y$', c='b', linewidth=1)
+    plt.plot(t_pose, pds[:,2], label='$z$', c='g', linewidth=1)
 
-    plt.plot([t_pose[0], t_pose[-1]], [x0, xf], c='r', linestyle='dashed', linewidth=2)
-    plt.plot([t_pose[0], t_pose[-1]], [y0, y0], c='b', linestyle='dashed', linewidth=2)
-    plt.plot([t_pose[0], t_pose[-1]], [z0, z0], c='g', linestyle='dashed', linewidth=2)
+    plt.plot([t_pose[0], t_pose[-1]], [x0, xf], c='r', linestyle='dashed', linewidth=1)
+    plt.plot([t_pose[0], t_pose[-1]], [y0, y0], c='b', linestyle='dashed', linewidth=1)
+    plt.plot([t_pose[0], t_pose[-1]], [z0, z0], c='g', linestyle='dashed', linewidth=1)
 
-    plt.legend()
-    plt.ylabel('Desired position (m)')
-    plt.xticks([])
+    plt.legend(labelspacing=0, borderpad=0.3, loc=0)
+    plt.ylabel('Desired position (m)', labelpad=11)
     plt.yticks([0, 1, 2, 3])
 
-    plt.subplot(313)
-    plt.plot(t_pose, pes[:,0], label='$x$', c='r', linewidth=2)
-    plt.plot(t_pose, pes[:,1], label='$y$', c='b', linewidth=2)
-    plt.plot(t_pose, pes[:,2], label='$z$', c='g', linewidth=2)
-
+    # plt.subplot(313)
+    # plt.plot(t_pose, pes[:,0], label='$x$', c='r', linewidth=2)
+    # plt.plot(t_pose, pes[:,1], label='$y$', c='b', linewidth=2)
+    # plt.plot(t_pose, pes[:,2], label='$z$', c='g', linewidth=2)
+    #
     plt.xlabel('Time (s)')
 
-    fig.tight_layout()
-    fig.savefig('force.pdf', bbox_inches='tight', pad_inches=0.1)
+    fig.tight_layout(pad=0.1)
+    fig.savefig('force.pdf')
