@@ -9,4 +9,5 @@ rosbag record -o "$1"    \
   /vicon/ThingBase/ThingBase \
   /vicon/markers \
   /robotiq_force_torque_wrench \
-  /force_control/state
+  /force_control/state \
+  /obstacles

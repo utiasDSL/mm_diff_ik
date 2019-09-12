@@ -1,6 +1,11 @@
 import numpy as np
 
 
+def rms(e):
+    ''' Calculate root mean square of a vector of data. '''
+    return np.sqrt(np.mean(np.square(e)))
+
+
 def parse_time(msgs):
     ''' Parse time in seconds from a list of messages and normalize so t[0] = 0. '''
     t = np.array([msg.header.stamp.to_sec() for msg in msgs])
