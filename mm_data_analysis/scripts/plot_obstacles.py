@@ -74,7 +74,6 @@ def main():
     ax.add_patch(plt.Circle((p2[0], p2[1]), 0.5, color='r', linewidth=1,
                              linestyle='dashed', fill=False))
 
-
     plt.axis('scaled')
     plt.plot(OBS_X, OBS_Y, 'o', c='k')
     plt.plot(pos_bs[:,0], pos_bs[:,1], label='Base', linewidth=2, color='r')
@@ -89,6 +88,9 @@ def main():
     plt.legend(labelspacing=0.1, borderpad=0.3, loc=0)
     plt.xlim([-1.1, 3.3])
     plt.ylim([-1, 1])
+
+    ax.set_xticklabels(['', '$0$', '$1$', '$2$', '$3$', '$4$'])
+
 
     plt.yticks([-1, 0, 1])
     plt.grid()

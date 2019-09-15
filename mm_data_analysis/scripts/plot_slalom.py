@@ -110,6 +110,8 @@ def plot_force(fig):
     plt.xlim([-2.1, 4.3])
     plt.ylim([-1, 1])
 
+    ax.set_xticklabels(['', '$0$', '$1$', '$2$', '$3$', '$4$', '$5$', '$6$'])
+
     plt.yticks([-1, 0, 1])
     plt.grid()
 
