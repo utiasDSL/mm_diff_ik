@@ -1,5 +1,4 @@
 #!/usr/bin/env python2
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import rosbag
@@ -7,6 +6,9 @@ import mm_kinematics.kinematics as kinematics
 import tf.transformations as tfs
 
 import IPython
+
+
+BAG = 'bags/2019-09-12/obstacles/obs_sim_2019-09-12-14-40-06.bag'
 
 
 OBS_X = [0, 1]
@@ -26,7 +28,7 @@ def closest_dist_to_obs(ps, o):
 
 
 def main():
-    bag = rosbag.Bag(sys.argv[1])
+    bag = rosbag.Bag(BAG)
     joint_msgs = [msg for _, msg, _ in bag.read_messages('/mm_joint_states')]
     qs = [msg.position for msg in joint_msgs]
 
@@ -81,8 +83,8 @@ def main():
     plt.plot(p1[0], p1[1], markersize=10, marker='+', color='k')
     plt.plot(p2[0], p2[1], markersize=10, marker='+', color='k')
 
-    plt.xlabel('$x$ (m)')
-    plt.ylabel('$y$ (m)')
+    plt.xlabel('x (m)')
+    plt.ylabel('y (m)')
 
     plt.legend(labelspacing=0.1, borderpad=0.3, loc=0)
     plt.xlim([-1.1, 3.3])

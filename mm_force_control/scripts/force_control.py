@@ -27,7 +27,7 @@ N_BIAS = 100  # Number of samples to use for force bias estimation.
 Kp = np.zeros(3)
 Kd = np.zeros(3)
 Ki = 0.02 * np.ones(3)  # 0.02
-DECAY = 0.1
+DECAY = 0
 
 # Transform from EE frame to force torque sensor frame - just a small offset.
 e_T_f = tfs.translation_matrix([0.02, 0, 0])

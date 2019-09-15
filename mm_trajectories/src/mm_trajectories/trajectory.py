@@ -88,10 +88,10 @@ class LineTrajectory(object):
 
     def sample_linear(self, t):
         # v_max = 0.5  # for speed
-        v_max = 0.4
-        v, a = trapezoidal_velocity(v_max, t, self.t_acc, self.duration)
+        v_max = 0.1
+        # v, a = trapezoidal_velocity(v_max, t, self.t_acc, self.duration)
 
-        # v = v_max
+        v = v_max
 
         # p = self.p0 + np.array([v * t, 0, 0])
         self.p0[0] += v * self.dt

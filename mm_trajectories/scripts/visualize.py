@@ -59,9 +59,9 @@ def main():
     ax.annotate('$-0.5$', (12, 55), xycoords='figure pixels')
 
     # manually place axis labels
-    ax.annotate('$x$ (m)', (170, 15), xycoords='figure pixels')
-    ax.annotate('$y$ (m)', (40, 15), xycoords='figure pixels')
-    ax.annotate('$z$ (m)', (4, 105), xycoords='figure pixels')
+    ax.annotate('x (m)', (170, 15), xycoords='figure pixels')
+    ax.annotate('y (m)', (40, 15), xycoords='figure pixels')
+    ax.annotate('z (m)', (4, 105), xycoords='figure pixels')
 
     # set background colors to white
     ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))

@@ -174,13 +174,14 @@ def plot_forces(force_state_msgs, pose_msgs):
 
     plt.subplot(211)
     ax = plt.gca()
+
     plt.plot(t_force, f[:,0], label='$f_x$', c='r', linewidth=1)
     plt.plot(t_force, f[:,1], label='$f_y$', c='b', linewidth=1)
     plt.plot(t_force, f[:,2], label='$f_z$', c='g', linewidth=1)
     plt.plot([t_force[0], t_force[-1]], [5, 5], color='k', linestyle='dashed', linewidth=1)
     plt.plot([t_force[0], t_force[-1]], [-5, -5], color='k', linestyle='dashed', linewidth=1)
+
     plt.ylabel('Force (N)', labelpad=0)
-    # plt.xticks([])
     ax.set_xticklabels([])
     plt.yticks([-10, 0, 10, 20])
     plt.legend(labelspacing=0, borderpad=0.3, loc=2)
