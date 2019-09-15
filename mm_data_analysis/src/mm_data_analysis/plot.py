@@ -167,7 +167,7 @@ def plot_forces(force_state_msgs, pose_msgs):
     t_force = parse_time(force_state_msgs)
     f = vec3_msg_to_np([msg.force_world for msg in force_state_msgs])
 
-    fig = plt.figure(figsize=(3.25, 3))
+    fig = plt.figure(figsize=(3.25, 2.5))
     plt.rcParams.update({'font.size': 8,
                          'text.usetex': True,
                          'legend.fontsize': 8})
@@ -200,12 +200,60 @@ def plot_forces(force_state_msgs, pose_msgs):
     plt.plot(t_pose, pds[:,1], label='$y$', c='b', linewidth=1)
     plt.plot(t_pose, pds[:,2], label='$z$', c='g', linewidth=1)
 
-    plt.plot([t_pose[0], t_pose[-1]], [x0, xf], c='r', linestyle='dashed', linewidth=1)
-    plt.plot([t_pose[0], t_pose[-1]], [y0, y0], c='b', linestyle='dashed', linewidth=1)
-    plt.plot([t_pose[0], t_pose[-1]], [z0, z0], c='g', linestyle='dashed', linewidth=1)
+    plt.plot([t_pose[0], t_pose[-1]], [x0, xf], c=(0.25, 0, 0, 1), linestyle='dashed', linewidth=1)
+    plt.plot([t_pose[0], t_pose[-1]], [y0, y0], c=(0, 0, 0.25, 1), linestyle='dashed', linewidth=1)
+    plt.plot([t_pose[0], t_pose[-1]], [z0, z0], c=(0, 0.25, 0, 1), linestyle='dashed', linewidth=1)
 
     plt.legend(labelspacing=0, borderpad=0.3, loc=0)
     plt.ylabel('Desired position (m)', labelpad=11)
+    plt.yticks([0, 1, 2, 3])
+
+    # plt.subplot(313)
+    # plt.plot(t_pose, pes[:,0], label='$x$', c='r', linewidth=2)
+    # plt.plot(t_pose, pes[:,1], label='$y$', c='b', linewidth=2)
+    # plt.plot(t_pose, pes[:,2], label='$z$', c='g', linewidth=2)
+    #
+    plt.xlabel('Time (s)')
+
+    fig.tight_layout(pad=0.1)
+    fig.savefig('force.pdf')
+
+
+def plot_final(force_state_msgs, joint_state_msgs, obs_msgs, pose_msgs):
+    force_state_msgs = trim_to_traj(force_state_msgs, pose_msgs)
+    t_force = parse_time(force_state_msgs)
+    f = vec3_msg_to_np([msg.force_world for msg in force_state_msgs])
+
+    fig = plt.figure(figsize=(3.25, 3))
+    plt.rcParams.update({'font.size': 8,
+                         'text.usetex': True,
+                         'legend.fontsize': 8})
+
+    plt.subplot(211)
+    ax = plt.gca()
+    plt.plot(t_force, f[:,0], label='$f_x$', c='r', linewidth=1)
+    plt.plot(t_force, f[:,1], label='$f_y$', c='b', linewidth=1)
+    plt.plot(t_force, f[:,2], label='$f_z$', c='g', linewidth=1)
+    plt.plot([t_force[0], t_force[-1]], [5, 5], color='k', linestyle='dashed', linewidth=1)
+    plt.plot([t_force[0], t_force[-1]], [-5, -5], color='k', linestyle='dashed', linewidth=1)
+    plt.ylabel('Force (N)', labelpad=0)
+    # plt.xticks([])
+    ax.set_xticklabels([])
+    plt.yticks([-10, 0, 10, 20])
+    plt.legend(labelspacing=0, borderpad=0.3, loc=2)
+
+    t_pose = parse_time(pose_msgs)
+    pas = vec3_msg_to_np([msg.error.position for msg in pose_msgs])
+    # pes = vec3_msg_to_np([msg.error.position for msg in pose_msgs])
+
+    plt.subplot(212)
+
+    plt.plot(t_pose, pas[:,0], label='$x$', c='r', linewidth=1)
+    plt.plot(t_pose, pas[:,1], label='$y$', c='b', linewidth=1)
+    plt.plot(t_pose, pas[:,2], label='$z$', c='g', linewidth=1)
+
+    plt.legend(labelspacing=0, borderpad=0.3, loc=0)
+    plt.ylabel('End Effector position (m)')
     plt.yticks([0, 1, 2, 3])
 
     # plt.subplot(313)

@@ -88,17 +88,19 @@ class LineTrajectory(object):
 
     def sample_linear(self, t):
         # v_max = 0.5  # for speed
-        v_max = 0.1  # for obstacles
-        #v = trapezoidal_velocity(v_max, t, self.t_acc, self.duration)
-        v = v_max
+        v_max = 0.4
+        v, a = trapezoidal_velocity(v_max, t, self.t_acc, self.duration)
 
-        p = self.p0 + np.array([v * t, 0, 0])
-        # self.p[0] += v * self.dt
+        # v = v_max
+
+        # p = self.p0 + np.array([v * t, 0, 0])
+        self.p0[0] += v * self.dt
 
         dx = v
         dy = dz = 0
 
-        return p, np.array([dx, dy, dz])
+        # return p, np.array([dx, dy, dz])
+        return self.p0, np.array([dx, dy, dz])
 
     def sample_rotation(self, t):
         return self.quat0, np.zeros(3)
@@ -117,8 +119,8 @@ class SineXYTrajectory(object):
     def sample_linear(self, t):
         # v = 0.25 and w = 1.0 are as aggressive as I want to go, but they are
         # quite impressive
-        v_max = 0.1  # linear velocity
-        A_max = 1.0  # sine amplitude
+        v_max = 0.1  # linear velocity - default 0.1
+        A_max = 1.0  # sine amplitude - default 1
         # w = 0.25  # sine frequency
         w = 2 * np.pi / self.duration
 

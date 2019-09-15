@@ -9,7 +9,6 @@ import tf.transformations as tfs
 import IPython
 
 
-# TODO second point may not be correct
 OBS_X = [0, 1]
 OBS_Y = [-0.5, 0.5]
 
@@ -67,15 +66,20 @@ def main():
     ax.add_patch(plt.Circle((pos_bs[0, 0], pos_bs[0, 1]), 0.05, color='r'))
     ax.add_patch(plt.Circle((pos_es[0, 0], pos_es[0, 1]), 0.05, color='b'))
 
+    # Closest points
     ax.add_patch(plt.Circle((p1[0], p1[1]), 0.5, color='r', linewidth=1,
                              linestyle='dashed', fill=False))
     ax.add_patch(plt.Circle((p2[0], p2[1]), 0.5, color='r', linewidth=1,
                              linestyle='dashed', fill=False))
 
+
     plt.axis('scaled')
     plt.plot(OBS_X, OBS_Y, 'o', c='k')
     plt.plot(pos_bs[:,0], pos_bs[:,1], label='Base', linewidth=2, color='r')
     plt.plot(pos_es[:,0], pos_es[:,1], label='End effector', linewidth=2, color='b')
+
+    plt.plot(p1[0], p1[1], markersize=10, marker='+', color='k')
+    plt.plot(p2[0], p2[1], markersize=10, marker='+', color='k')
 
     plt.xlabel('$x$ (m)')
     plt.ylabel('$y$ (m)')
