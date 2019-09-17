@@ -167,7 +167,7 @@ def plot_forces(force_state_msgs, pose_msgs):
     t_force = parse_time(force_state_msgs)
     f = vec3_msg_to_np([msg.force_world for msg in force_state_msgs])
 
-    fig = plt.figure(figsize=(3.25, 2.5))
+    fig = plt.figure(figsize=(3.25, 2.1))
     plt.rcParams.update({'font.size': 8,
                          'text.usetex': True,
                          'legend.fontsize': 8})

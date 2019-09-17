@@ -52,9 +52,10 @@ def main():
     p1 = closest_dist_to_obs(pos_bs, o1)
     p2 = closest_dist_to_obs(pos_bs, o2)
 
-    fig = plt.figure(figsize=(3.25, 2))
+    fig = plt.figure(figsize=(3.25, 1.8))
     plt.rcParams.update({'font.size': 8,
-                         'text.usetex': True})
+                         'text.usetex': True,
+                         'legend.fontsize': 8})
     ax = plt.gca()
 
     # Obstacles

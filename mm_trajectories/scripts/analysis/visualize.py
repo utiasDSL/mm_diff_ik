@@ -29,10 +29,11 @@ def main():
     square = trajectory.SquareTrajectory(np.zeros(3), quat0, DURATION)
     spiral = trajectory.SpiralTrajectory(np.zeros(3), quat0, DURATION)
 
-    fig = plt.figure(figsize=(3.25, 2.5))
+    fig = plt.figure(figsize=(3.25, 2.3))
     plt.rcParams.update({'font.size': 8,
                          'text.usetex': True,
-                         'text.latex.unicode': True})
+                         'text.latex.unicode': True,
+                         'legend.fontsize': 8})
     ax = fig.add_subplot(111, projection='3d')
 
     ax.zaxis.labelpad = 40
@@ -61,7 +62,7 @@ def main():
     # manually place axis labels
     ax.annotate('x (m)', (170, 15), xycoords='figure pixels')
     ax.annotate('y (m)', (40, 15), xycoords='figure pixels')
-    ax.annotate('z (m)', (4, 105), xycoords='figure pixels')
+    ax.annotate('z (m)', (4, 95), xycoords='figure pixels')
 
     # set background colors to white
     ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))

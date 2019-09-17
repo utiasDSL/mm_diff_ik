@@ -44,6 +44,7 @@ def plot_line(fig):
     pos_es = np.array(pos_es)
 
     ax = plt.gca()
+    ax.set_title('Experiment 1: Trajectory Tracking', fontsize=8)
 
     # Obstacles
     for i in range(len(OBS_X)):
@@ -89,6 +90,7 @@ def plot_force(fig):
     pos_es = np.array(pos_es)
 
     ax = plt.gca()
+    ax.set_title('Experiment 2: Force Adaption', fontsize=8)
 
     # Obstacles
     for i in range(len(OBS_X)):
