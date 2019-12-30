@@ -18,7 +18,7 @@ namespace mm {
 const static JointMatrix K = 0.5*JointMatrix::Identity();
 
 const static JointVector HOME((JointVector()
-            << -2.0, 0.0, 0.0,
+            << 0.0, -1.0, M_PI_2,
                 0.0, -0.75*M_PI, -M_PI_2, -0.75*M_PI, -M_PI_2, M_PI_2).finished());
 const static double MAX_DQ = 0.2;
 

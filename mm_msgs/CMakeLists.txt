@@ -77,12 +77,21 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES mm_msgs
+  INCLUDE_DIRS include
+  LIBRARIES mm_msgs
 #  CATKIN_DEPENDS other_catkin_pkg
-#  DEPENDS system_lib
+  DEPENDS eigen
 )
 
-
 include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
+
+# Create C++ library
+add_library(${PROJECT_NAME}
+  src/conversions.cpp
+)
+target_link_libraries(${PROJECT_NAME}
+  ${catkin_LIBRARIES}
 )

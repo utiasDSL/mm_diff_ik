@@ -59,20 +59,22 @@ class IKOptimizer {
         // Create and solve the QP.
         //
         // q:      Current value of joint angles.
-        // ee_vel: Desired task space velocity of end effector.
+        // d:      d = pd - f(q)
+        // vd:     Desired task space velocity of end effector.
         // dt:     Control timestep.
         // dq_opt: Optimal values of joint velocities.
         //
         // Returns true if optimization problem was solved successfully
         // (i.e. constraints satisified).
-        bool solve(const JointVector& q, const Vector6d& ee_vel,
+        bool solve(const JointVector& q, const Vector6d& d,
+                   const Vector6d& vd,
                    const std::vector<ObstacleModel>& obstacles, double dt,
                    JointVector& dq_opt) {
             /* OBJECTIVE */
 
             // Minimize velocity objective.
             JointMatrix Q1 = JointMatrix::Identity(); // norm weighting
-            // Q1(0,0) = 10;
+            Q1(0,0) = 0.01;
             // Q1(1,1) = 10;
             // Q1(2,2) = 10;
             JointVector C1 = JointVector::Zero();
@@ -98,25 +100,34 @@ class IKOptimizer {
 
             // w1=0.1, w2=0, w3=1.0 worked well for line with no orientation control
 
-            double w1 = 1.0;  // velocity
-            double w2 = 0.0;  // manipulability
-            double w3 = 0.0; // limits
-
-            JointMatrix Q = w1*Q1 + w2*Q2 + w3*Q3;
-            JointVector C = w1*C1 + w2*C2 + w3*C3;
-
-            // JointMatrix Q = W;
-            // JointVector C = JointVector::Zero();
-
-            /* EQUALITY CONSTRAINTS */
-
             // Track the reference velocity.
             // TODO relaxation (see Dufour and Suleiman, 2017)
             JacobianMatrix J;
             Kinematics::jacobian(q, J);
 
-            Eigen::Matrix<double, 3, 9> Aeq = J.topRows<3>();
-            Eigen::Matrix<double, 3, 1> Beq = ee_vel.topRows<3>();
+            // TODO could weight this by putting another matrix between the Js
+            Eigen::Matrix<double, 6, 6> W4;
+            W4.diagonal() << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
+            JointMatrix Q4 = dt * dt * J.transpose() * W4 * J;
+            JointVector C4 = -dt * d.transpose() * W4 * J;
+
+            double w1 = 1.0;  // velocity
+            double w2 = 0.0;  // manipulability
+            double w3 = 0.0; // limits
+            double w4 = 100.0;
+
+            JointMatrix Q = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4;
+            JointVector C = w1*C1 + w2*C2 + w3*C3 + w4*C4;
+
+            /* EQUALITY CONSTRAINTS */
+
+
+            // Eigen::Matrix<double, 3, 9> Aeq = J.topRows<3>();
+            // Eigen::Matrix<double, 3, 1> Beq = ee_vel.topRows<3>();
+            // Eigen::Matrix<double, 6, 9> Aeq = J;
+            // Eigen::Matrix<double, 6, 1> Beq = vd;
+            Eigen::Matrix<double, 1, 0> Aeq;
+            Eigen::Matrix<double, 1, 0> Beq;
 
             /* INEQUALITY CONSTRAINTS */
 
@@ -148,7 +159,7 @@ class IKOptimizer {
 
             // Solve the QP.
             // Arguments: # variables, # eq constraints, # ineq constraints
-            Eigen::QuadProgDense qp(NUM_JOINTS, 3, num_ineq);
+            Eigen::QuadProgDense qp(NUM_JOINTS, 0, num_ineq);
             bool success = qp.solve(Q, C, Aeq, Beq, Aineq, bineq);
             dq_opt = qp.result();
 

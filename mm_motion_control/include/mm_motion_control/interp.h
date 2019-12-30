@@ -5,15 +5,12 @@
 #include <tf/transform_datatypes.h>
 #include <mm_msgs/PoseTrajectoryPoint.h>
 #include <mm_msgs/PoseTrajectory.h>
+#include <mm_msgs/conversions.h>
 #include <geometry_msgs/Pose.h>
 
 
 namespace mm {
 
-
-void pose_traj_point_to_eigen(const mm_msgs::PoseTrajectoryPoint& msg,
-                              Eigen::Vector3d& p, Eigen::Quaterniond& q,
-                              Eigen::Vector3d& v, Eigen::Vector3d& w);
 
 template <unsigned int N>
 class CubicInterp {
@@ -122,8 +119,6 @@ class QuaternionInterp {
 }; // class QuaternionInterp
 
 
-// TODO rename without interp---this doesn't do the raw interpolation processing!
-// + actual interpolation code should be moved to the mm_math_util package
 class PoseTrajectory {
     public:
         PoseTrajectory() {}

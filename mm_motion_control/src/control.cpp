@@ -28,7 +28,7 @@ namespace mm {
 
 // Controller gain.
 Matrix3d LINEAR_GAIN = Matrix3d::Identity();
-Matrix3d ROTATIONAL_GAIN = 0*Matrix3d::Identity();
+Matrix3d ROTATIONAL_GAIN = Matrix3d::Identity();
 
 
 // Populate Pose message from Eigen types.
@@ -86,6 +86,9 @@ bool IKController::update(const Vector3d& pos_des, const Quaterniond& quat_des,
     Vector3d rot_err;
     rot_err << quat_err.x(), quat_err.y(), quat_err.z();
 
+    Vector6d d;
+    d << pos_err, rot_err;
+
     // Eigen::AngleAxisd aa(quat_err);
     // Vector3d rot_err = aa.axis() * wrap_to_pi(aa.angle());
     // ROS_INFO_STREAM(rot_err);
@@ -104,7 +107,7 @@ bool IKController::update(const Vector3d& pos_des, const Quaterniond& quat_des,
     time_prev = now.toSec();
 
     // Optimize to solve IK problem.
-    bool success = optimizer.solve(q_act, vel_cmd, obstacles, dt, dq_cmd);
+    bool success = optimizer.solve(q_act, d, vel_cmd, obstacles, dt, dq_cmd);
 
     publish_state(now, pos_act, quat_act, pos_des, quat_des, pos_err, quat_err, v_ff);
 
