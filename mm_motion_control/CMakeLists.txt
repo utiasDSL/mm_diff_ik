@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(mm_motion_control)
 
-## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
+
+# Required for qpOASES
+add_compile_options(
+  -D__USE_LONG_INTEGERS__
+  -D__USE_LONG_FINTS__
+)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -46,6 +51,7 @@ include_directories(
   ${mm_kinematics_INCLUDE_DIRS}
   ${mm_math_util_INCLUDE_DIRS}
   /usr/local/include/eigen-quadprog
+  /usr/local/include/qpOASES
 )
 
 # Executables
@@ -56,6 +62,7 @@ add_executable(mm_control_node
 target_link_libraries(mm_control_node
   ${catkin_LIBRARIES}
   /usr/local/lib/libeigen-quadprog.so
+  /usr/local/lib/libqpOASES.so
 )
 
 add_executable(joint_state_mux
