@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include <iostream>
 
-#include "mm_motion_control/interp.h"
+#include "mm_math_util/interp.h"
 
 
 using namespace mm;

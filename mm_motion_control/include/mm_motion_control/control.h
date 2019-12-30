@@ -15,7 +15,7 @@
 #include <mm_kinematics/kinematics.h>
 
 #include "mm_motion_control/optimize.h"
-#include "mm_motion_control/interp.h"
+#include "mm_motion_control/trajectory.h"
 #include "mm_motion_control/obstacle.h"
 
 #include <geometry_msgs/Vector3.h>

@@ -80,11 +80,6 @@ target_link_libraries(home
 # )
 
 # Tests
-
-catkin_add_executable_with_gtest(test_interp
-  test/test_interp.cpp
-)
-
 catkin_add_executable_with_gtest(test_optimize
   test/test_optimize.cpp
 )

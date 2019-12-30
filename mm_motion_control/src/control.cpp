@@ -16,7 +16,7 @@
 #include <mm_math_util/wrap.h>
 
 #include "mm_motion_control/optimize.h"
-#include "mm_motion_control/interp.h"
+#include "mm_motion_control/trajectory.h"
 #include "mm_motion_control/control.h"
 #include "mm_motion_control/obstacle.h"
 
