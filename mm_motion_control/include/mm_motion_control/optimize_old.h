@@ -4,7 +4,6 @@
 #include <QuadProg.h>
 #include <ros/ros.h>
 #include <realtime_tools/realtime_publisher.h>
-#include <qpOASES/qpOASES.hpp>
 
 #include <trajectory_msgs/JointTrajectory.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -43,6 +42,7 @@ static const bool POSITIION_LIMITED[] = {
     true, true, true, true, true, true /* arm  */
 };
 
+
 // For numerical differentiation
 // NOTE pushing this down to even 1e-5 makes the numerical Hessian fail
 static const double STEP_SIZE = 1e-3;
@@ -70,19 +70,16 @@ class IKOptimizer {
                    const Vector6d& vd,
                    const std::vector<ObstacleModel>& obstacles, double dt,
                    JointVector& dq_opt) {
+            /* OBJECTIVE */
 
-            /*** OBJECTIVES ***/
-
-            // 1. Minimize velocity objective.
+            // Minimize velocity objective.
             JointMatrix Q1 = JointMatrix::Identity(); // norm weighting
-            JointVector C1 = JointVector::Zero();
-
-            // To reduce base movement, increase the base joint weighting.
-            // Q1(0,0) = 10;
+            Q1(0,0) = 0.01;
             // Q1(1,1) = 10;
             // Q1(2,2) = 10;
+            JointVector C1 = JointVector::Zero();
 
-            // 2. Manipulability objective.
+            // Manipulability objective.
             JointVector dm;
             JointMatrix Hm = JointMatrix::Zero();
             //linearize_manipulability2(q, dm, Hm);
@@ -91,8 +88,7 @@ class IKOptimizer {
             JointMatrix Q2 = -dt * dt * Hm;
             JointVector C2 = -dt * dm;
 
-            // 3. Avoid joint limits objective.
-            // TODO this is experimental
+            // Avoid joint limits objective.
             JointMatrix Q3 = dt * dt * JointMatrix::Identity();
             Q3(0,0) = 0;
             Q3(1,1) = 0;
@@ -104,12 +100,14 @@ class IKOptimizer {
 
             // w1=0.1, w2=0, w3=1.0 worked well for line with no orientation control
 
-            // 4. Track the reference velocity.
+            // Track the reference velocity.
+            // TODO relaxation (see Dufour and Suleiman, 2017)
             JacobianMatrix J;
             Kinematics::jacobian(q, J);
 
             // Error minimization objective (instead of making tracking a
             // constraint)
+            // TODO could weight this by putting another matrix between the Js
             Eigen::Matrix<double, 6, 6> W4;
             W4.diagonal() << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
             JointMatrix Q4 = dt * dt * J.transpose() * W4 * J;
@@ -117,17 +115,27 @@ class IKOptimizer {
 
             double w1 = 1.0;  // velocity
             double w2 = 0.0;  // manipulability
-            double w3 = 0.0;  // joint limits
-            double w4 = 100.0; // position error
+            double w3 = 0.0; // limits
+            double w4 = 100.0;
 
             JointMatrix Q = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4;
             JointVector C = w1*C1 + w2*C2 + w3*C3 + w4*C4;
 
-            /*** INEQUALITY CONSTRAINTS ***/
+            /* EQUALITY CONSTRAINTS */
+
+
+            // Eigen::Matrix<double, 3, 9> Aeq = J.topRows<3>();
+            // Eigen::Matrix<double, 3, 1> Beq = ee_vel.topRows<3>();
+            // Eigen::Matrix<double, 6, 9> Aeq = J;
+            // Eigen::Matrix<double, 6, 1> Beq = vd;
+            Eigen::Matrix<double, 1, 0> Aeq;
+            Eigen::Matrix<double, 1, 0> Beq;
+
+            /* INEQUALITY CONSTRAINTS */
 
             // Eigen::Matrix<double, 1, 0> Aineq, Bineq;
 
-            // Velocity damper inequality constraints
+            // Velocity damper ineq constraints
             JointVector dq_lb, dq_ub;
             velocity_damper_limits(q, dq_lb, dq_ub);
 
@@ -138,7 +146,6 @@ class IKOptimizer {
             b_lim << -dq_lb, dq_ub;
 
             // Obstacle constraints.
-            // TODO we may also want this to be an objective
             Eigen::MatrixXd A_obs;
             Eigen::VectorXd b_obs;
             Eigen::Vector2d pb(q[0], q[1]);
@@ -152,33 +159,11 @@ class IKOptimizer {
             Eigen::VectorXd bineq(num_ineq);
             bineq << b_lim, b_obs;
 
-            /*** SOLVE QP ***/
-
-            // Convert to row-major order. Only meaningful for matrices, not
-            // vectors.
-            Eigen::Matrix<qpOASES::real_t, NUM_JOINTS, NUM_JOINTS, Eigen::RowMajor> H_rowmajor = Q;
-
-            // Custom Eigen typedefs stored in row-major order to correspond to
-            // requirement by qpOASES.
-            qpOASES::real_t *H = H_rowmajor.data();
-            qpOASES::real_t *g = C.data();
-
-            qpOASES::real_t lb[9] = {-1, -1, -1, -1, -1, -1, -1, -1, -1};
-            qpOASES::real_t ub[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
-
-            qpOASES::int_t nWSR = 10;
-
-            qpOASES::QProblemB qp(9);
-            qp.init(H, g, NULL, NULL, nWSR);
-            qpOASES::real_t dq_opt_raw[NUM_JOINTS];
-            int ret = qp.getPrimalSolution(dq_opt_raw);
-
             // Solve the QP.
             // Arguments: # variables, # eq constraints, # ineq constraints
-            // Eigen::QuadProgDense qp(NUM_JOINTS, 0, num_ineq);
-            // bool success = qp.solve(Q, C, Aeq, Beq, Aineq, bineq);
-            // dq_opt = qp.result();
-            bool success = false;
+            Eigen::QuadProgDense qp(NUM_JOINTS, 0, num_ineq);
+            bool success = qp.solve(Q, C, Aeq, Beq, Aineq, bineq);
+            dq_opt = qp.result();
 
             // Examine objective function values
             double vel_obj = dq_opt.transpose() * Q1 * dq_opt; // want to minimize

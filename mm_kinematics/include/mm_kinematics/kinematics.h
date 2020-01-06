@@ -14,18 +14,19 @@ const uint32_t NUM_ARM_JOINTS = 6;
 const uint32_t NUM_JOINTS = NUM_BASE_JOINTS + NUM_ARM_JOINTS;
 
 typedef Eigen::Matrix<double, 6, 1> Vector6d;
-typedef Eigen::Matrix<double, 6, 6> Matrix6d;
+typedef Eigen::Matrix<double, 6, 6, Eigen::RowMajor> Matrix6d;
 
-typedef Eigen::Matrix<double, NUM_ARM_JOINTS,  1>               ArmJointVector;
 typedef Eigen::Matrix<double, NUM_ARM_JOINTS,  NUM_ARM_JOINTS>  ArmJointMatrix;
-typedef Eigen::Matrix<double, NUM_BASE_JOINTS, 1>               BaseJointVector;
 typedef Eigen::Matrix<double, NUM_BASE_JOINTS, NUM_BASE_JOINTS> BaseJointMatrix;
-typedef Eigen::Matrix<double, NUM_JOINTS,      1>               JointVector;
 typedef Eigen::Matrix<double, NUM_JOINTS,      NUM_JOINTS>      JointMatrix;
 
-typedef Eigen::Matrix<double, 6, NUM_BASE_JOINTS> BaseJacobianMatrix;
-typedef Eigen::Matrix<double, 6, NUM_ARM_JOINTS>  ArmJacobianMatrix;
-typedef Eigen::Matrix<double, 6, NUM_JOINTS>      JacobianMatrix;
+typedef Eigen::Matrix<double, NUM_ARM_JOINTS,  1> ArmJointVector;
+typedef Eigen::Matrix<double, NUM_BASE_JOINTS, 1> BaseJointVector;
+typedef Eigen::Matrix<double, NUM_JOINTS,      1> JointVector;
+
+typedef Eigen::Matrix<double, 6, NUM_BASE_JOINTS, Eigen::RowMajor> BaseJacobianMatrix;
+typedef Eigen::Matrix<double, 6, NUM_ARM_JOINTS, Eigen::RowMajor>  ArmJacobianMatrix;
+typedef Eigen::Matrix<double, 6, NUM_JOINTS, Eigen::RowMajor>      JacobianMatrix;
 
 
 // Joint position limits
