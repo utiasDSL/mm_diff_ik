@@ -123,34 +123,39 @@ class IKOptimizer {
             JointMatrix Q = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4;
             JointVector C = w1*C1 + w2*C2 + w3*C3 + w4*C4;
 
-            /*** INEQUALITY CONSTRAINTS ***/
+            /*** BOUNDS ***/
 
-            // Eigen::Matrix<double, 1, 0> Aineq, Bineq;
+            // qpOASES makes the distinction between bounds and constraints.
+            // Bounds are of the form lb <= x <= ub, whereas constraints are an
+            // affine transformation of the optimization variable, lb <= Ax <=
+            // ub
 
             // Velocity damper inequality constraints
             JointVector dq_lb, dq_ub;
             velocity_damper_limits(q, dq_lb, dq_ub);
 
-            Eigen::Matrix<double, 2*NUM_JOINTS, NUM_JOINTS> A_lim;
-            A_lim << -JointMatrix::Identity(), JointMatrix::Identity();
+            // Eigen::Matrix<double, 2*NUM_JOINTS, NUM_JOINTS> A_lim;
+            // A_lim << -JointMatrix::Identity(), JointMatrix::Identity();
+            //
+            // Eigen::Matrix<double, 2*NUM_JOINTS, 1> b_lim;
+            // b_lim << -dq_lb, dq_ub;
 
-            Eigen::Matrix<double, 2*NUM_JOINTS, 1> b_lim;
-            b_lim << -dq_lb, dq_ub;
+            /*** CONSTRAINTS ***/
 
-            // Obstacle constraints.
+            // 2. Obstacle constraints.
             // TODO we may also want this to be an objective
             Eigen::MatrixXd A_obs;
             Eigen::VectorXd b_obs;
             Eigen::Vector2d pb(q[0], q[1]);
             int num_obs = obstacle_limits(pb, obstacles, A_obs, b_obs);
 
-            int num_ineq = 2*NUM_JOINTS + num_obs;
+            // int num_ineq = 2*NUM_JOINTS + num_obs;
 
-            Eigen::MatrixXd Aineq(num_ineq, NUM_JOINTS);
-            Aineq << A_lim, A_obs;
-
-            Eigen::VectorXd bineq(num_ineq);
-            bineq << b_lim, b_obs;
+            // Eigen::MatrixXd Aineq(num_ineq, NUM_JOINTS);
+            // Aineq << A_lim, A_obs;
+            //
+            // Eigen::VectorXd bineq(num_ineq);
+            // bineq << b_lim, b_obs;
 
             /*** SOLVE QP ***/
 
@@ -163,13 +168,13 @@ class IKOptimizer {
             qpOASES::real_t *H = H_rowmajor.data();
             qpOASES::real_t *g = C.data();
 
-            qpOASES::real_t lb[9] = {-1, -1, -1, -1, -1, -1, -1, -1, -1};
-            qpOASES::real_t ub[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
+            qpOASES::real_t *lb = dq_lb.data();
+            qpOASES::real_t *ub = dq_ub.data();
 
             qpOASES::int_t nWSR = 10;
 
             qpOASES::QProblemB qp(9);
-            qp.init(H, g, NULL, NULL, nWSR);
+            qp.init(H, g, lb, ub, nWSR);
             qpOASES::real_t dq_opt_raw[NUM_JOINTS];
             int ret = qp.getPrimalSolution(dq_opt_raw);
 
