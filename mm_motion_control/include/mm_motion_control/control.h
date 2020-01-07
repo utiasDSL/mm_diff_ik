@@ -37,15 +37,16 @@ class IKController {
         // q_act:    current value of joint angles
         // dq_cmd:   populated with joint velocity commands to send
         //
-        // Returns true if the optimization problem was solved sucessfully,
-        // false otherwise.
-        bool update(const Eigen::Vector3d& pos_des,
-                    const Eigen::Quaterniond& quat_des,
-                    const Eigen::Vector3d& v_ff,
-                    const Eigen::Vector3d& w_ff,
-                    const JointVector& q_act,
-                    const std::vector<ObstacleModel> obstacles,
-                    JointVector& dq_cmd);
+        // Returns 0 if the optimization problem was solved sucessfully,
+        // otherwise a non-zero status code.
+        int update(const Eigen::Vector3d& pos_des,
+                   const Eigen::Quaterniond& quat_des,
+                   const Eigen::Vector3d& v_ff,
+                   const Eigen::Vector3d& w_ff,
+                   const JointVector& q_act,
+                   const JointVector& dq_act,
+                   const std::vector<ObstacleModel> obstacles,
+                   JointVector& dq_cmd);
 
         // Reset the stored previous time to current time.
         void tick();

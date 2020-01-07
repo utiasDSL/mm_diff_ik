@@ -14,7 +14,7 @@ def main():
     bag = rosbag.Bag(sys.argv[1])
     pose_msgs = [msg for _, msg, _ in bag.read_messages('/mm_pose_state')]
 
-    mmplt.plot_pose_actual_vs_desired(pose_msgs)
+    mmplt.plot_pose_error(pose_msgs)
     plt.show()
 
     # IPython.embed()
