@@ -102,16 +102,18 @@ class IKOptimizer {
             /* 4. Error minimization objective */
 
             // (instead of making tracking a constraint)
+            // TODO want to split into position and orientation components, to
+            // make it easier to test independently
 
             JacobianMatrix J;
             Kinematics::jacobian(q, J);
 
             Matrix6d W4 = Matrix6d::Identity();
-            // W4.diagonal() << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
+            W4(3,3) = 0.1;
+            W4(4,4) = 0.1;
+            W4(5,5) = 0.1;
             JointMatrix Q4 = dt * dt * J.transpose() * W4 * J;
             JointVector C4 = -dt * d.transpose() * W4 * J;
-
-            ROS_INFO_STREAM(W4);
 
             /* 5. Minimize joint acceleration */
 
@@ -128,15 +130,13 @@ class IKOptimizer {
             double w1 = 1.0; // velocity
             double w2 = 0.0; // manipulability
             double w3 = 0.0; // joint limits
-            double w4 = 100.0; // position error
-            double w5 = 0.0; // acceleration
+            double w4 = 100.0; // pose error
+            double w5 = 0.1; // acceleration
 
             // TODO obstacle avoidance can also be done here
 
             JointMatrix Q = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5;
             JointVector C = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5;
-            // JointMatrix Q = w1*Q1 + w2*Q2 + w3*Q3 + w5*Q5;
-            // JointVector C = w1*C1 + w2*C2 + w3*C3 + w5*C5;
 
 
             /*** BOUNDS ***/

@@ -28,6 +28,8 @@ typedef Eigen::Matrix<double, 6, NUM_BASE_JOINTS> BaseJacobianMatrix;
 typedef Eigen::Matrix<double, 6, NUM_ARM_JOINTS>  ArmJacobianMatrix;
 typedef Eigen::Matrix<double, 6, NUM_JOINTS>      JacobianMatrix;
 
+typedef Eigen::Matrix<double, 3, 9> Matrix3x9;
+
 
 // Joint position limits
 // base: -0.75pi : 0.75pi
@@ -57,9 +59,21 @@ const double BASE_RADIUS = 0.5; // m
 class Kinematics {
     public:
         // Calculate Jacobian
-        // q: current joint values
+        // q: current joint positions
         // J: populated with Jacobian matrix
         static void jacobian(const JointVector& q, JacobianMatrix& J);
+
+        // Calculate rotation error
+        // d: desired orientation
+        // q: current joint positions
+        // e: populated with orientation error vector
+        static void rotation_error(const Eigen::AngleAxisd& d,
+                                   const JointVector& q, Eigen::Vector3d& e);
+
+        // Derivative of rotation error
+        static void rotation_error_jacobian(const Eigen::AngleAxisd& d,
+                                            const JointVector& q, Matrix3x9& Jn,
+                                            Matrix3x9& Js, Matrix3x9& Ja);
 
         // Forward kinematics
         // q: joint values

@@ -24,6 +24,8 @@
 namespace mm {
 
 
+// The IKController wraps the IKOptimizer to perform additional preprocessing
+// and publishing.
 class IKController {
     public:
         IKController() : optimizer() {}
@@ -82,6 +84,8 @@ class IKController {
 }; // class IKController
 
 
+// The IKControlNode runs the control loop that commands and receives feedback
+// from the robot.
 class IKControlNode {
     public:
         IKControlNode() : controller() {}

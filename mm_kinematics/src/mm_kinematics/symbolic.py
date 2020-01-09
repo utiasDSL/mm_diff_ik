@@ -4,6 +4,23 @@ import sympy as sym
 
 from util import dh_tf, R_t_from_T, _as_np
 
+import IPython
+
+
+def _sin_repl(m):
+    return 's' + m.group(1)
+
+
+def _cos_repl(m):
+    return 'c' + m.group(1)
+
+
+def _replace_sin_cos(s):
+    s = re.sub('sin\(([a-z0-9]+)\)', _sin_repl, s)
+    s = re.sub('cos\(([a-z0-9]+)\)', _cos_repl, s)
+    return s
+
+
 
 class SymbolicKinematics(object):
     ''' Kinematics for the Thing mobile manipulator. '''
@@ -114,6 +131,31 @@ class SymbolicKinematics(object):
         # Full Jacobian
         self.J_sym = sym.Matrix.vstack(Jv, Jw)
 
+    def _calc_sym_analytic_jacobian(self):
+        # Transform from base to EE
+        T = self.T0[-1]
+        R, p = R_t_from_T(T)
+
+        # Linear derivatives
+        # These are the same as the geometric Jacobian
+        # dp_dx = sym.diff(p, self.xb)
+        # dp_dy = sym.diff(p, self.yb)
+        # dp_dt = sym.diff(p, self.tb)
+
+        # Angular derivatives
+        n = R[:, 0]
+        s = R[:, 1]
+        a = R[:, 2]
+
+        qs = [self.xb, self.yb, self.tb, self.q1, self.q2, self.q3, self.q4, self.q5, self.q6]
+
+        # Calculate Jacobians for each column of the rotation matrix
+        Jn = sym.Matrix.hstack(*[sym.diff(n, q) for q in qs])
+        Js = sym.Matrix.hstack(*[sym.diff(s, q) for q in qs])
+        Ja = sym.Matrix.hstack(*[sym.diff(a, q) for q in qs])
+
+        return Jn, Js, Ja
+
     def _sub_dict(self, q):
         qb = q[:3]
         qa = q[3:]
@@ -156,25 +198,17 @@ class SymbolicKinematics(object):
         ''' Write symbolic Jacobian out to a file. '''
         # fmt can be c++ or py
 
-        def sin_repl(m):
-            return 's' + m.group(1)
-
-        def cos_repl(m):
-            return 'c' + m.group(1)
+        # Generate the string version of the Jacobian
+        J = np.empty((6, 9), dtype=object)
+        for i in range(6):
+            for j in range(9):
+                s = str(self.J_sym[i,j])
+                J[i, j] = _replace_sin_cos(s)
 
         if fmt == 'c++':
             msg = '{}({},{}) = {};\n'
         else:
             msg = '{}[{},{}] = {}\n'
-
-        # Generate the string version of the Jacobian
-        J = np.empty((6, 9), dtype=object)
-        for i in range(6):
-            for j in range(9):
-                Jij = str(self.J_sym[i,j])
-                Jij = re.sub('sin\(([a-z0-9]+)\)', sin_repl, Jij)
-                Jij = re.sub('cos\(([a-z0-9]+)\)', cos_repl, Jij)
-                J[i,j] = Jij
 
         with open(fname, 'w+') as f:
             f.write('Base\n')
@@ -186,3 +220,35 @@ class SymbolicKinematics(object):
             for i in range(6):
                 for j in range(6):
                     f.write(msg.format('Ja', i, j, J[i,j+3]))
+
+    def write_sym_orientation_jacobian(self, fname, fmt='c++'):
+        Jn, Js, Ja = self._calc_sym_analytic_jacobian()
+
+        if fmt == 'c++':
+            msg = '{}({},{}) = {};\n'
+        else:
+            msg = '{}[{},{}] = {}\n'
+
+        r, c = Jn.shape
+        with open(fname, 'w+') as f:
+            # Jn_str = np.empty(Jn.shape, dtype=object)
+            f.write('Jn\n')
+            for i in range(r):
+                for j in range(c):
+                    s = str(Jn[i, j])
+                    s = _replace_sin_cos(s)
+                    f.write(msg.format('Jn', i, j, s))
+
+            f.write('\nJs\n')
+            for i in range(r):
+                for j in range(c):
+                    s = str(Js[i, j])
+                    s = _replace_sin_cos(s)
+                    f.write(msg.format('Js', i, j, s))
+
+            f.write('\nJa\n')
+            for i in range(r):
+                for j in range(c):
+                    s = str(Ja[i, j])
+                    s = _replace_sin_cos(s)
+                    f.write(msg.format('Ja', i, j, s))

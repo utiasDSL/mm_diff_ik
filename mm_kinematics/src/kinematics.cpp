@@ -146,6 +146,36 @@ void Kinematics::jacobians(const JointVector& q, ArmJacobianMatrix& Ja,
           0, 0, 1;
 }
 
+
+// TODO this should really go elsewhere
+void Kinematics::rotation_error(const Eigen::AngleAxisd& d,
+                                const JointVector& q,
+                                Eigen::Vector3d& e) {
+    // Desired EE rotation.
+    Eigen::Matrix3d Rd = d.toRotationMatrix();
+
+    // Current EE rotation (extract from current pose).
+    Eigen::Affine3d w_T_e;
+    Kinematics::calc_w_T_e(q, w_T_e);
+    Eigen::Matrix3d Re = w_T_e.rotation();
+
+    Eigen::Vector3d nd = Rd.col(0);
+    Eigen::Vector3d sd = Rd.col(1);
+    Eigen::Vector3d ad = Rd.col(2);
+
+    Eigen::Vector3d ne = Re.col(0);
+    Eigen::Vector3d se = Re.col(1);
+    Eigen::Vector3d ae = Re.col(2);
+
+    e = 0.5 * (ne.cross(nd) + se.cross(sd) + ae.cross(ad));
+}
+
+void Kinematics::rotation_error_jacobian(const Eigen::AngleAxisd& d,
+                                         const JointVector& q, Matrix3x9& Jn,
+                                         Matrix3x9& Js, Matrix3x9& Ja) {
+
+}
+
 void Kinematics::calc_w_T_b(const JointVector& q, Eigen::Affine3d& w_T_b) {
     DH_TF(T1, M_PI_2, 0, 0,    M_PI_2);
     DH_TF(T2, M_PI_2, 0, q(0), M_PI_2);

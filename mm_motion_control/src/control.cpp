@@ -84,11 +84,11 @@ int IKController::update(const Vector3d& pos_des, const Quaterniond& quat_des,
     //     quat_err.coeffs() *= -1;
     // }
 
-    Vector3d rot_err;
-    rot_err << quat_err.x(), quat_err.y(), quat_err.z();
+    // Vector3d rot_err;
+    // rot_err << quat_err.x(), quat_err.y(), quat_err.z();
 
-    // Eigen::AngleAxisd aa_err(quat_err);
-    // Vector3d rot_err = aa_err.axis() * aa_err.angle();
+    Eigen::AngleAxisd aa_err(quat_err);
+    Vector3d rot_err = aa_err.axis() * aa_err.angle();
 
     Vector6d d;
     d << pos_err, rot_err;
