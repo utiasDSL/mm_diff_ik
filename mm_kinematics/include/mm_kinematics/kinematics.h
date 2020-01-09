@@ -63,18 +63,6 @@ class Kinematics {
         // J: populated with Jacobian matrix
         static void jacobian(const JointVector& q, JacobianMatrix& J);
 
-        // Calculate rotation error
-        // d: desired orientation
-        // q: current joint positions
-        // e: populated with orientation error vector
-        static void rotation_error(const Eigen::AngleAxisd& d,
-                                   const JointVector& q, Eigen::Vector3d& e);
-
-        // Derivative of rotation error
-        static void rotation_error_jacobian(const Eigen::AngleAxisd& d,
-                                            const JointVector& q, Matrix3x9& Jn,
-                                            Matrix3x9& Js, Matrix3x9& Ja);
-
         // Forward kinematics
         // q: joint values
         // P: populated with pose of end effector
