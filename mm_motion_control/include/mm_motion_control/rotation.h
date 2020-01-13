@@ -8,7 +8,7 @@
 
 namespace mm {
 
-void rotation_error_jacobians(const JointVector& q,
+inline void rotation_error_jacobians(const JointVector& q,
                               Matrix3x9& Jn, Matrix3x9& Js, Matrix3x9& Ja) {
     double stb = std::sin(q(2));
     double ctb = std::cos(q(2));
@@ -116,7 +116,7 @@ Ja(2,8) = 0;
 // d: desired orientation
 // q: current joint positions
 // e: populated with orientation error vector
-void rotation_error(const Eigen::Quaterniond& d, const JointVector& q,
+inline void rotation_error(const Eigen::Quaterniond& d, const JointVector& q,
                     Eigen::Vector3d& e) {
     // Desired EE rotation.
     Eigen::Matrix3d Rd = d.toRotationMatrix();
@@ -138,7 +138,7 @@ void rotation_error(const Eigen::Quaterniond& d, const JointVector& q,
 }
 
 
-void linearize_rotation_error(const Eigen::Quaterniond& d, const JointVector& q,
+inline void linearize_rotation_error(const Eigen::Quaterniond& d, const JointVector& q,
                               double dt, Eigen::Vector3d& e, Matrix3x9& J) {
     // Desired EE rotation.
     Eigen::Matrix3d Rd = d.toRotationMatrix();
@@ -166,6 +166,22 @@ void linearize_rotation_error(const Eigen::Quaterniond& d, const JointVector& q,
     Matrix3x9 Jn, Js, Ja;
     rotation_error_jacobians(q, Jn, Js, Ja);
     J = -0.5 * dt * (Nd * Jn + Sd * Js + Ad * Ja);
+}
+
+inline void linearize_position_error(const Eigen::Vector3d& d, const JointVector& q,
+                              double dt, Eigen::Vector3d& e, Matrix3x9& J) {
+
+    // Calculate actual pose using forward kinematics.
+    Eigen::Affine3d w_T_e;
+    Kinematics::calc_w_T_e(q, w_T_e);
+    Eigen::Vector3d p = w_T_e.translation();
+    e = d - p;
+
+    // Jacobian for position error is just the top three rows of the usual
+    // geometric Jacobian.
+    JacobianMatrix J_geo;
+    Kinematics::jacobian(q, J_geo);
+    J = -dt * J_geo.topRows<3>();
 }
 
 } // namespace mm

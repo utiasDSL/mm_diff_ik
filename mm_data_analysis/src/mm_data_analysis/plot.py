@@ -31,7 +31,7 @@ def plot_pose_error(pose_msgs):
     plt.plot(t, pz, label='z')
     plt.grid()
     plt.legend()
-    plt.title('Linear End Effector Pose Error')
+    plt.title('End Effector Translation Error')
     plt.xlabel('Time (s)')
     plt.ylabel('Error (m)')
 
@@ -41,9 +41,36 @@ def plot_pose_error(pose_msgs):
     plt.plot(t, qz, label='z')
     plt.grid()
     plt.legend()
-    plt.title('Rotational End Effector Pose Error')
+    plt.title('End Effector Rotation Error')
     plt.xlabel('Time (s)')
     plt.ylabel('Error (rad)')
+
+
+# Function developed to highlight the difference between using orientation
+# control and not.
+def plot_qx_actual_vs_desired(pose_msgs1, pose_msgs2):
+    t1 = parse_time(pose_msgs1)
+    t2 = parse_time(pose_msgs2)
+
+    # same for both
+    qd = [msg.desired.orientation for msg in pose_msgs1]
+    qxd = [q.x for q in qd]
+
+    q1 = [msg.actual.orientation for msg in pose_msgs1]
+    qx1 = [q.x if q.w >= 0 else -q.x for q in q1]
+
+    q2 = [msg.actual.orientation for msg in pose_msgs2]
+    qx2 = [q.x if q.w >= 0 else -q.x for q in q2]
+
+    plt.figure(figsize=(10, 3.5))
+    plt.plot(t1, qxd, label='$q_x^{(d)}$', linewidth=2)
+    plt.plot(t1, qx1, label='$q_x^{(1)}$', linewidth=2)
+    plt.plot(t2, qx2, label='$q_x^{(2)}$', linewidth=2)
+    plt.grid()
+    plt.legend()
+    plt.title('End Effector Rotation')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Rotation')
 
 
 def plot_pose_actual_vs_desired(pose_msgs):
@@ -107,7 +134,7 @@ def plot_pose_actual_vs_desired(pose_msgs):
 
     plt.grid()
     plt.legend()
-    plt.title('Rotational End Effector Desired Pose')
+    plt.title('End Effector Actual and Desired Orientation')
     plt.xlabel('Time (s)')
     plt.ylabel('Distance (rad)')
 

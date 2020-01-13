@@ -112,7 +112,7 @@ int IKController::update(const Vector3d& pos_des, const Quaterniond& quat_des,
     time_prev = now.toSec();
 
     // Optimize to solve IK problem.
-    int status = optimizer.solve(q_act, dq_act, d, vel_cmd, obstacles, dt, dq_cmd);
+    int status = optimizer.solve(pos_des, quat_des, q_act, dq_act, vel_cmd, obstacles, dt, dq_cmd);
 
     publish_state(now, pos_act, quat_act, pos_des, quat_des, pos_err, quat_err, v_ff);
 

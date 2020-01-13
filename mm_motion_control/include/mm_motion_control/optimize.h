@@ -15,6 +15,7 @@
 #include <mm_math_util/differentiation.h>
 
 #include "mm_motion_control/obstacle.h"
+#include "mm_motion_control/rotation.h"
 
 
 namespace mm {
@@ -58,8 +59,9 @@ class IKOptimizer {
         //
         // Return value is 0 if the problem was solved successfully. Otherwise,
         // status code indicates a failure in the optmization problem.
-        int solve(const JointVector& q, const JointVector& dq,
-                  const Vector6d& d, const Vector6d& vd,
+        int solve(const Eigen::Vector3d& pos_des,
+                  const Eigen::Quaterniond& quat_des, const JointVector& q,
+                  const JointVector& dq, const Vector6d& vd,
                   const std::vector<ObstacleModel>& obstacles, double dt,
                   JointVector& dq_opt) {
 
@@ -97,23 +99,27 @@ class IKOptimizer {
             C3(1) = 0;
             C3(2) = 0;
 
-            // w1=0.1, w2=0, w3=1.0 worked well for line with no orientation control
-
             /* 4. Error minimization objective */
 
-            // (instead of making tracking a constraint)
-            // TODO want to split into position and orientation components, to
-            // make it easier to test independently
+            Eigen::Vector3d pos_err, rot_err;
+            Matrix3x9 pos_J, rot_J;
+            linearize_rotation_error(quat_des, q, dt, rot_err, rot_J);
+            linearize_position_error(pos_des, q, dt, pos_err, pos_J);
 
-            JacobianMatrix J;
-            Kinematics::jacobian(q, J);
+            // Compose into a single expression.
+            JacobianMatrix J4;
+            J4 << pos_J, rot_J;
+
+            Vector6d e4;
+            e4 << pos_err, rot_err;
 
             Matrix6d W4 = Matrix6d::Identity();
-            W4(3,3) = 0.1;
-            W4(4,4) = 0.1;
-            W4(5,5) = 0.1;
-            JointMatrix Q4 = dt * dt * J.transpose() * W4 * J;
-            JointVector C4 = -dt * d.transpose() * W4 * J;
+            // W4(3,3) = 0;
+            // W4(4,4) = 0;
+            // W4(5,5) = 0;
+
+            JointMatrix Q4 = J4.transpose() * W4 * J4;
+            JointVector C4 = e4.transpose() * W4 * J4;
 
             /* 5. Minimize joint acceleration */
 
@@ -127,11 +133,13 @@ class IKOptimizer {
 
             /* Objective weighting */
 
+            // w1=0.1, w2=0, w3=1.0 worked well for line with no orientation control
+
             double w1 = 1.0; // velocity
             double w2 = 0.0; // manipulability
             double w3 = 0.0; // joint limits
             double w4 = 100.0; // pose error
-            double w5 = 0.1; // acceleration
+            double w5 = 0.01; // acceleration
 
             // TODO obstacle avoidance can also be done here
 

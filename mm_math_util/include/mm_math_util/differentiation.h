@@ -11,7 +11,7 @@ namespace mm {
 // x: Input point
 // grad: The gradient, populated by this function.
 template<int N>
-void approx_gradient(double (*f)(const Eigen::Matrix<double, N, 1>&),
+inline void approx_gradient(double (*f)(const Eigen::Matrix<double, N, 1>&),
                      double h, const Eigen::Matrix<double, N, 1>& x,
                      Eigen::Matrix<double, N, 1>& grad) {
     typedef Eigen::Matrix<double, N, N> MatrixNd;
@@ -32,7 +32,7 @@ void approx_gradient(double (*f)(const Eigen::Matrix<double, N, 1>&),
 // x: Input point
 // H: The Hessian, populated by this function.
 template<int N>
-void approx_hessian(double (*f)(const Eigen::Matrix<double, N, 1>&),
+inline void approx_hessian(double (*f)(const Eigen::Matrix<double, N, 1>&),
                     double h, const Eigen::Matrix<double, N, 1>& x,
                     Eigen::Matrix<double, N, N>& H) {
     typedef Eigen::Matrix<double, N, N> MatrixNd;
