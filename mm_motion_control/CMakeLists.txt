@@ -61,10 +61,10 @@ add_executable(mm_control_node
   src/nodes/pose_control_node.cpp
   src/pose_control/controller.cpp src/pose_control/manager.cpp
   src/pose_control/pose_error.cpp src/pose_control/pose_error_jac.cpp
+  src/pose_control/optimizer.cpp
 )
 target_link_libraries(mm_control_node
   ${catkin_LIBRARIES}
-  /usr/local/lib/libeigen-quadprog.so
   /usr/local/lib/libqpOASES.so
 )
 
@@ -95,8 +95,11 @@ target_link_libraries(home
 # Tests
 catkin_add_executable_with_gtest(test_optimize
   test/test_optimize.cpp
+  src/pose_control/optimizer.cpp
+  src/pose_control/pose_error.cpp
+  src/pose_control/pose_error_jac.cpp
 )
 target_link_libraries(test_optimize
   ${catkin_LIBRARIES}
-  /usr/local/lib/libeigen-quadprog.so
+  /usr/local/lib/libqpOASES.so
 )

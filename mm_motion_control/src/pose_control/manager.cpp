@@ -118,14 +118,6 @@ void IKControllerManager::publish_joint_speeds(const JointVector& dq_cmd) {
 }
 
 
-void IKControllerManager::update_forward_kinematics() {
-    Kinematics::calc_w_T_b(q_act, w_T_b_act);
-    Kinematics::calc_w_T_e(q_act, w_T_e_act);
-
-    Kinematics::forward_vel(q_act, dq_act, dw_T_e_act);
-}
-
-
 // An entire trajectory is sent
 // Single point method is a special case
 void IKControllerManager::pose_traj_cb(const mm_msgs::PoseTrajectory& msg) {
@@ -133,6 +125,7 @@ void IKControllerManager::pose_traj_cb(const mm_msgs::PoseTrajectory& msg) {
     traj_active = true;
     ROS_INFO("Trajectory started.");
 }
+
 
 void IKControllerManager::point_traj_cb(const geometry_msgs::PoseStamped& msg) {
     trajectory.stay_at(msg.pose);
@@ -146,7 +139,6 @@ void IKControllerManager::mm_joint_states_cb(const sensor_msgs::JointState& msg)
         q_act(i) = msg.position[i];
         dq_act(i) = msg.velocity[i];
     }
-    update_forward_kinematics();
 }
 
 

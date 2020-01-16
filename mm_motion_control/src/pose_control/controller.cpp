@@ -75,9 +75,6 @@ int IKController::update(const Eigen::Vector3d& pos_des, const Eigen::Quaternion
     Eigen::Quaterniond quat_act(ee_pose_act.rotation());
     Eigen::Quaterniond quat_err = quat_des * quat_act.inverse();
 
-    Vector6d d;
-    d << pos_err, rot_err;
-
     // Velocity command in task space: P control with velocity feedforward.
     // At the moment we assume zero rotational feedforward.
     Eigen::Vector3d v = Kv * pos_err + v_ff;
@@ -100,6 +97,8 @@ int IKController::update(const Eigen::Vector3d& pos_des, const Eigen::Quaternion
 }
 
 
+// TODO doesn't really make sense that this is here -- should be able to
+// publish this in the manager
 void IKController::publish_state(const ros::Time& time,
                                  const Eigen::Vector3d& pos_act,
                                  const Eigen::Quaterniond& quat_act,

@@ -101,9 +101,6 @@ class IKControllerManager {
         // Receive list of obstacles for the base to avoid.
         void obstacle_cb(const mm_msgs::Obstacles& msg);
 
-        // Calculate poses in task space based on current joint state.
-        void update_forward_kinematics();
-
         // Publish joint speeds computed by the controller to the arm and base.
         void publish_joint_speeds(const JointVector& dq_cmd);
 }; // class IKControllerManager
