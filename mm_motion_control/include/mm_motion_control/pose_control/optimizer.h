@@ -61,6 +61,12 @@ class IKOptimizer {
                   const std::vector<ObstacleModel>& obstacles, double dt,
                   JointVector& dq_opt);
 
+        // Construct and solve the QP given our problem-specific matrices.
+        // Note that the underlying data for input arguments is not copied.
+        int solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
+                     JointVector& lb, JointVector& ub, Eigen::VectorXd& ubA,
+                     JointVector& dq_opt);
+
         // 1st-order linearization of manipulability index around joint values
         // q, returning the gradient dm.
         void linearize_manipulability1(const JointVector& q, JointVector& dm,

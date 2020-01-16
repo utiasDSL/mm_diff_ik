@@ -11,6 +11,49 @@ bool IKOptimizer::init(ros::NodeHandle& nh) {
 }
 
 
+int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
+                          JointVector& lb, JointVector& ub,
+                          Eigen::VectorXd& ubA, JointVector& dq_opt) {
+    // Convert to row-major order. Only meaningful for matrices, not
+    // vectors.
+    Eigen::Matrix<qpOASES::real_t,
+                  NUM_JOINTS,
+                  NUM_JOINTS,
+                  Eigen::RowMajor> H_rowmajor = H;
+    Eigen::Matrix<qpOASES::real_t,
+                  Eigen::Dynamic,
+                  Eigen::Dynamic,
+                  Eigen::RowMajor> A_rowmajor = A;
+
+    // Convert eigen data to raw arrays for qpOASES.
+    qpOASES::real_t *H_data = H_rowmajor.data();
+    qpOASES::real_t *g_data = g.data();
+
+    qpOASES::real_t *lb_data = lb.data();
+    qpOASES::real_t *ub_data = ub.data();
+
+    qpOASES::real_t *A_data = A_rowmajor.data();
+    qpOASES::real_t *ubA_data = ubA.data();
+    qpOASES::real_t *lbA_data = NULL;
+
+    qpOASES::int_t nWSR = 10;
+
+    int num_obstacles = A.rows();
+
+    // Solve the QP.
+    qpOASES::QProblem qp(NUM_JOINTS, num_obstacles);
+    qp.init(H_data, g_data, A_data, lb_data, ub_data, lbA_data, ubA_data, nWSR);
+    // qpOASES::QProblemB qp(NUM_JOINTS);
+    // qp.init(H, g, lb, ub, nWSR);
+
+    qpOASES::real_t dq_opt_raw[NUM_JOINTS];
+    int status = qp.getPrimalSolution(dq_opt_raw);
+    dq_opt = Eigen::Map<JointVector>(dq_opt_raw); // map back to eigen
+
+    return status;
+}
+
+
 int IKOptimizer::solve(const Eigen::Vector3d& pos_des,
                        const Eigen::Quaterniond& quat_des, const JointVector& q,
                        const JointVector& dq, const Vector6d& vd,
@@ -114,42 +157,15 @@ int IKOptimizer::solve(const Eigen::Vector3d& pos_des,
     /*** CONSTRAINTS ***/
 
     // Obstacle constraints.
-    // TODO we may also want this to be an objective
     Eigen::MatrixXd A_obs;
     Eigen::VectorXd b_obs;
     Eigen::Vector2d pb(q[0], q[1]);
-    int num_obs = obstacle_limits(pb, obstacles, A_obs, b_obs);
+    obstacle_limits(pb, obstacles, A_obs, b_obs);
 
 
     /*** SOLVE QP ***/
 
-    // Convert to row-major order. Only meaningful for matrices, not
-    // vectors.
-    Eigen::Matrix<qpOASES::real_t, NUM_JOINTS, NUM_JOINTS, Eigen::RowMajor> H_rowmajor = Q;
-    Eigen::Matrix<qpOASES::real_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A_rowmajor = A_obs;
-
-    // Convert eigen data to raw arrays for qpOASES.
-    qpOASES::real_t *H = H_rowmajor.data();
-    qpOASES::real_t *g = C.data();
-
-    qpOASES::real_t *lb = dq_lb.data();
-    qpOASES::real_t *ub = dq_ub.data();
-
-    qpOASES::real_t *A = A_rowmajor.data();
-    qpOASES::real_t *ubA = b_obs.data();
-    qpOASES::real_t *lbA = NULL;
-
-    qpOASES::int_t nWSR = 10;
-
-    // Solve the QP.
-    qpOASES::QProblem qp(NUM_JOINTS, num_obs);
-    qp.init(H, g, A, lb, ub, lbA, ubA, nWSR);
-    // qpOASES::QProblemB qp(NUM_JOINTS);
-    // qp.init(H, g, lb, ub, nWSR);
-
-    qpOASES::real_t dq_opt_raw[NUM_JOINTS];
-    int status = qp.getPrimalSolution(dq_opt_raw);
-    dq_opt = Eigen::Map<JointVector>(dq_opt_raw); // map back to eigen
+    int status = solve_qp(Q, C, A_obs, dq_lb, dq_ub, b_obs, dq_opt);
 
 
     /*** CALCULATE OBJECTIVE FUNCTION VALUES ***/
