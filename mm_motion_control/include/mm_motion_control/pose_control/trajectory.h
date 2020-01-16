@@ -3,10 +3,11 @@
 #include <Eigen/Eigen>
 #include <ros/ros.h>
 #include <tf/transform_datatypes.h>
+#include <geometry_msgs/Pose.h>
+
 #include <mm_msgs/PoseTrajectoryPoint.h>
 #include <mm_msgs/PoseTrajectory.h>
 #include <mm_msgs/conversions.h>
-#include <geometry_msgs/Pose.h>
 #include <mm_math_util/interp.h>
 
 

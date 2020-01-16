@@ -1,9 +1,11 @@
+#include <iostream>
+
 #include <gtest/gtest.h>
 
-#include "mm_kinematics/kinematics.h"
-#include "mm_motion_control/optimize.h"
+#include <mm_kinematics/kinematics.h>
 
-#include <iostream>
+#include "mm_motion_control/pose_control/optimizer.h"
+
 
 
 using namespace mm;

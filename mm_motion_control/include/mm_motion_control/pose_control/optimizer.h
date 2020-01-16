@@ -1,21 +1,20 @@
 #pragma once
 
 #include <Eigen/Eigen>
-#include <QuadProg.h>
-#include <ros/ros.h>
-#include <realtime_tools/realtime_publisher.h>
 #include <qpOASES/qpOASES.hpp>
 
+#include <ros/ros.h>
+#include <realtime_tools/realtime_publisher.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/JointState.h>
-#include <mm_msgs/OptimizationState.h>
 
+#include <mm_msgs/OptimizationState.h>
 #include <mm_kinematics/kinematics.h>
 #include <mm_math_util/differentiation.h>
 
-#include "mm_motion_control/obstacle.h"
-#include "mm_motion_control/pose_error.h"
+#include "mm_motion_control/pose_control/obstacle.h"
+#include "mm_motion_control/pose_control/pose_error.h"
 
 
 namespace mm {

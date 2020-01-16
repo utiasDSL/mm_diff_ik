@@ -1,4 +1,4 @@
-#include "mm_motion_control/pose_error.h"
+#include "mm_motion_control/pose_control/pose_error.h"
 
 #include <Eigen/Eigen>
 

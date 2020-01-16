@@ -10,7 +10,7 @@
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Twist.h>
 
-#include <mm_kinematics/kinematics.h> // for the typedefs
+#include <mm_kinematics/kinematics.h>
 
 
 namespace mm {
@@ -23,14 +23,20 @@ const static JointVector HOME((JointVector()
 const static double MAX_DQ = 0.2;
 
 
+// class JointController {
+//     public:
+//         JointController() {}
+// }; // class JointController
+
+
 // Node for controlling the MM based on a desired joint trajectory.
-class JointControlNode {
+class JointControllerManager {
     public:
-        JointControlNode() {}
+        JointControllerManager() {}
 
         bool init(ros::NodeHandle& nh) {
             mm_joint_states_sub = nh.subscribe("/mm_joint_states", 1,
-                    &JointControlNode::mm_joint_states_cb, this);
+                    &JointControllerManager::mm_joint_states_cb, this);
 
             ur10_joint_vel_pub = nh.advertise<trajectory_msgs::JointTrajectory>(
                     "/ur_driver/joint_speed", 1);
@@ -146,6 +152,6 @@ class JointControlNode {
         //         q_des(i) = msg.positions[i];
         //     }
         // }
-}; // class JointControlNode
+}; // class JointControllerManager
 
 }

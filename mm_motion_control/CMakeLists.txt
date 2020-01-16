@@ -56,8 +56,11 @@ include_directories(
 
 # Executables
 
+## mm_control node
 add_executable(mm_control_node
-  src/mm_control_node.cpp src/control.cpp src/pose_error.cpp src/pose_error_jac.cpp
+  src/nodes/pose_control_node.cpp
+  src/pose_control/controller.cpp src/pose_control/manager.cpp
+  src/pose_control/pose_error.cpp src/pose_control/pose_error_jac.cpp
 )
 target_link_libraries(mm_control_node
   ${catkin_LIBRARIES}
@@ -65,15 +68,17 @@ target_link_libraries(mm_control_node
   /usr/local/lib/libqpOASES.so
 )
 
+## joint_state_mux
 add_executable(joint_state_mux
-  src/joint_state_mux.cpp
+  src/nodes/joint_state_mux_node.cpp
 )
 target_link_libraries(joint_state_mux
   ${catkin_LIBRARIES}
 )
 
+## home
 add_executable(home
-  src/home.cpp
+  src/nodes/go_home_node.cpp
 )
 target_link_libraries(home
   ${catkin_LIBRARIES}
