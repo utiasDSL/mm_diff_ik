@@ -57,7 +57,7 @@ include_directories(
 # Executables
 
 add_executable(mm_control_node
-  src/mm_control_node.cpp src/control.cpp
+  src/mm_control_node.cpp src/control.cpp src/pose_error.cpp src/pose_error_jac.cpp
 )
 target_link_libraries(mm_control_node
   ${catkin_LIBRARIES}

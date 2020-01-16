@@ -19,7 +19,7 @@
 #include "mm_motion_control/trajectory.h"
 #include "mm_motion_control/control.h"
 #include "mm_motion_control/obstacle.h"
-#include "mm_motion_control/rotation.h"
+#include "mm_motion_control/pose_error.h"
 
 
 using namespace Eigen;

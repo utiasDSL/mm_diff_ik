@@ -15,7 +15,7 @@
 #include <mm_math_util/differentiation.h>
 
 #include "mm_motion_control/obstacle.h"
-#include "mm_motion_control/rotation.h"
+#include "mm_motion_control/pose_error.h"
 
 
 namespace mm {
@@ -190,10 +190,10 @@ class IKOptimizer {
             qpOASES::int_t nWSR = 10;
 
             // Solve the QP.
-            // qpOASES::QProblemB qp(NUM_JOINTS, num_obs);
-            // qp.init(H, g, A, lb, ub, lbA, ubA, nWSR);
-            qpOASES::QProblemB qp(NUM_JOINTS);
-            qp.init(H, g, lb, ub, nWSR);
+            qpOASES::QProblem qp(NUM_JOINTS, num_obs);
+            qp.init(H, g, A, lb, ub, lbA, ubA, nWSR);
+            // qpOASES::QProblemB qp(NUM_JOINTS);
+            // qp.init(H, g, lb, ub, nWSR);
 
             qpOASES::real_t dq_opt_raw[NUM_JOINTS];
             int status = qp.getPrimalSolution(dq_opt_raw);
