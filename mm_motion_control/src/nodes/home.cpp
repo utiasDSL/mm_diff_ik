@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 
-#include "mm_motion_control/joint.h"
+#include "mm_motion_control/joint_control.h"
 
 
 static const double HZ = 125;

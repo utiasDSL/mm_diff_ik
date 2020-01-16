@@ -23,6 +23,7 @@ const static JointVector HOME((JointVector()
 const static double MAX_DQ = 0.2;
 
 
+// Node for controlling the MM based on a desired joint trajectory.
 class JointControlNode {
     public:
         JointControlNode() {}
@@ -68,6 +69,7 @@ class JointControlNode {
                     break;
                 }
 
+                // P control.
                 JointVector dq_cmd = K * q_err;
 
                 // Bound commands for base joints, which could be quite large.

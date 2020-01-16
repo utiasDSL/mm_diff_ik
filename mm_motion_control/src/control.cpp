@@ -13,13 +13,12 @@
 #include <mm_msgs/PoseControlState.h>
 #include <mm_msgs/Obstacles.h>
 #include <mm_kinematics/kinematics.h>
-#include <mm_math_util/wrap.h>
 
 #include "mm_motion_control/optimize.h"
 #include "mm_motion_control/trajectory.h"
-#include "mm_motion_control/control.h"
-#include "mm_motion_control/obstacle.h"
+#include "mm_motion_control/pose_control.h"
 #include "mm_motion_control/pose_error.h"
+#include "mm_motion_control/obstacle.h"
 
 
 using namespace Eigen;
@@ -81,19 +80,6 @@ int IKController::update(const Vector3d& pos_des, const Quaterniond& quat_des,
     // Orientation error (see pg. 140 of Siciliano et al., 2010).
     Eigen::Quaterniond quat_act(ee_pose_act.rotation());
     Eigen::Quaterniond quat_err = quat_des * quat_act.inverse();
-
-    // Keep quaternion positive. Otherwise, we can get in a situation where it
-    // flips between the negative and positive versions and doesn't go
-    // anywhere.
-    // if (quat_err.w() < 0) {
-    //     quat_err.coeffs() *= -1;
-    // }
-
-    // Vector3d rot_err;
-    // rot_err << quat_err.x(), quat_err.y(), quat_err.z();
-
-    // Eigen::AngleAxisd aa_err(quat_err);
-    // Vector3d rot_err = aa_err.axis() * aa_err.angle();
 
     Vector6d d;
     d << pos_err, rot_err;
