@@ -79,6 +79,7 @@ target_link_libraries(joint_state_mux
 ## home
 add_executable(home
   src/nodes/go_home_node.cpp
+  src/joint_control/controller.cpp src/joint_control/manager.cpp
 )
 target_link_libraries(home
   ${catkin_LIBRARIES}

@@ -108,26 +108,13 @@ void IKControllerManager::loop(const double hz) {
 
 
 void IKControllerManager::publish_joint_speeds(const JointVector& dq_cmd) {
-    // Split into base and arm joints to send out.
-    Eigen::Vector3d dq_cmd_rb = dq_cmd.topRows<3>();
-    Vector6d dq_cmd_ur10 = dq_cmd.bottomRows<6>();
+    trajectory_msgs::JointTrajectory traj_arm;
+    geometry_msgs::Twist twist_base;
 
-    // Convert to JointTrajectory message with a single point (i.e.
-    // velocity servoing) to publish to UR10.
-    trajectory_msgs::JointTrajectoryPoint point;
-    point.velocities = std::vector<double>(
-            dq_cmd_ur10.data(), dq_cmd_ur10.data() + dq_cmd_ur10.size());
-    trajectory_msgs::JointTrajectory traj_ur10;
-    traj_ur10.points.push_back(point);
+    joint_speed_msgs(dq_cmd, traj_arm, twist_base);
 
-    // Base twist.
-    geometry_msgs::Twist twist_rb;
-    twist_rb.linear.x = dq_cmd_rb(0);
-    twist_rb.linear.y = dq_cmd_rb(1);
-    twist_rb.angular.z = dq_cmd_rb(2);
-
-    ur10_joint_vel_pub.publish(traj_ur10);
-    rb_joint_vel_pub.publish(twist_rb);
+    ur10_joint_vel_pub.publish(traj_arm);
+    rb_joint_vel_pub.publish(twist_base);
 }
 
 
