@@ -44,7 +44,7 @@ bool IKController::init(ros::NodeHandle& nh, Eigen::Matrix3d& Kv,
     this->Kw = Kw;
     time_prev = ros::Time::now().toSec();
 
-    optimizer.init(nh);
+    optimizer.init();
     state_pub.reset(new StatePublisher(nh, "/mm_pose_state", 1));
 }
 
@@ -80,16 +80,13 @@ int IKController::update(const Eigen::Vector3d& pos_des, const Eigen::Quaternion
     Eigen::Vector3d v = Kv * pos_err + v_ff;
     Eigen::Vector3d w = Kw * rot_err + w_ff;
 
-    Vector6d vel_cmd;
-    vel_cmd << v, w;
-
     // Update time.
     ros::Time now = ros::Time::now();
     double dt = now.toSec() - time_prev;
     time_prev = now.toSec();
 
     // Optimize to solve IK problem.
-    int status = optimizer.solve(pos_des, quat_des, q_act, dq_act, vel_cmd, obstacles, dt, dq_cmd);
+    int status = optimizer.solve(pos_des, quat_des, q_act, dq_act, obstacles, dt, dq_cmd);
 
     publish_state(now, pos_act, quat_act, pos_des, quat_des, pos_err, quat_err, v_ff);
 

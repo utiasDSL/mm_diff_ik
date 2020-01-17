@@ -3,12 +3,14 @@
 #include <Eigen/Eigen>
 #include <qpOASES/qpOASES.hpp>
 
+#include <mm_kinematics/kinematics.h>
+#include <mm_math_util/differentiation.h>
+
+#include "mm_motion_control/pose_control/obstacle.h"
+#include "mm_motion_control/pose_control/pose_error.h"
+
 
 namespace mm {
-
-bool IKOptimizer::init(ros::NodeHandle& nh) {
-    state_pub.reset(new StatePublisher(nh, "/optimization_state", 1));
-}
 
 
 int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
@@ -50,18 +52,18 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
     int status = qp.getPrimalSolution(dq_opt_raw);
     dq_opt = Eigen::Map<JointVector>(dq_opt_raw); // map back to eigen
 
+    // Populate state values;
+    state.dq_opt = dq_opt;
+    state.obj_val = qp.getObjVal();
+
     return status;
 }
 
 
-int IKOptimizer::solve(const Eigen::Vector3d& pos_des,
-                       const Eigen::Quaterniond& quat_des, const JointVector& q,
-                       const JointVector& dq, const Vector6d& vd,
-                       const std::vector<ObstacleModel>& obstacles, double dt,
-                       JointVector& dq_opt) {
-
-    /*** OBJECTIVES ***/
-
+void IKOptimizer::build_objective(const Eigen::Vector3d& pos_des,
+                                  const Eigen::Quaterniond& quat_des,
+                                  const JointVector& q, const JointVector& dq,
+                                  double dt, JointMatrix& H, JointVector& g) {
     /* 1. Minimize velocity objective. */
 
     JointMatrix Q1 = JointMatrix::Identity();
@@ -138,8 +140,22 @@ int IKOptimizer::solve(const Eigen::Vector3d& pos_des,
 
     // TODO obstacle avoidance can also be done here
 
-    JointMatrix Q = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5;
-    JointVector C = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5;
+    H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5;
+    g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5;
+}
+
+
+int IKOptimizer::solve(const Eigen::Vector3d& pos_des,
+                       const Eigen::Quaterniond& quat_des,
+                       const JointVector& q, const JointVector& dq,
+                       const std::vector<ObstacleModel>& obstacles, double dt,
+                       JointVector& dq_opt) {
+
+    /*** OBJECTIVE ***/
+
+    JointMatrix H;
+    JointVector g;
+    build_objective(pos_des, quat_des, q, dq, dt, H, g);
 
 
     /*** BOUNDS ***/
@@ -165,38 +181,36 @@ int IKOptimizer::solve(const Eigen::Vector3d& pos_des,
 
     /*** SOLVE QP ***/
 
-    int status = solve_qp(Q, C, A_obs, dq_lb, dq_ub, b_obs, dq_opt);
+    int status = solve_qp(H, g, A_obs, dq_lb, dq_ub, b_obs, dq_opt);
 
 
     /*** CALCULATE OBJECTIVE FUNCTION VALUES ***/
 
-    // Examine objective function values
-    double vel_obj = dq_opt.transpose() * Q1 * dq_opt; // want to minimize
-
-    double mi = Kinematics::manipulability(q);
-    double mi_obj_quad = dt * dt * dq_opt.transpose() * Hm * dq_opt;
-    double mi_obj_lin = dt * dm.dot(dq_opt);
-
-    // This is what actually gets considering in the optimization
-    // problem.
-    double mi_obj = w1 * (mi_obj_quad + mi_obj_lin); // want to maximize
-
-    publish_state(dq_opt, vel_obj, mi_obj);
+    // // Examine objective function values
+    // double vel_obj = dq_opt.transpose() * Q1 * dq_opt; // want to minimize
+    //
+    // double mi = Kinematics::manipulability(q);
+    // double mi_obj_quad = dt * dt * dq_opt.transpose() * Hm * dq_opt;
+    // double mi_obj_lin = dt * dm.dot(dq_opt);
+    //
+    // // This is what actually gets considering in the optimization
+    // // problem.
+    // double mi_obj = w1 * (mi_obj_quad + mi_obj_lin); // want to maximize
+    //
+    // publish_state(dq_opt, vel_obj, mi_obj);
 
     return status;
 }
 
 
 void IKOptimizer::linearize_manipulability1(const JointVector& q,
-                                            JointVector& dm,
-                                            double h) {
+                                            JointVector& dm, double h) {
     approx_gradient<NUM_JOINTS>(&Kinematics::manipulability, h, q, dm);
 }
 
 
 void IKOptimizer::linearize_manipulability2(const JointVector& q,
-                                            JointVector& dm,
-                                            JointMatrix& Hm,
+                                            JointVector& dm, JointMatrix& Hm,
                                             double h) {
     approx_gradient<NUM_JOINTS>(&Kinematics::manipulability, h, q, dm);
     approx_hessian<NUM_JOINTS>(&Kinematics::manipulability, h, q, Hm);
@@ -275,16 +289,8 @@ void IKOptimizer::filter_obstacles(const Eigen::Vector2d& pb,
 }
 
 
-void IKOptimizer::publish_state(const JointVector& dq_opt, double vel_obj,
-                                double mi_obj) {
-    if (state_pub->trylock()) {
-        state_pub->msg_.labels = { "vel", "mi" };
-        state_pub->msg_.objectives = { vel_obj, mi_obj };
-        state_pub->msg_.result = std::vector<double>(dq_opt.data(), dq_opt.data() + dq_opt.size());
-
-        state_pub->msg_.header.stamp = ros::Time::now();
-        state_pub->unlockAndPublish();
-    }
+void IKOptimizer::get_state(IKOptimizerState& state) {
+    state = this->state;
 }
 
 } // namespace mm

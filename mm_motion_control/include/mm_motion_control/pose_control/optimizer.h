@@ -2,18 +2,9 @@
 
 #include <Eigen/Eigen>
 
-#include <ros/ros.h>
-#include <realtime_tools/realtime_publisher.h>
-#include <trajectory_msgs/JointTrajectory.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <sensor_msgs/JointState.h>
-
-#include <mm_msgs/OptimizationState.h>
 #include <mm_kinematics/kinematics.h>
-#include <mm_math_util/differentiation.h>
 
 #include "mm_motion_control/pose_control/obstacle.h"
-#include "mm_motion_control/pose_control/pose_error.h"
 
 
 namespace mm {
@@ -38,34 +29,37 @@ static const bool POSITIION_LIMITED[] = {
 static const double STEP_SIZE = 1e-3;
 
 
+// State of the Optimizer
+struct IKOptimizerState {
+    JointVector dq_opt;  // Optimal joint velocities.
+    double obj_val;  // Objective value.
+};
+
+
 class IKOptimizer {
     public:
-        IKOptimizer() {};
+        IKOptimizer() : state() {};
 
-        bool init(ros::NodeHandle& nh);
+        bool init() { return true; }
 
         // Create and solve the QP.
+        // Parameters:
+        //   pos_des:  Desired EE position.
+        //   quat_des: Desired EE orientation.
+        //   q:        Current joint angles.
+        //   dq:       Current joint velocities.
+        //   dt:       Control timestep.
+        //   dq_opt:   Optimal values of joint velocities.
         //
-        // q:      Current joint angles.
-        // dq:     Current joint velocities.
-        // d:      d = pd - f(q)
-        // vd:     Desired task space velocity of end effector.
-        // dt:     Control timestep.
-        // dq_opt: Optimal values of joint velocities.
-        //
-        // Return value is 0 if the problem was solved successfully. Otherwise,
-        // status code indicates a failure in the optmization problem.
+        // Returns:
+        //   0 if the optimization problem was solved successfully. Otherwise,
+        //   status code indicates a failure in the optimization problem.
         int solve(const Eigen::Vector3d& pos_des,
-                  const Eigen::Quaterniond& quat_des, const JointVector& q,
-                  const JointVector& dq, const Vector6d& vd,
+                  const Eigen::Quaterniond& quat_des,
+                  const JointVector& q, const JointVector& dq,
                   const std::vector<ObstacleModel>& obstacles, double dt,
                   JointVector& dq_opt);
 
-        // Construct and solve the QP given our problem-specific matrices.
-        // Note that the underlying data for input arguments is not copied.
-        int solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
-                     JointVector& lb, JointVector& ub, Eigen::VectorXd& ubA,
-                     JointVector& dq_opt);
 
         // 1st-order linearization of manipulability index around joint values
         // q, returning the gradient dm.
@@ -93,14 +87,29 @@ class IKOptimizer {
                               const std::vector<ObstacleModel>& obstacles,
                               std::vector<ObstacleModel>& close_obstacles);
 
+        // Returns the current state of the optimizer.
+        void get_state(IKOptimizerState& state);
+
     private:
-        typedef realtime_tools::RealtimePublisher<mm_msgs::OptimizationState> StatePublisher;
-        typedef std::unique_ptr<StatePublisher> StatePublisherPtr;
+        IKOptimizerState state;
 
-        StatePublisherPtr state_pub;
+        // typedef realtime_tools::RealtimePublisher<mm_msgs::OptimizationState> StatePublisher;
+        // typedef std::unique_ptr<StatePublisher> StatePublisherPtr;
+        //
+        // StatePublisherPtr state_pub;
 
-        void publish_state(const JointVector& dq_opt, double vel_obj,
-                           double mi_obj);
+        // Construct and solve the QP given our problem-specific matrices.
+        // Note that the underlying data for input arguments is not copied.
+        int solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
+                     JointVector& lb, JointVector& ub, Eigen::VectorXd& ubA,
+                     JointVector& dq_opt);
+
+        // Build objective matrices H and g, where the quadratic to minimize is
+        // x'Hx + g'x.
+        void build_objective(const Eigen::Vector3d& pos_des,
+                             const Eigen::Quaterniond& quat_des,
+                             const JointVector& q, const JointVector& dq,
+                             double dt, JointMatrix& H, JointVector& g);
 }; // class IKOptimizer
 
 } // namespace mm
