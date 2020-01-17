@@ -26,12 +26,9 @@
 namespace mm {
 
 
-// Controller gain.
-Eigen::Matrix3d LINEAR_GAIN = Eigen::Matrix3d::Identity();
-Eigen::Matrix3d ROTATIONAL_GAIN = Eigen::Matrix3d::Identity();
-
-
 bool IKControllerManager::init(ros::NodeHandle& nh) {
+    state_pub.reset(new StatePublisher(nh, "/mm_pose_state", 1));
+
     pose_traj_sub = nh.subscribe("/trajectory/poses", 1,
             &IKControllerManager::pose_traj_cb, this);
 
@@ -44,13 +41,15 @@ bool IKControllerManager::init(ros::NodeHandle& nh) {
     force_position_offset_sub = nh.subscribe("/force_control/position_offset",
             1, &IKControllerManager::pos_offset_cb, this);
 
-    obstacle_sub = nh.subscribe("/obstacles", 1, &IKControllerManager::obstacle_cb,
-                                this);
+    obstacle_sub = nh.subscribe("/obstacles", 1,
+                                &IKControllerManager::obstacle_cb, this);
 
-    ur10_joint_vel_pub = nh.advertise<trajectory_msgs::JointTrajectory>("/ur_driver/joint_speed", 1);
-    rb_joint_vel_pub = nh.advertise<geometry_msgs::Twist>("/ridgeback_velocity_controller/cmd_vel", 1);
+    ur10_joint_vel_pub = nh.advertise<trajectory_msgs::JointTrajectory>(
+            "/ur_driver/joint_speed", 1);
+    rb_joint_vel_pub = nh.advertise<geometry_msgs::Twist>(
+            "/ridgeback_velocity_controller/cmd_vel", 1);
 
-    controller.init(nh, LINEAR_GAIN, ROTATIONAL_GAIN);
+    controller.init();
 
     q_act = JointVector::Zero();
     dq_act = JointVector::Zero();
@@ -90,8 +89,8 @@ void IKControllerManager::loop(const double hz) {
         pos_des += pos_offset;
 
         JointVector dq_cmd = JointVector::Zero();
-        int status = controller.update(pos_des, quat_des, v_ff, w_ff, q_act,
-                                       dq_act, obstacles, dq_cmd);
+        int status = controller.update(pos_des, quat_des, q_act, dq_act,
+                                       obstacles, dq_cmd);
         if (status) {
             // Send zero velocity command if optimization fails (the velocity
             // commands are garbage in this case).
@@ -102,6 +101,8 @@ void IKControllerManager::loop(const double hz) {
         }
 
         publish_joint_speeds(dq_cmd);
+
+        publish_robot_state(pos_des, quat_des, q_act, dq_act);
 
         rate.sleep();
     }
@@ -154,6 +155,38 @@ void IKControllerManager::obstacle_cb(const mm_msgs::Obstacles& msg) {
     obstacles.clear();
     for (int i = 0; i < msg.obstacles.size(); ++i) {
         obstacles.push_back(ObstacleModel(msg.obstacles[i]));
+    }
+}
+
+
+void IKControllerManager::publish_robot_state(
+        const Eigen::Vector3d& pos_des,
+        const Eigen::Quaterniond& quat_des,
+        const JointVector& q,
+        const JointVector& dq) {
+    Eigen::Affine3d w_T_e;
+    Kinematics::calc_w_T_e(q, w_T_e);
+
+    Eigen::Vector3d pos_act = w_T_e.translation();
+    Eigen::Quaterniond quat_act(w_T_e.rotation());
+
+    Eigen::Vector3d pos_err = pos_des - pos_act;
+    Eigen::Quaterniond quat_err = quat_des * quat_act.inverse();
+
+    if (state_pub->trylock()) {
+        geometry_msgs::Pose pose_act_msg, pose_des_msg, pose_err_msg;
+
+        pose_msg_from_eigen(pos_act, quat_act, pose_act_msg);
+        pose_msg_from_eigen(pos_des, quat_des, pose_des_msg);
+        pose_msg_from_eigen(pos_err, quat_err, pose_err_msg);
+
+        state_pub->msg_.actual = pose_act_msg;
+        state_pub->msg_.desired = pose_des_msg;
+        state_pub->msg_.error = pose_err_msg;
+
+        state_pub->msg_.header.frame_id = "world";
+        state_pub->msg_.header.stamp = ros::Time::now();
+        state_pub->unlockAndPublish();
     }
 }
 

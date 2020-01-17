@@ -25,15 +25,10 @@
 namespace mm {
 
 
-bool IKController::init(ros::NodeHandle& nh, Eigen::Matrix3d& Kv,
-                        Eigen::Matrix3d& Kw) {
-    this->Kv = Kv;
-    this->Kw = Kw;
-
+bool IKController::init() {
     optimizer.init();
-    state_pub.reset(new StatePublisher(nh, "/mm_pose_state", 1));
-
     tick();
+    return true;
 }
 
 
@@ -42,75 +37,18 @@ void IKController::tick() {
 }
 
 
-int IKController::update(const Eigen::Vector3d& pos_des, const Eigen::Quaterniond& quat_des,
-                         const Eigen::Vector3d& v_ff, const Eigen::Vector3d& w_ff,
+int IKController::update(const Eigen::Vector3d& pos_des,
+                         const Eigen::Quaterniond& quat_des,
                          const JointVector& q_act, const JointVector& dq_act,
                          const std::vector<ObstacleModel> obstacles,
                          JointVector& dq_cmd) {
-    // Calculate actual pose using forward kinematics.
-    Eigen::Affine3d ee_pose_act;
-    Kinematics::forward(q_act, ee_pose_act);
-
-    // Position error.
-    Eigen::Vector3d pos_act = ee_pose_act.translation();
-    Eigen::Vector3d pos_err = pos_des - pos_act;
-
-    // TODO there is a weird duplication of effort here in some calculations
-    Eigen::Vector3d rot_err;
-    rotation_error(quat_des, q_act, rot_err);
-
-    // Orientation error (see pg. 140 of Siciliano et al., 2010).
-    Eigen::Quaterniond quat_act(ee_pose_act.rotation());
-    Eigen::Quaterniond quat_err = quat_des * quat_act.inverse();
-
-    // Velocity command in task space: P control with velocity feedforward.
-    // At the moment we assume zero rotational feedforward.
-    Eigen::Vector3d v = Kv * pos_err + v_ff;
-    Eigen::Vector3d w = Kw * rot_err + w_ff;
-
     // Update time.
     ros::Time now = ros::Time::now();
     double dt = now.toSec() - time_prev;
     time_prev = now.toSec();
 
     // Optimize to solve IK problem.
-    int status = optimizer.solve(pos_des, quat_des, q_act, dq_act, obstacles, dt, dq_cmd);
-
-    publish_state(now, pos_act, quat_act, pos_des, quat_des, pos_err, quat_err, v_ff);
-
-    return status;
-}
-
-
-// TODO doesn't really make sense that this is here -- should be able to
-// publish this in the manager
-void IKController::publish_state(const ros::Time& time,
-                                 const Eigen::Vector3d& pos_act,
-                                 const Eigen::Quaterniond& quat_act,
-                                 const Eigen::Vector3d& pos_des,
-                                 const Eigen::Quaterniond& quat_des,
-                                 const Eigen::Vector3d& pos_err,
-                                 const Eigen::Quaterniond& quat_err,
-                                 const Eigen::Vector3d& vel_des) {
-    if (state_pub->trylock()) {
-        geometry_msgs::Pose pose_act_msg, pose_des_msg, pose_err_msg;
-
-        pose_msg_from_eigen(pos_act, quat_act, pose_act_msg);
-        pose_msg_from_eigen(pos_des, quat_des, pose_des_msg);
-        pose_msg_from_eigen(pos_err, quat_err, pose_err_msg);
-
-        state_pub->msg_.actual = pose_act_msg;
-        state_pub->msg_.desired = pose_des_msg;
-        state_pub->msg_.error = pose_err_msg;
-
-        state_pub->msg_.twist_desired.linear.x = vel_des(0);
-        state_pub->msg_.twist_desired.linear.y = vel_des(1);
-        state_pub->msg_.twist_desired.linear.z = vel_des(2);
-
-        state_pub->msg_.header.frame_id = "world";
-        state_pub->msg_.header.stamp = time;
-        state_pub->unlockAndPublish();
-    }
+    return optimizer.solve(pos_des, quat_des, q_act, dq_act, obstacles, dt, dq_cmd);
 }
 
 } // namespace mm

@@ -38,7 +38,13 @@ class IKControllerManager {
         void loop(const double hz);
 
     private:
+        // Pattern followed by ROS control for typedefing.
+        typedef realtime_tools::RealtimePublisher<mm_msgs::PoseControlState> StatePublisher;
+        typedef std::unique_ptr<StatePublisher> StatePublisherPtr;
+
         /** VARIABLES **/
+
+        StatePublisherPtr state_pub;
 
         // Subsribe to desired end effector pose trajectories.
         ros::Subscriber pose_traj_sub;
@@ -63,13 +69,6 @@ class IKControllerManager {
         // Actual joint positions, updated by the subscriber
         JointVector q_act;
         JointVector dq_act;
-
-        // Actual pose and twist of end effector.
-        Eigen::Affine3d w_T_e_act;
-        Vector6d dw_T_e_act;
-
-        // Base pose.
-        Eigen::Affine3d w_T_b_act;
 
         // Position offset from the force controller.
         Eigen::Vector3d pos_offset;
@@ -103,6 +102,12 @@ class IKControllerManager {
 
         // Publish joint speeds computed by the controller to the arm and base.
         void publish_joint_speeds(const JointVector& dq_cmd);
+
+        // Publish the current control state of the robot: actual and desired
+        // poses, and pose error.
+        void publish_robot_state(const Eigen::Vector3d& pos_des,
+                                 const Eigen::Quaterniond& quat_des,
+                                 const JointVector& q, const JointVector& dq);
 }; // class IKControllerManager
 
 } // namespace mm
