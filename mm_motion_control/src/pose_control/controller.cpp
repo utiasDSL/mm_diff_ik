@@ -1,4 +1,7 @@
+#include "mm_motion_control/pose_control/controller.h"
+
 #include <Eigen/Eigen>
+
 #include <ros/ros.h>
 #include <tf/transform_datatypes.h>
 
@@ -19,7 +22,6 @@
 #include "mm_motion_control/pose_control/trajectory.h"
 #include "mm_motion_control/pose_control/pose_error.h"
 #include "mm_motion_control/pose_control/obstacle.h"
-#include "mm_motion_control/pose_control/controller.h"
 
 
 namespace mm {

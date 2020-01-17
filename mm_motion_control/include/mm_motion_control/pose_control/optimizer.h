@@ -33,6 +33,18 @@ static const double STEP_SIZE = 1e-3;
 struct IKOptimizerState {
     JointVector dq_opt;  // Optimal joint velocities.
     double obj_val;  // Objective value.
+
+    // Detailed status code returned by optimization problem. 0 indicates
+    // success (see qpOASES user manual).
+    int status;
+
+    // Simple status code indicating status of optimization problem:
+    //  0: QP was solved,
+    //  1: QP could not be solved within the given number of iterations,
+    // -1: QP could not be solved due to an internal error,
+    // -2: QP is infeasible and thus could not be solved,
+    // -3: QP is unbounded and thus could not be solved.
+    int simple_status;
 };
 
 
@@ -40,7 +52,7 @@ class IKOptimizer {
     public:
         IKOptimizer() : state() {};
 
-        bool init() { return true; }
+        bool init();
 
         // Create and solve the QP.
         // Parameters:

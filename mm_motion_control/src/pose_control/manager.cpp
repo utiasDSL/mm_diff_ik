@@ -1,4 +1,7 @@
+#include "mm_motion_control/pose_control/manager.h"
+
 #include <Eigen/Eigen>
+
 #include <ros/ros.h>
 #include <tf/transform_datatypes.h>
 
@@ -20,7 +23,6 @@
 #include "mm_motion_control/pose_control/pose_error.h"
 #include "mm_motion_control/pose_control/obstacle.h"
 #include "mm_motion_control/pose_control/controller.h"
-#include "mm_motion_control/pose_control/manager.h"
 
 
 namespace mm {
@@ -94,7 +96,7 @@ void IKControllerManager::loop(const double hz) {
         if (status) {
             // Send zero velocity command if optimization fails (the velocity
             // commands are garbage in this case).
-            ROS_WARN("Optimization failed");
+            ROS_WARN_STREAM("Optimization failed with status = " << status);
             publish_joint_speeds(JointVector::Zero());
             rate.sleep();
             continue;

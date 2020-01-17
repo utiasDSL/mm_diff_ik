@@ -13,6 +13,14 @@
 namespace mm {
 
 
+static const int NUM_WSR = 10;
+
+
+bool IKOptimizer::init() {
+    return true;
+}
+
+
 int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
                           JointVector& lb, JointVector& ub,
                           Eigen::VectorXd& ubA, JointVector& dq_opt) {
@@ -38,23 +46,26 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
     qpOASES::real_t *ubA_data = ubA.data();
     qpOASES::real_t *lbA_data = NULL;
 
-    qpOASES::int_t nWSR = 10;
+    qpOASES::int_t nWSR = NUM_WSR;
 
     int num_obstacles = A.rows();
 
     // Solve the QP.
     qpOASES::QProblem qp(NUM_JOINTS, num_obstacles);
+    qp.setPrintLevel(qpOASES::PL_NONE);
     qp.init(H_data, g_data, A_data, lb_data, ub_data, lbA_data, ubA_data, nWSR);
     // qpOASES::QProblemB qp(NUM_JOINTS);
     // qp.init(H, g, lb, ub, nWSR);
 
     qpOASES::real_t dq_opt_raw[NUM_JOINTS];
-    int status = qp.getPrimalSolution(dq_opt_raw);
+    qpOASES::returnValue status = qp.getPrimalSolution(dq_opt_raw);
     dq_opt = Eigen::Map<JointVector>(dq_opt_raw); // map back to eigen
 
     // Populate state values;
     state.dq_opt = dq_opt;
     state.obj_val = qp.getObjVal();
+    state.status = status;
+    state.simple_status = qpOASES::getSimpleStatus(status);
 
     return status;
 }
