@@ -7,10 +7,10 @@
 #include <trajectory_msgs/JointTrajectoryPoint.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Twist.h>
-#include <mm_msgs/conversions.h>
 
 #include <mm_kinematics/kinematics.h>
 
+#include "mm_motion_control/util/messages.h"
 #include "mm_motion_control/joint_control/controller.h"
 
 

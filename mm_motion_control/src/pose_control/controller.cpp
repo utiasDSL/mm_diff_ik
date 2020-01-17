@@ -14,6 +14,7 @@
 #include <mm_msgs/Obstacles.h>
 #include <mm_kinematics/kinematics.h>
 
+#include "mm_motion_control/util/messages.h"
 #include "mm_motion_control/pose_control/optimizer.h"
 #include "mm_motion_control/pose_control/trajectory.h"
 #include "mm_motion_control/pose_control/pose_error.h"
@@ -24,28 +25,15 @@
 namespace mm {
 
 
-// Populate Pose message from Eigen types.
-void pose_msg_from_eigen(const Eigen::Vector3d& p, const Eigen::Quaterniond& q,
-                         geometry_msgs::Pose& msg) {
-    msg.position.x = p(0);
-    msg.position.y = p(1);
-    msg.position.z = p(2);
-
-    msg.orientation.w = q.w();
-    msg.orientation.x = q.x();
-    msg.orientation.y = q.y();
-    msg.orientation.z = q.z();
-}
-
-
 bool IKController::init(ros::NodeHandle& nh, Eigen::Matrix3d& Kv,
                         Eigen::Matrix3d& Kw) {
     this->Kv = Kv;
     this->Kw = Kw;
-    time_prev = ros::Time::now().toSec();
 
     optimizer.init();
     state_pub.reset(new StatePublisher(nh, "/mm_pose_state", 1));
+
+    tick();
 }
 
 

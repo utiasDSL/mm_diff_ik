@@ -93,11 +93,6 @@ class IKOptimizer {
     private:
         IKOptimizerState state;
 
-        // typedef realtime_tools::RealtimePublisher<mm_msgs::OptimizationState> StatePublisher;
-        // typedef std::unique_ptr<StatePublisher> StatePublisherPtr;
-        //
-        // StatePublisherPtr state_pub;
-
         // Construct and solve the QP given our problem-specific matrices.
         // Note that the underlying data for input arguments is not copied.
         int solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,

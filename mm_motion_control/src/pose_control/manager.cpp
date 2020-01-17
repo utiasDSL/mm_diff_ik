@@ -14,6 +14,7 @@
 #include <mm_msgs/Obstacles.h>
 #include <mm_kinematics/kinematics.h>
 
+#include "mm_motion_control/util/messages.h"
 #include "mm_motion_control/pose_control/optimizer.h"
 #include "mm_motion_control/pose_control/trajectory.h"
 #include "mm_motion_control/pose_control/pose_error.h"
