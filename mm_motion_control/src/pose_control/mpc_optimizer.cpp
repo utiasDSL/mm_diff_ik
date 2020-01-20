@@ -39,14 +39,14 @@ int MPCOptimizer::solve_sqp(qpOASES::SQProblem& sqp, OptWeightMatrix& H,
     // Solve the QP.
     int status = 0;
     if (init) {
-        status = qp.init(H_data, g_data, NULL, lb_data, ub_data, NULL, NULL, nWSR);
+        status = sqp.init(H_data, g_data, NULL, lb_data, ub_data, NULL, NULL, nWSR);
     } else {
-        status = qp.hotstart(H_data, g_data, NULL, lb_data, ub_data, NULL, NULL, nWSR);
+        status = sqp.hotstart(H_data, g_data, NULL, lb_data, ub_data, NULL, NULL, nWSR);
     }
 
     qpOASES::real_t step_raw[NUM_OPT];
-    qpOASES::returnValue status = sqp.getPrimalSolution(step_raw);
-    step = Eigen::Map<JointVector>(step_raw); // map back to eigen
+    sqp.getPrimalSolution(step_raw);
+    step = Eigen::Map<OptVector>(step_raw); // map back to eigen
 
     return status;
 }
@@ -60,8 +60,8 @@ int MPCOptimizer::solve(PoseTrajectory& traj,
     JointMatrix R = JointMatrix::Identity();
 
     // Lifted error weight matrix is (block) diagonal.
-    OptErrorWeightMatrix Qbar = OptErrorWeightMatrix::Zeros();
-    OptWeightMatrix Rbar = OptWeightMatrix::Zeros();
+    OptErrorWeightMatrix Qbar = OptErrorWeightMatrix::Zero();
+    OptWeightMatrix Rbar = OptWeightMatrix::Zero();
     for (int i = 0; i < NUM_HORIZON; ++i) {
         Qbar.block<6, 6>(i*6, i*6) = Q;
         Rbar.block<NUM_JOINTS, NUM_JOINTS>(i*NUM_JOINTS, i*NUM_JOINTS) = R;
@@ -73,7 +73,7 @@ int MPCOptimizer::solve(PoseTrajectory& traj,
     // Stacked vector of initial joint positions.
     OptVector q0bar = OptVector::Zero();
     for (int i = 0; i < NUM_HORIZON; ++i) {
-        q0bar.block<NUM_JOINTS, 1>(i * NUM_JOINTS) = q0;
+        q0bar.segment<NUM_JOINTS>(i * NUM_JOINTS) = q0;
     }
 
     // Current guess for optimal joint positions and velocities.
@@ -83,8 +83,8 @@ int MPCOptimizer::solve(PoseTrajectory& traj,
     OptLiftedJacobian Jbar = OptLiftedJacobian::Zero();
 
     // Placeholder bounds
-    OptVector dq_min = -OptVector::Ones()
-    OptVector dq_max = OptVector::Ones()
+    OptVector dq_min = -OptVector::Ones();
+    OptVector dq_max = OptVector::Ones();
 
     qpOASES::SQProblem sqp(NUM_OPT, 0);
     sqp.setPrintLevel(qpOASES::PL_NONE);
@@ -103,22 +103,22 @@ int MPCOptimizer::solve(PoseTrajectory& traj,
             traj.sample(t, Td, twist);
 
             // current guess for joint values k steps in the future
-            JointVector qk = qbar(NUM_JOINTS * k, NUM_JOINTS * (k + 1) - 1);
+            JointVector qk = qbar.segment<NUM_JOINTS>(NUM_JOINTS * k);
 
             // calculate pose error
             Vector6d ek;
             pose_error(Td, qk, ek);
-            ebar.block<6, 1>(k, 0) = ek;
+            ebar.segment<6>(k) = ek;
 
             // calculate Jacobian of pose error
             JacobianMatrix Jk;
             pose_error_jacobian(Td, qk, Jk);
-            Jbar.block<6, NUM_JOINTS>(6 * k, NUM_JOINTS * (k + 1) - 1) = Jk;
+            Jbar.block<6, NUM_JOINTS>(6 * k, NUM_JOINTS * k) = Jk;
         }
 
         // Construct overall objective matrices.
         OptWeightMatrix H = dt * dt * Ebar.transpose() * Jbar.transpose() * Qbar * Jbar * Ebar + Rbar;
-        OptVector g = dt * ebar * Qbar * Jbar * Ebar + dqbar * Rbar;
+        OptVector g = dt * ebar.transpose() * Qbar * Jbar * Ebar + dqbar.transpose() * Rbar;
 
         // Bounds
         OptVector lb = dq_min - dqbar;

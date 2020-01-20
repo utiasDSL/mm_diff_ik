@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Eigen>
+#include <qpOASES/qpOASES.hpp>
 
 #include <mm_kinematics/kinematics.h>
 
@@ -21,7 +22,7 @@ static const int NUM_OPT = NUM_JOINTS * NUM_HORIZON;
 
 class MPCOptimizer {
     public:
-        MPCOptimizer() : {};
+        MPCOptimizer() {};
 
         bool init();
 
@@ -37,7 +38,7 @@ class MPCOptimizer {
         //   0 if the optimization problem was solved successfully. Otherwise,
         //   status code indicates a failure in the optimization problem.
         int solve(PoseTrajectory& traj, const JointVector& q0,
-                  const JointVector& dq0, double dt, JointVector& dq_opt) {
+                  const JointVector& dq0, double dt, JointVector& dq_opt);
 
     private:
         typedef Eigen::Matrix<double, NUM_OPT, 1> OptVector;
@@ -51,7 +52,7 @@ class MPCOptimizer {
         // Note that the underlying data for input arguments is not copied.
         int solve_sqp(qpOASES::SQProblem& sqp, OptWeightMatrix& H,
                       OptVector& g, OptVector& lb, OptVector& ub,
-                      bool init, OptVector& step) {
+                      bool init, OptVector& step);
 
 }; // class MPCOptimizer
 
