@@ -98,11 +98,9 @@ void IKControllerManager::loop(const double hz) {
             // commands are garbage in this case).
             ROS_WARN_STREAM("Optimization failed with status = " << status);
             publish_joint_speeds(JointVector::Zero());
-            rate.sleep();
-            continue;
+        } else {
+            publish_joint_speeds(dq_cmd);
         }
-
-        publish_joint_speeds(dq_cmd);
 
         publish_robot_state(pos_des, quat_des, q_act, dq_act);
 

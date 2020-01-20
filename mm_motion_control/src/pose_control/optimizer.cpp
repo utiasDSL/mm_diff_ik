@@ -126,8 +126,8 @@ void IKOptimizer::build_objective(const Eigen::Vector3d& pos_des,
     // W4(4,4) = 0;
     // W4(5,5) = 0;
 
-    JointMatrix Q4 = J4.transpose() * W4 * J4;
-    JointVector C4 = e4.transpose() * W4 * J4;
+    JointMatrix Q4 = dt * dt * J4.transpose() * W4 * J4;
+    JointVector C4 = dt * e4.transpose() * W4 * J4;
 
     /* 5. Minimize joint acceleration */
 

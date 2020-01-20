@@ -8,16 +8,27 @@
 
 namespace mm {
 
-void rotation_error(const Eigen::Quaterniond& d, const JointVector& q,
-                    Eigen::Vector3d& e) {
-    // Desired EE rotation.
-    Eigen::Matrix3d Rd = d.toRotationMatrix();
+void pose_error(const Eigen::Affine3d& d, const JointVector& q, Vector6d& e) {
+    Eigen::Matrix3d Rd = d.rotation();
+    Eigen::Vector3d pd = d.translation();
 
-    // Current EE rotation (extract from current pose).
+    // Current EE pose.
     Eigen::Affine3d w_T_e;
     Kinematics::calc_w_T_e(q, w_T_e);
     Eigen::Matrix3d Re = w_T_e.rotation();
+    Eigen::Vector3d pe = w_T_e.translation();
 
+    // Calculate errors.
+    Vector3d pos_err, rot_err;
+    pos_err = pd - pe;
+    rotation_error(Rd, Re, rot_err);
+
+    e << pos_err, rot_err;
+}
+
+// TODO this does not need to be part of header
+void rotation_error(const Eigen::Matrix3d& Rd, const Eigen::Matrix3d& Re,
+                    Eigen::Vector3d& e) {
     Eigen::Vector3d nd = Rd.col(0);
     Eigen::Vector3d sd = Rd.col(1);
     Eigen::Vector3d ad = Rd.col(2);
@@ -57,7 +68,29 @@ void linearize_rotation_error(const Eigen::Quaterniond& d, const JointVector& q,
     // Construct Jacobian of e for first-order linearization.
     Matrix3x9 Jn, Js, Ja;
     rotation_error_jacobians(q, Jn, Js, Ja);
-    J = -0.5 * dt * (Nd * Jn + Sd * Js + Ad * Ja);
+
+    // TODO want to remove dt from this equation and use the function below to calculate
+    J = -0.5 * (Nd * Jn + Sd * Js + Ad * Ja);
+}
+
+
+void rotation_error_jacobian(const JointVector& q, Matrix3x9& Je) {
+    Matrix3x9 Jn, Js, Ja;
+    rotation_error_jacobians(q, Jn, Js, Ja);
+    // TODO need more info here
+    Je = -0.5 * (Nd * Jn + Sd * Js + Ad * Ja);
+}
+
+
+void pose_error_jacobian(const JointVector& q, JacobianMatrix& J) {
+    Matrix3x9 Je;
+    rotation_error_jacobian(q, Je);
+
+    JacobianMatrix J_geo;
+    Kinematics::jacobian(q, J_geo);
+    Matrix3x9 Jp = J_geo.topRows<3>();
+
+    J << Jp, Je;
 }
 
 
@@ -74,7 +107,7 @@ void linearize_position_error(const Eigen::Vector3d& d, const JointVector& q,
     // geometric Jacobian.
     JacobianMatrix J_geo;
     Kinematics::jacobian(q, J_geo);
-    J = -dt * J_geo.topRows<3>();
+    J = -J_geo.topRows<3>();
 }
 
 } // namespace mm

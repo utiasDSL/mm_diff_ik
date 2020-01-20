@@ -61,7 +61,7 @@ add_executable(mm_control_node
   src/nodes/pose_control_node.cpp
   src/pose_control/controller.cpp src/pose_control/manager.cpp
   src/pose_control/pose_error.cpp src/pose_control/pose_error_jac.cpp
-  src/pose_control/optimizer.cpp
+  src/pose_control/optimizer.cpp src/pose_control/optimizer2.cpp
 )
 target_link_libraries(mm_control_node
   ${catkin_LIBRARIES}
