@@ -52,6 +52,18 @@ class PoseTrajectory {
             return true;
         }
 
+        // Overloaded version in terms of poses and twists.
+        bool sample(const double t, Eigen::Affine3d& pose, Vector6d& twist) {
+            Eigen::Vector3d p, v, w;
+            Eigen::Quaterniond q;
+
+            bool status = sample(t, p, v, q, w);
+            pose = Eigen::Translation3d(p) * q;
+            twist << v, w;
+
+            return status;
+        }
+
     private:
         double t0; // start time
         double tf; // end time

@@ -95,23 +95,24 @@ int MPCOptimizer::solve(PoseTrajectory& traj,
 
         // Inner loop iterates over timesteps.
         for (int k = 0; k < NUM_HORIZON; ++i) {
-            // sample desired pose
-            Eigen::Vector3d pos_des, v_des, w_des;
-            Eigen::Quaterniond quat_des;
             double t = (k + 1) * LOOKAHEAD_STEP_TIME;
-            traj.sample(t, pos_des, v_des, quat_des, w_des);
+
+            // sample desired pose
+            Eigen::Affine3d Td;
+            Vector6d twist;  // unused
+            traj.sample(t, Td, twist);
 
             // current guess for joint values k steps in the future
             JointVector qk = qbar(NUM_JOINTS * k, NUM_JOINTS * (k + 1) - 1);
 
             // calculate pose error
             Vector6d ek;
-            pose_error(pos_des, quat_des, qk, ek);
+            pose_error(Td, qk, ek);
             ebar.block<6, 1>(k, 0) = ek;
 
             // calculate Jacobian of pose error
             JacobianMatrix Jk;
-            pose_error_jacobian(qk, Jk);
+            pose_error_jacobian(Td, qk, Jk);
             Jbar.block<6, NUM_JOINTS>(6 * k, NUM_JOINTS * (k + 1) - 1) = Jk;
         }
 

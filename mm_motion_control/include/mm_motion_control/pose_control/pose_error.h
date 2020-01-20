@@ -8,6 +8,23 @@
 
 namespace mm {
 
+// Calculate pose error.
+// Parameters:
+//   Td: desired pose
+//   q:  current joint positions
+//   e:  populated with orientation error vector
+void pose_error(const Eigen::Affine3d& Td, const JointVector& q, Vector6d& e);
+
+
+// Calculate pose error Jacobian (note this is different from the manipulator
+// Jacobian).
+// Parameters:
+//   Td: desired pose
+//   q:  current joint positions
+//   J:  populated with pose error Jacobian
+void pose_error_jacobian(const Eigen::Affine3d& Td, const JointVector& q,
+                         JacobianMatrix& J);
+
 // Calculate Jacobians w.r.t. each column of the forward kinematics rotation
 // matrix, R(q) = [n, s, a].
 // Parameters:
@@ -17,38 +34,5 @@ namespace mm {
 //   Ja: populated with Jacobian of third column (a)
 void rotation_error_jacobians(const JointVector& q,
                               Matrix3x9& Jn, Matrix3x9& Js, Matrix3x9& Ja);
-
-
-// Calculate rotation error.
-// Parameters:
-//   d: desired orientation
-//   q: current joint positions
-//   e: populated with orientation error vector
-void rotation_error(const Eigen::Quaterniond& d, const JointVector& q,
-                    Eigen::Vector3d& e);
-
-
-// Linearize the rotation error around the joint configuration q.
-// Parameters:
-//   d:  desired orientation
-//   q:  current joint positions
-//   dt: time step
-//   e:  populated with orientation error calculated at the linearization point q
-//   J:  populated with Jacobian (first derivative) of orientation error
-//       evaluated at the linearization point
-void linearize_rotation_error(const Eigen::Quaterniond& d, const JointVector& q,
-                              double dt, Eigen::Vector3d& e, Matrix3x9& J);
-
-
-// Linearize the position error around the joint configuration q.
-// Parameters:
-//   d:  desired position
-//   q:  current joint positions
-//   dt: time step
-//   e:  populated with position error calculated at the linearization point q
-//   J:  populated with Jacobian (first derivative) of position error evaluated
-//       at the linearization point
-void linearize_position_error(const Eigen::Vector3d& d, const JointVector& q,
-                              double dt, Eigen::Vector3d& e, Matrix3x9& J);
 
 } // namespace mm

@@ -109,17 +109,13 @@ void IKOptimizer::build_objective(const Eigen::Vector3d& pos_des,
 
     /* 4. Error minimization objective */
 
-    Eigen::Vector3d pos_err, rot_err;
-    Matrix3x9 pos_J, rot_J;
-    linearize_rotation_error(quat_des, q, dt, rot_err, rot_J);
-    linearize_position_error(pos_des, q, dt, pos_err, pos_J);
-
-    // Compose into a single expression.
     JacobianMatrix J4;
-    J4 << pos_J, rot_J;
-
     Vector6d e4;
-    e4 << pos_err, rot_err;
+
+    Eigen::Affine3d Td = Eigen::Translation3d(pos_des) * quat_des;
+
+    pose_error(Td, q, e4);
+    pose_error_jacobian(Td, q, J4);
 
     Matrix6d W4 = Matrix6d::Identity();
     // W4(3,3) = 0;
