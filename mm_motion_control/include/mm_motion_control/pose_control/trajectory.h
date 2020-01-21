@@ -26,6 +26,7 @@ class PoseTrajectory {
             dt = trajectory.dt.toSec();
             waypoints = trajectory.points;
             tf = t0 + (waypoints.size()-1) * dt;
+            // ROS_INFO_STREAM("traj t0 = " << t0 << ", tf = " << tf << ", duration = " << tf - t0);
             w_prev = Eigen::Vector3d::Zero();
             stationary = false;
 

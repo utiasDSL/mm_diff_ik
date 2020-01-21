@@ -86,7 +86,9 @@ void IKControllerManager::loop(const double hz) {
         JointVector dq_cmd = JointVector::Zero();
         int status = controller.update(t, trajectory, q_act, dq_act,
                                        obstacles, dq_cmd);
-        if (status) {
+
+        // Return value is 0 is successful, non-zero otherwise.
+        if (!status) {
             // Send zero velocity command if optimization fails (the velocity
             // commands are garbage in this case).
             ROS_WARN_STREAM("Optimization failed with status = " << status);

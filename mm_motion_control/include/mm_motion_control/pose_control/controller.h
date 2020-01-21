@@ -3,11 +3,9 @@
 #include <Eigen/Eigen>
 
 #include <mm_kinematics/kinematics.h>
-#include <mm_msgs/PoseTrajectory.h>
-#include <mm_msgs/PoseControlState.h>
-#include <mm_msgs/Obstacles.h>
 
 #include "mm_motion_control/pose_control/optimizer.h"
+#include "mm_motion_control/pose_control/mpc_optimizer.h"
 #include "mm_motion_control/pose_control/trajectory.h"
 #include "mm_motion_control/pose_control/obstacle.h"
 
@@ -52,7 +50,7 @@ class IKController {
 
         // Optimizer to solve for joint velocity commands to send to the
         // robot.
-        IKOptimizer optimizer;
+        MPCOptimizer optimizer;
 
 }; // class IKController
 

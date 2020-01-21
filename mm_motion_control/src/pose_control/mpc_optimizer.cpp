@@ -37,18 +37,18 @@ int MPCOptimizer::solve_sqp(qpOASES::SQProblem& sqp, OptWeightMatrix& H,
     qpOASES::int_t nWSR = NUM_WSR;
 
     // Solve the QP.
-    int status = 0;
+    qpOASES::returnValue ret;
     if (init) {
-        status = sqp.init(H_data, g_data, NULL, lb_data, ub_data, NULL, NULL, nWSR);
+        ret = sqp.init(H_data, g_data, NULL, lb_data, ub_data, NULL, NULL, nWSR);
     } else {
-        status = sqp.hotstart(H_data, g_data, NULL, lb_data, ub_data, NULL, NULL, nWSR);
+        ret = sqp.hotstart(H_data, g_data, NULL, lb_data, ub_data, NULL, NULL, nWSR);
     }
 
     qpOASES::real_t step_raw[NUM_OPT];
     sqp.getPrimalSolution(step_raw);
     step = Eigen::Map<OptVector>(step_raw); // map back to eigen
 
-    return status;
+    return qpOASES::getSimpleStatus(ret);
 }
 
 
@@ -56,7 +56,7 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
                         const JointVector& q0, const JointVector& dq0,
                         double dt, JointVector& dq_opt) {
     // Error weight matrix.
-    Matrix6d Q = Matrix6d::Identity();
+    Matrix6d Q = 100 * Matrix6d::Identity();
     JointMatrix R = JointMatrix::Identity();
 
     // Lifted error weight matrix is (block) diagonal.
@@ -82,29 +82,34 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
     OptErrorVector ebar = OptErrorVector::Zero();
     OptLiftedJacobian Jbar = OptLiftedJacobian::Zero();
 
-    // Placeholder bounds
+    // TODO Placeholder bounds
     OptVector dq_min = -OptVector::Ones();
     OptVector dq_max = OptVector::Ones();
 
+    // Roll out desired trajectory.
+    // TODO handling overshooting the end of the trajectory isn't good
+    // because it spreads error for final position over time
+    std::vector<Eigen::Affine3d> Tds;
+    for (int k = 0; k < NUM_HORIZON; ++k) {
+        double t = t0 + k * LOOKAHEAD_STEP_TIME;
+
+        Eigen::Affine3d Td;
+        Vector6d twist;  // unused
+        trajectory.sample(t, Td, twist);
+
+        Tds.push_back(Td);
+    }
+
     qpOASES::SQProblem sqp(NUM_OPT, 0);
-    sqp.setPrintLevel(qpOASES::PL_NONE);
+    // sqp.setPrintLevel(qpOASES::PL_NONE);
 
     // Outer loop iterates over linearizations (i.e. QP solves).
     for (int i = 0; i < NUM_ITER; ++i) {
-        qbar = q0bar + dt * Ebar * dqbar;
+        qbar = q0bar + LOOKAHEAD_STEP_TIME * Ebar * dqbar;
 
-        // Inner loop iterates over timesteps.
-        for (int k = 0; k < NUM_HORIZON; ++i) {
-            // TODO verify that this is correct and we don't have an off-by-one
-            // error
-            double t = t0 + k * LOOKAHEAD_STEP_TIME;
-
-            // sample desired pose
-            // TODO handling overshooting the end of the trajectory isn't good
-            // because it spreads error for final position over time
-            Eigen::Affine3d Td;
-            Vector6d twist;  // unused
-            trajectory.sample(t, Td, twist);
+        // Inner loop iterates over timesteps to build up the matrices.
+        for (int k = 0; k < NUM_HORIZON; ++k) {
+            Eigen::Affine3d Td = Tds[k];
 
             // current guess for joint values k steps in the future
             JointVector qk = qbar.segment<NUM_JOINTS>(NUM_JOINTS * k);
@@ -121,8 +126,8 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
         }
 
         // Construct overall objective matrices.
-        OptWeightMatrix H = dt * dt * Ebar.transpose() * Jbar.transpose() * Qbar * Jbar * Ebar + Rbar;
-        OptVector g = dt * ebar.transpose() * Qbar * Jbar * Ebar + dqbar.transpose() * Rbar;
+        OptWeightMatrix H = LOOKAHEAD_STEP_TIME * LOOKAHEAD_STEP_TIME * Ebar.transpose() * Jbar.transpose() * Qbar * Jbar * Ebar + Rbar;
+        OptVector g = LOOKAHEAD_STEP_TIME * ebar.transpose() * Qbar * Jbar * Ebar + dqbar.transpose() * Rbar;
 
         // Bounds
         OptVector lb = dq_min - dqbar;
@@ -140,6 +145,9 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
         // dqbar updated by new step
         dqbar = dqbar + step;
     }
-}; // class MPCOptimizer
+
+    dq_opt = dqbar.head<NUM_JOINTS>();
+    ROS_INFO_STREAM(dq_opt);
+}
 
 } // namespace mm

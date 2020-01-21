@@ -53,21 +53,21 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
     // Solve the QP.
     qpOASES::QProblem qp(NUM_JOINTS, num_obstacles);
     qp.setPrintLevel(qpOASES::PL_NONE);
-    qp.init(H_data, g_data, A_data, lb_data, ub_data, lbA_data, ubA_data, nWSR);
+    qpOASES::returnValue ret = qp.init(H_data, g_data, A_data, lb_data, ub_data, lbA_data, ubA_data, nWSR);
     // qpOASES::QProblemB qp(NUM_JOINTS);
     // qp.init(H, g, lb, ub, nWSR);
 
     qpOASES::real_t dq_opt_raw[NUM_JOINTS];
-    qpOASES::returnValue status = qp.getPrimalSolution(dq_opt_raw);
+    qp.getPrimalSolution(dq_opt_raw);
     dq_opt = Eigen::Map<JointVector>(dq_opt_raw); // map back to eigen
 
     // Populate state values;
     state.dq_opt = dq_opt;
     state.obj_val = qp.getObjVal();
-    state.status = status;
-    state.simple_status = qpOASES::getSimpleStatus(status);
+    state.status = ret;
+    state.simple_status = qpOASES::getSimpleStatus(ret);
 
-    return status;
+    return ret;
 }
 
 
@@ -152,12 +152,11 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
                        const JointVector& q, const JointVector& dq,
                        const std::vector<ObstacleModel>& obstacles, double dt,
                        JointVector& dq_opt) {
-    // TODO is this slow?
+    // TODO is this slow? Could potentially be improved by pre-processing the
+    // trajectory
     Eigen::Affine3d Td;
     Vector6d twist;
     trajectory.sample(t, Td, twist);
-
-    // ROS_INFO_STREAM(Td.translation());
 
     /*** OBJECTIVE ***/
 

@@ -4,7 +4,6 @@
 
 #include <mm_kinematics/kinematics.h>
 
-#include "mm_motion_control/pose_control/optimizer.h"
 #include "mm_motion_control/pose_control/trajectory.h"
 #include "mm_motion_control/pose_control/obstacle.h"
 
@@ -33,7 +32,7 @@ int IKController::update(double t, PoseTrajectory& trajectory,
     time_prev = t;
 
     // Optimize to solve IK problem.
-    return optimizer.solve(t, trajectory, q_act, dq_act, obstacles, dt, dq_cmd);
+    return optimizer.solve(t, trajectory, q_act, dq_act, dt, dq_cmd);
 }
 
 } // namespace mm
