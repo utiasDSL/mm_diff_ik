@@ -31,6 +31,8 @@ int IKController::update(double t, PoseTrajectory& trajectory,
     double dt = t - time_prev;
     time_prev = t;
 
+    ROS_INFO_STREAM("dt = " << dt);
+
     // Optimize to solve IK problem.
     return optimizer.solve(t, trajectory, q_act, dq_act, dt, dq_cmd);
 }

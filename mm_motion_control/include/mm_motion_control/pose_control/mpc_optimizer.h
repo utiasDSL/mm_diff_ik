@@ -15,15 +15,15 @@ namespace mm {
 static const double LOOKAHEAD_STEP_TIME = 0.01;
 
 static const int NUM_HORIZON = 10; // steps to look ahead
-static const int NUM_ITER = 3; // number of relinearizations in SQP
-static const int NUM_WSR = 1000; // max number of working set recalculations
+static const int NUM_ITER = 1; // number of relinearizations in SQP
+static const int NUM_WSR = 200; // max number of working set recalculations
 
 static const int NUM_OPT = NUM_JOINTS * NUM_HORIZON;
 
 
 class MPCOptimizer {
     public:
-        MPCOptimizer() {};
+        MPCOptimizer() : sqp(NUM_OPT, 0) {};
 
         bool init();
 
@@ -50,11 +50,13 @@ class MPCOptimizer {
         typedef Eigen::Matrix<double, 6 * NUM_HORIZON, 6 * NUM_HORIZON> OptErrorWeightMatrix;
         typedef Eigen::Matrix<double, 6 * NUM_HORIZON, NUM_JOINTS * NUM_HORIZON> OptLiftedJacobian;
 
+        // SQP to solve.
+        qpOASES::SQProblem sqp;
+
         // Construct and solve the QP given our problem-specific matrices.
         // Note that the underlying data for input arguments is not copied.
-        int solve_sqp(qpOASES::SQProblem& sqp, OptWeightMatrix& H,
-                      OptVector& g, OptVector& lb, OptVector& ub,
-                      bool init, OptVector& step);
+        int solve_sqp(OptWeightMatrix& H, OptVector& g, OptVector& lb,
+                      OptVector& ub, OptVector& step);
 
 }; // class MPCOptimizer
 

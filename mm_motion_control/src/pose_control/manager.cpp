@@ -97,8 +97,10 @@ void IKControllerManager::loop(const double hz) {
             publish_joint_speeds(dq_cmd);
         }
 
-        // TODO this needs to be updated
-        // publish_robot_state(pos_des, quat_des, q_act, dq_act);
+        Eigen::Affine3d Td;
+        Vector6d twist;
+        trajectory.sample(t, Td, twist);
+        publish_robot_state(Td, q_act, dq_act);
 
         rate.sleep();
     }
@@ -155,17 +157,20 @@ void IKControllerManager::obstacle_cb(const mm_msgs::Obstacles& msg) {
 }
 
 
-void IKControllerManager::publish_robot_state(
-        const Eigen::Vector3d& pos_des,
-        const Eigen::Quaterniond& quat_des,
-        const JointVector& q,
-        const JointVector& dq) {
+void IKControllerManager::publish_robot_state(const Eigen::Affine3d& Td,
+                                              const JointVector& q,
+                                              const JointVector& dq) {
+    // Desired pose.
+    Eigen::Vector3d pos_des = Td.translation();
+    Eigen::Quaterniond quat_des(Td.rotation());
+
+    // Actual pose.
     Eigen::Affine3d w_T_e;
     Kinematics::calc_w_T_e(q, w_T_e);
-
     Eigen::Vector3d pos_act = w_T_e.translation();
     Eigen::Quaterniond quat_act(w_T_e.rotation());
 
+    // Error.
     Eigen::Vector3d pos_err = pos_des - pos_act;
     Eigen::Quaterniond quat_err = quat_des * quat_act.inverse();
 
