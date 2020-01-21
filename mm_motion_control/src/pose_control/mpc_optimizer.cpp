@@ -101,7 +101,7 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
     }
 
     qpOASES::SQProblem sqp(NUM_OPT, 0);
-    // sqp.setPrintLevel(qpOASES::PL_NONE);
+    sqp.setPrintLevel(qpOASES::PL_NONE);
 
     // Outer loop iterates over linearizations (i.e. QP solves).
     for (int i = 0; i < NUM_ITER; ++i) {
@@ -117,7 +117,7 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
             // calculate pose error
             Vector6d ek;
             pose_error(Td, qk, ek);
-            ebar.segment<6>(k) = ek;
+            ebar.segment<6>(6 * k) = ek;
 
             // calculate Jacobian of pose error
             JacobianMatrix Jk;
