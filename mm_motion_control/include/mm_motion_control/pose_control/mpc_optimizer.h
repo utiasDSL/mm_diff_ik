@@ -28,16 +28,17 @@ class MPCOptimizer {
 
         // Create and solve the QP.
         // Parameters:
-        //   traj:   Desired EE pose trajectory.
-        //   q0:     Current joint angles.
-        //   dq0:    Current joint velocities.
-        //   dt:     Control timestep.
-        //   dq_opt: Optimal values of joint velocities.
+        //   t:          Current time.
+        //   trajectory: Desired EE pose trajectory.
+        //   q0:         Current joint angles.
+        //   dq0:        Current joint velocities.
+        //   dt:         Control timestep.
+        //   dq_opt:     Optimal values of joint velocities.
         //
         // Returns:
         //   0 if the optimization problem was solved successfully. Otherwise,
         //   status code indicates a failure in the optimization problem.
-        int solve(PoseTrajectory& traj, const JointVector& q0,
+        int solve(double t0, PoseTrajectory& trajectory, const JointVector& q0,
                   const JointVector& dq0, double dt, JointVector& dq_opt);
 
     private:

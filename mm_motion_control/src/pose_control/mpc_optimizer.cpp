@@ -52,7 +52,7 @@ int MPCOptimizer::solve_sqp(qpOASES::SQProblem& sqp, OptWeightMatrix& H,
 }
 
 
-int MPCOptimizer::solve(PoseTrajectory& traj,
+int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
                         const JointVector& q0, const JointVector& dq0,
                         double dt, JointVector& dq_opt) {
     // Error weight matrix.
@@ -95,12 +95,16 @@ int MPCOptimizer::solve(PoseTrajectory& traj,
 
         // Inner loop iterates over timesteps.
         for (int k = 0; k < NUM_HORIZON; ++i) {
-            double t = (k + 1) * LOOKAHEAD_STEP_TIME;
+            // TODO verify that this is correct and we don't have an off-by-one
+            // error
+            double t = t0 + k * LOOKAHEAD_STEP_TIME;
 
             // sample desired pose
+            // TODO handling overshooting the end of the trajectory isn't good
+            // because it spreads error for final position over time
             Eigen::Affine3d Td;
             Vector6d twist;  // unused
-            traj.sample(t, Td, twist);
+            trajectory.sample(t, Td, twist);
 
             // current guess for joint values k steps in the future
             JointVector qk = qbar.segment<NUM_JOINTS>(NUM_JOINTS * k);

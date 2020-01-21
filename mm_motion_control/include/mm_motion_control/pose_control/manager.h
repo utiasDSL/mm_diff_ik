@@ -70,9 +70,6 @@ class IKControllerManager {
         JointVector q_act;
         JointVector dq_act;
 
-        // Position offset from the force controller.
-        Eigen::Vector3d pos_offset;
-
         // Trajectory interpolator.
         PoseTrajectory trajectory;
 

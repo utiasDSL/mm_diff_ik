@@ -5,6 +5,7 @@
 #include <mm_kinematics/kinematics.h>
 
 #include "mm_motion_control/pose_control/obstacle.h"
+#include "mm_motion_control/pose_control/trajectory.h"
 
 
 namespace mm {
@@ -56,18 +57,17 @@ class IKOptimizer {
 
         // Create and solve the QP.
         // Parameters:
-        //   pos_des:  Desired EE position.
-        //   quat_des: Desired EE orientation.
-        //   q:        Current joint angles.
-        //   dq:       Current joint velocities.
-        //   dt:       Control timestep.
-        //   dq_opt:   Optimal values of joint velocities.
+        //   t:          Current time.
+        //   trajectory: Desired EE pose trajectory.
+        //   q:          Current joint angles.
+        //   dq:         Current joint velocities.
+        //   dt:         Control timestep.
+        //   dq_opt:     Optimal values of joint velocities.
         //
         // Returns:
         //   0 if the optimization problem was solved successfully. Otherwise,
         //   status code indicates a failure in the optimization problem.
-        int solve(const Eigen::Vector3d& pos_des,
-                  const Eigen::Quaterniond& quat_des,
+        int solve(double t, PoseTrajectory& trajectory,
                   const JointVector& q, const JointVector& dq,
                   const std::vector<ObstacleModel>& obstacles, double dt,
                   JointVector& dq_opt);
@@ -113,8 +113,7 @@ class IKOptimizer {
 
         // Build objective matrices H and g, where the quadratic to minimize is
         // x'Hx + g'x.
-        void build_objective(const Eigen::Vector3d& pos_des,
-                             const Eigen::Quaterniond& quat_des,
+        void build_objective(const Eigen::Affine3d& Td,
                              const JointVector& q, const JointVector& dq,
                              double dt, JointMatrix& H, JointVector& g);
 }; // class IKOptimizer

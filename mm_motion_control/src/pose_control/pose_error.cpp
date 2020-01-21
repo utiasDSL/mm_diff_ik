@@ -13,7 +13,9 @@ namespace mm {
 void position_error_jacobian(const JointVector& q, Matrix3x9& Jp) {
     JacobianMatrix J_geo; // geometric Jacobian
     Kinematics::jacobian(q, J_geo);
-    Jp = J_geo.topRows<3>();
+
+    // Note negative sign since error is pd - pe.
+    Jp = -J_geo.topRows<3>();
 }
 
 

@@ -71,8 +71,7 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
 }
 
 
-void IKOptimizer::build_objective(const Eigen::Vector3d& pos_des,
-                                  const Eigen::Quaterniond& quat_des,
+void IKOptimizer::build_objective(const Eigen::Affine3d& Td,
                                   const JointVector& q, const JointVector& dq,
                                   double dt, JointMatrix& H, JointVector& g) {
     /* 1. Minimize velocity objective. */
@@ -111,9 +110,6 @@ void IKOptimizer::build_objective(const Eigen::Vector3d& pos_des,
 
     JacobianMatrix J4;
     Vector6d e4;
-
-    Eigen::Affine3d Td = Eigen::Translation3d(pos_des) * quat_des;
-
     pose_error(Td, q, e4);
     pose_error_jacobian(Td, q, J4);
 
@@ -152,17 +148,22 @@ void IKOptimizer::build_objective(const Eigen::Vector3d& pos_des,
 }
 
 
-int IKOptimizer::solve(const Eigen::Vector3d& pos_des,
-                       const Eigen::Quaterniond& quat_des,
+int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
                        const JointVector& q, const JointVector& dq,
                        const std::vector<ObstacleModel>& obstacles, double dt,
                        JointVector& dq_opt) {
+    // TODO is this slow?
+    Eigen::Affine3d Td;
+    Vector6d twist;
+    trajectory.sample(t, Td, twist);
+
+    // ROS_INFO_STREAM(Td.translation());
 
     /*** OBJECTIVE ***/
 
     JointMatrix H;
     JointVector g;
-    build_objective(pos_des, quat_des, q, dq, dt, H, g);
+    build_objective(Td, q, dq, dt, H, g);
 
 
     /*** BOUNDS ***/
