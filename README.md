@@ -67,7 +67,15 @@ packages.
 ### Experiment
 1. Connect to `DSL_DroneNet_5G` network.
 2. Connect to the Thing via Ethernet.
-3. Run:
+3. Ensure ROS is configured to use the Thing as master:
+```bash
+# on laptop
+> export ROS_IP=192.168.131.100
+> export ROS_MASTER_URI=http://cpr-tor11-01:11311
+```
+If you run `rostopic list`, you should see various topics related to the Thing
+listed.
+4. Run:
 ```bash
 # on laptop
 > roslaunch mm_vicon vicon.launch
@@ -76,5 +84,11 @@ packages.
 > roslaunch mm_motion_control mm_motion_control.launch
 
 # on laptop
-> rosrun mm_trajectories launch_traj.py
+> rosrun mm_trajectories line.py
+```
+
+Other useful commands (run on the laptop) include:
+```bash
+# go to home position defined in mm_motion_control/joint_control/manager.h
+> roslaunch mm_motion_control home.launch
 ```
