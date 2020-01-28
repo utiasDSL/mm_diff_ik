@@ -123,6 +123,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td,
     if (dt * dt > 0) {
         Q5 = JointMatrix::Identity() / (dt * dt);
     }
+    // TODO this must be wrong
     JointVector C5 = -dq.transpose() * Q5;
 
 

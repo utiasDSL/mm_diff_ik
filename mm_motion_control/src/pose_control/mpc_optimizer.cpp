@@ -108,11 +108,11 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
         Tds.push_back(Td);
     }
 
+    int status = 0;
+
     // Outer loop iterates over linearizations (i.e. QP solves).
     for (int i = 0; i < NUM_ITER; ++i) {
         qbar = q0bar + LOOKAHEAD_STEP_TIME * Ebar * dqbar;
-
-        double t1 = ros::Time::now().toSec();
 
         // Inner loop iterates over timesteps to build up the matrices.
         // We're abusing indexing notation slightly here: mathematically, we
@@ -136,8 +136,6 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
             Jbar.block<6, NUM_JOINTS>(6 * k, NUM_JOINTS * k) = Jk;
         }
 
-        double t2 = ros::Time::now().toSec();
-
         // Construct overall objective matrices.
         OptWeightMatrix H = LOOKAHEAD_STEP_TIME * LOOKAHEAD_STEP_TIME * Ebar.transpose() * Jbar.transpose() * Qbar * Jbar * Ebar + Rbar;
         OptVector g = LOOKAHEAD_STEP_TIME * ebar.transpose() * Qbar * Jbar * Ebar + dqbar.transpose() * Rbar;
@@ -147,17 +145,17 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
         OptVector ub = dq_max - dqbar;
 
         OptVector step = OptVector::Zero();
-        solve_sqp(H, g, lb, ub, step);
-
-        double t3 = ros::Time::now().toSec();
+        status = solve_sqp(H, g, lb, ub, step);
+        if (status) {
+            return status;
+        }
 
         // dqbar updated by new step
         dqbar = dqbar + step;
-
-        // ROS_INFO_STREAM("t12 = " << t2 - t1 << ", t23 = " << t3 - t2);
     }
 
     dq_opt = dqbar.head<NUM_JOINTS>();
+    return status;
 }
 
 } // namespace mm
