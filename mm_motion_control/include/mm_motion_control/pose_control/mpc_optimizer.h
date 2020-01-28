@@ -10,9 +10,7 @@
 
 namespace mm {
 
-// TODO Later we will likely specify a time horizon and an interval and
-// calculate based on that.
-static const double LOOKAHEAD_STEP_TIME = 0.01;
+static const double LOOKAHEAD_STEP_TIME = 0.1;
 
 static const int NUM_HORIZON = 10; // steps to look ahead
 static const int NUM_ITER = 1; // number of relinearizations in SQP

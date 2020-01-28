@@ -131,6 +131,11 @@ class SymbolicKinematics(object):
         # Full Jacobian
         self.J_sym = sym.Matrix.vstack(Jv, Jw)
 
+    def calc_sym_mi(self):
+        # This appears to be intractable to evaluate symbolically
+        mi = sym.sqrt(sym.det(self.J_sym * self.J_sym.T))
+        return mi
+
     def _calc_sym_analytic_jacobian(self):
         # Transform from base to EE
         T = self.T0[-1]

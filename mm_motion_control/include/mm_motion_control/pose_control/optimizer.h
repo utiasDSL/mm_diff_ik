@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Eigen>
+#include <qpOASES/qpOASES.hpp>
 
 #include <mm_kinematics/kinematics.h>
 
@@ -37,7 +38,7 @@ struct IKOptimizerState {
 
     // Detailed status code returned by optimization problem. 0 indicates
     // success (see qpOASES user manual).
-    int status;
+    qpOASES::returnValue code;
 
     // Simple status code indicating status of optimization problem:
     //  0: QP was solved,
@@ -45,7 +46,7 @@ struct IKOptimizerState {
     // -1: QP could not be solved due to an internal error,
     // -2: QP is infeasible and thus could not be solved,
     // -3: QP is unbounded and thus could not be solved.
-    int simple_status;
+    int status;
 };
 
 

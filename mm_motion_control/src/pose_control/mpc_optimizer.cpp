@@ -86,9 +86,13 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
     OptErrorVector ebar = OptErrorVector::Zero();
     OptLiftedJacobian Jbar = OptLiftedJacobian::Zero();
 
-    // TODO Placeholder bounds
-    OptVector dq_min = -OptVector::Ones();
-    OptVector dq_max = OptVector::Ones();
+    // Velocity bounds.
+    OptVector dq_min = OptVector::Zero();
+    OptVector dq_max = OptVector::Zero();
+    for (int i = 0; i < NUM_HORIZON; ++i) {
+        dq_min.segment<NUM_JOINTS>(i * NUM_JOINTS) = VELOCITY_LIMITS_LOWER;
+        dq_max.segment<NUM_JOINTS>(i * NUM_JOINTS) = VELOCITY_LIMITS_UPPER;
+    }
 
     // Roll out desired trajectory.
     // TODO handling overshooting the end of the trajectory isn't good

@@ -54,8 +54,7 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
     qpOASES::QProblem qp(NUM_JOINTS, num_obstacles);
     qp.setPrintLevel(qpOASES::PL_NONE);
     qpOASES::returnValue ret = qp.init(H_data, g_data, A_data, lb_data, ub_data, lbA_data, ubA_data, nWSR);
-    // qpOASES::QProblemB qp(NUM_JOINTS);
-    // qp.init(H, g, lb, ub, nWSR);
+    int status = qpOASES::getSimpleStatus(ret);
 
     qpOASES::real_t dq_opt_raw[NUM_JOINTS];
     qp.getPrimalSolution(dq_opt_raw);
@@ -64,10 +63,10 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
     // Populate state values;
     state.dq_opt = dq_opt;
     state.obj_val = qp.getObjVal();
-    state.status = ret;
-    state.simple_status = qpOASES::getSimpleStatus(ret);
+    state.code = ret;
+    state.status = status;
 
-    return ret;
+    return status;
 }
 
 
@@ -80,16 +79,14 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td,
     JointVector C1 = JointVector::Zero();
 
     // To reduce base movement, increase the base joint weighting.
-    // Q1(0,0) = 10;
-    // Q1(1,1) = 10;
-    // Q1(2,2) = 10;
+    // Q1.topLeftCorner<3, 3>() = 10 * Eigen::Matrix3d::Identity();
 
     /* 2. Manipulability objective. */
 
-    JointVector dm;
+    JointVector dm = JointVector::Zero();
     JointMatrix Hm = JointMatrix::Zero();
-    // linearize_manipulability2(q, dm, Hm, STEP_SIZE);
     linearize_manipulability1(q, dm, STEP_SIZE);
+    // linearize_manipulability2(q, dm, Hm, STEP_SIZE);
 
     JointMatrix Q2 = -dt * dt * Hm;
     JointVector C2 = -dt * dm;
@@ -97,14 +94,12 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td,
     /* 3. Avoid joint limits objective. */
     // TODO this is experimental
 
+    // Base has no limits, so first three joints are unweighted.
     JointMatrix Q3 = dt * dt * JointMatrix::Identity();
-    Q3(0,0) = 0;
-    Q3(1,1) = 0;
-    Q3(2,2) = 0;
+    Q3.topLeftCorner<3, 3>() = Eigen::Matrix3d::Zero();
+
     JointVector C3 = dt * (2*q - (POSITION_LIMITS_UPPER + POSITION_LIMITS_LOWER));
-    C3(0) = 0;
-    C3(1) = 0;
-    C3(2) = 0;
+    C3.head<3>() = Eigen::Vector3d::Zero();
 
     /* 4. Error minimization objective */
 
@@ -114,9 +109,9 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td,
     pose_error_jacobian(Td, q, J4);
 
     Matrix6d W4 = Matrix6d::Identity();
-    // W4(3,3) = 0;
-    // W4(4,4) = 0;
-    // W4(5,5) = 0;
+
+    // We may choose to weight orientation error differently than position.
+    // W4.bottomRightCorner<3, 3>() = Eigen::Matrix3d::Zero();
 
     JointMatrix Q4 = dt * dt * J4.transpose() * W4 * J4;
     JointVector C4 = dt * e4.transpose() * W4 * J4;
@@ -212,7 +207,17 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
 
 void IKOptimizer::linearize_manipulability1(const JointVector& q,
                                             JointVector& dm, double h) {
-    approx_gradient<NUM_JOINTS>(&Kinematics::manipulability, h, q, dm);
+    dm = JointVector::Zero();
+    JointMatrix I = JointMatrix::Identity();
+
+    // MI does not change as w.r.t. the base joint variables, so we leave the
+    // first three joints as zero.
+    for (int i = 3; i < NUM_JOINTS; ++i) {
+        JointVector Ii = I.col(i);
+        double m1 = Kinematics::manipulability(q + h*Ii);
+        double m2 = Kinematics::manipulability(q - h*Ii);
+        dm(i) = (m1 - m2) / (2*h);
+    }
 }
 
 

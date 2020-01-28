@@ -1,6 +1,7 @@
 #include "mm_motion_control/pose_control/controller.h"
 
 #include <Eigen/Eigen>
+#include <ros/ros.h>
 
 #include <mm_kinematics/kinematics.h>
 
@@ -31,10 +32,14 @@ int IKController::update(double t, PoseTrajectory& trajectory,
     double dt = t - time_prev;
     time_prev = t;
 
-    ROS_INFO_STREAM("dt = " << dt);
-
     // Optimize to solve IK problem.
-    return optimizer.solve(t, trajectory, q_act, dq_act, dt, dq_cmd);
+    double t1 = ros::Time::now().toSec();
+    int status = optimizer.solve(t, trajectory, q_act, dq_act, obstacles, dt, dq_cmd);
+    double dt2 = ros::Time::now().toSec() - t1;
+
+    // ROS_INFO_STREAM("loop dt = " << dt << ", opt dt = " << dt2);
+
+    return status;
 }
 
 } // namespace mm
