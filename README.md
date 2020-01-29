@@ -60,7 +60,16 @@ published.
 Contains forward kinematics code in both C++ and Python for use by other
 packages.
 
-## Running
+## Build
+```bash
+# normal build
+catkin build
+
+# with compiler optimizations
+catkin build DCMAKE_BUILD_TYPE=Release
+```
+
+## Run
 ### Simulation
 ```bash
 > roslaunch mm_motion_control mm_motion_control_sim.launch
