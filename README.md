@@ -66,7 +66,7 @@ packages.
 catkin build
 
 # with compiler optimizations
-catkin build DCMAKE_BUILD_TYPE=Release
+catkin build -DCMAKE_BUILD_TYPE=Release
 ```
 
 ## Run
