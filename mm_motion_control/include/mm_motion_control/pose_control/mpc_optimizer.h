@@ -13,8 +13,8 @@ namespace mm {
 
 static const double LOOKAHEAD_TIMESTEP = 0.008;
 
-static const int NUM_HORIZON = 1; // steps to look ahead
-static const int NUM_ITER = 1; // number of relinearizations in SQP
+static const int NUM_HORIZON = 5; // steps to look ahead
+static const int NUM_ITER = 2; // number of relinearizations in SQP
 static const int NUM_WSR = 200; // max number of working set recalculations
 
 static const int NUM_OPT = NUM_JOINTS * NUM_HORIZON;

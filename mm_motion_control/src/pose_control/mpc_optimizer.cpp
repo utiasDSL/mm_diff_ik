@@ -57,13 +57,18 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
                         const JointVector& q0, const JointVector& dq0,
                         const std::vector<ObstacleModel>& obstacles,
                         double dt, JointVector& dq_opt) {
+    // NOTE: We can run into numerical issues if the weights are too large. Try
+    // to balance between downweighting and upweighting between different
+    // objectives. This seems to be become more apparent as the horizon grows
+    // (so the optimization problem becomes larger).
+
     // Error weight matrix.
     Matrix6d Q = Matrix6d::Identity();
-    Q.topLeftCorner<3, 3>() = 100000 * Eigen::Matrix3d::Identity();
+    Q.topLeftCorner<3, 3>() = 100 * Eigen::Matrix3d::Identity();
     Q.bottomRightCorner<3, 3>() = 0 * Eigen::Matrix3d::Identity();
 
     // Effort weight matrix.
-    JointMatrix R = JointMatrix::Identity();
+    JointMatrix R = 0.001 * JointMatrix::Identity();
 
     // Lifted error weight matrix is (block) diagonal.
     OptErrorWeightMatrix Qbar = OptErrorWeightMatrix::Zero();
@@ -81,7 +86,7 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
             // For the first column of blocks, timestep is the control
             // timestep, otherwise it is the lookahead timestep.
             double timestep = LOOKAHEAD_TIMESTEP;
-            if (i == 0) {
+            if (j == 0) {
                 timestep = CONTROL_TIMESTEP;
             }
 
