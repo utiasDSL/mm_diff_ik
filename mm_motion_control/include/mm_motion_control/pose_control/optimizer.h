@@ -114,7 +114,7 @@ class IKOptimizer {
 
         // Build objective matrices H and g, where the quadratic to minimize is
         // x'Hx + g'x.
-        void build_objective(const Eigen::Affine3d& Td,
+        void build_objective(const Eigen::Affine3d& Td, const Vector6d& twistd,
                              const JointVector& q, const JointVector& dq,
                              double dt, JointMatrix& H, JointVector& g);
 }; // class IKOptimizer

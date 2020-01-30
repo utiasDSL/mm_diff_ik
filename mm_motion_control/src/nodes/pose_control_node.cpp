@@ -1,9 +1,7 @@
 #include <ros/ros.h>
 
 #include "mm_motion_control/pose_control/manager.h"
-
-
-static const double HZ = 125;
+#include "mm_motion_control/pose_control/rate.h"
 
 
 int main(int argc, char **argv) {
@@ -14,7 +12,7 @@ int main(int argc, char **argv) {
 
   mm::IKControllerManager manager;
   manager.init(nh);
-  manager.loop(HZ);
+  manager.loop(mm::CONTROL_RATE);
 
   return 0;
 }

@@ -12,6 +12,7 @@
 namespace mm {
 
 
+
 bool IKController::init(double t0) {
     optimizer.init();
     set_time(t0);
@@ -33,9 +34,9 @@ int IKController::update(double t, PoseTrajectory& trajectory,
     time_prev = t;
 
     // Optimize to solve IK problem.
-    double t1 = ros::Time::now().toSec();
+    // double t1 = ros::Time::now().toSec();
     int status = optimizer.solve(t, trajectory, q_act, dq_act, obstacles, dt, dq_cmd);
-    double dt2 = ros::Time::now().toSec() - t1;
+    // double dt2 = ros::Time::now().toSec() - t1;
 
     // ROS_INFO_STREAM("loop dt = " << dt << ", opt dt = " << dt2);
 

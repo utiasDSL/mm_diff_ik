@@ -8,18 +8,18 @@
 
 #include "mm_motion_control/pose_control/obstacle.h"
 #include "mm_motion_control/pose_control/pose_error.h"
+#include "mm_motion_control/pose_control/rate.h"
 
 
 namespace mm {
 
 
-static const int NUM_WSR = 10;
+static const int NUM_WSR = 50;
 
 
 bool IKOptimizer::init() {
     return true;
 }
-
 
 int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
                           JointVector& lb, JointVector& ub,
@@ -53,7 +53,8 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
     // Solve the QP.
     qpOASES::QProblem qp(NUM_JOINTS, num_obstacles);
     qp.setPrintLevel(qpOASES::PL_NONE);
-    qpOASES::returnValue ret = qp.init(H_data, g_data, A_data, lb_data, ub_data, lbA_data, ubA_data, nWSR);
+    qpOASES::returnValue ret = qp.init(H_data, g_data, A_data, lb_data, ub_data,
+                                       lbA_data, ubA_data, nWSR);
     int status = qpOASES::getSimpleStatus(ret);
 
     qpOASES::real_t dq_opt_raw[NUM_JOINTS];
@@ -70,7 +71,7 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
 }
 
 
-void IKOptimizer::build_objective(const Eigen::Affine3d& Td,
+void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twistd,
                                   const JointVector& q, const JointVector& dq,
                                   double dt, JointMatrix& H, JointVector& g) {
     /* 1. Minimize velocity objective. */
@@ -111,7 +112,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td,
     Matrix6d W4 = Matrix6d::Identity();
 
     // We may choose to weight orientation error differently than position.
-    // W4.bottomRightCorner<3, 3>() = Eigen::Matrix3d::Zero();
+    W4.bottomRightCorner<3, 3>() = Eigen::Matrix3d::Zero();
 
     JointMatrix Q4 = dt * dt * J4.transpose() * W4 * J4;
     JointVector C4 = dt * e4.transpose() * W4 * J4;
@@ -134,8 +135,8 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td,
     double w1 = 1.0; // velocity
     double w2 = 0.0; // manipulability
     double w3 = 0.0; // joint limits
-    double w4 = 100.0; // pose error
-    double w5 = 0.01; // acceleration
+    double w4 = 100000.0; // pose error
+    double w5 = 0.0; // acceleration
 
     // TODO obstacle avoidance can also be done here
 
@@ -150,15 +151,30 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
                        JointVector& dq_opt) {
     // TODO is this slow? Could potentially be improved by pre-processing the
     // trajectory
+    // Look one timestep into the future to see where we want to end up.
     Eigen::Affine3d Td;
-    Vector6d twist;
-    trajectory.sample(t, Td, twist);
+    Vector6d twistd;
+    trajectory.sample(t + CONTROL_TIMESTEP, Td, twistd);
+
+    // Calculate desired EE velocity.
+    /*
+    Eigen::Vector3d pd = Td.translation();
+    Eigen::Affine3d w_T_e;
+    Kinematics::calc_w_T_e(q, w_T_e);
+    Eigen::Vector3d pe = w_T_e.translation();
+    Eigen::Vector3d vd = twist.head<3>();
+    Eigen::Vector3d dp = (pd - pe) + vd;
+
+    JacobianMatrix J;
+    Kinematics::jacobian(q, J);
+    Matrix3x9 Jp = J.topRows<3>();
+    */
 
     /*** OBJECTIVE ***/
 
     JointMatrix H;
     JointVector g;
-    build_objective(Td, q, dq, dt, H, g);
+    build_objective(Td, twistd, q, dq, dt, H, g);
 
 
     /*** BOUNDS ***/

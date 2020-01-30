@@ -5,14 +5,15 @@
 
 #include <mm_kinematics/kinematics.h>
 
+#include "mm_motion_control/pose_control/obstacle.h"
 #include "mm_motion_control/pose_control/trajectory.h"
 
 
 namespace mm {
 
-static const double LOOKAHEAD_STEP_TIME = 0.1;
+static const double LOOKAHEAD_TIMESTEP = 0.008;
 
-static const int NUM_HORIZON = 10; // steps to look ahead
+static const int NUM_HORIZON = 1; // steps to look ahead
 static const int NUM_ITER = 1; // number of relinearizations in SQP
 static const int NUM_WSR = 200; // max number of working set recalculations
 
@@ -38,7 +39,9 @@ class MPCOptimizer {
         //   0 if the optimization problem was solved successfully. Otherwise,
         //   status code indicates a failure in the optimization problem.
         int solve(double t0, PoseTrajectory& trajectory, const JointVector& q0,
-                  const JointVector& dq0, double dt, JointVector& dq_opt);
+                  const JointVector& dq0,
+                  const std::vector<ObstacleModel>& obstacles, double dt,
+                  JointVector& dq_opt);
 
     private:
         typedef Eigen::Matrix<double, NUM_OPT, 1> OptVector;
