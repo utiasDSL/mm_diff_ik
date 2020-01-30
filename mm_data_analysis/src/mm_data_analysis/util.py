@@ -1,4 +1,7 @@
 import numpy as np
+import glob
+import os
+import sys
 
 
 def rms(e):
@@ -59,14 +62,16 @@ def align_msgs(msgs1, msgs2):
     return align_lists(t1, msgs1, t2, msgs2)
 
 
-# def align_msgs(msgs1, msgs2):
-#     ''' Align messages based on time stamp. Messages must have a header.stamp
-#         field. msgs2 are aligned with msgs1. '''
-#     i1 = i2 = 0
-#     aligned_msgs = []
-#     for i1 in xrange(len(msgs1)):
-#         t = msgs1[i1].header.stamp.to_sec()
-#         while i2 + 1 < len(msgs2) and msgs2[i2 + 1].header.stamp.to_sec() < t:
-#             i2 += 1
-#         aligned_msgs.append((msgs1[i1], msgs2[i2]))
-#     return aligned_msgs
+def most_recent_file(pattern):
+    ''' Return most recently modified file matching pattern.
+        e.g. most_recent_file('*.bag') will return the most recently modified
+             bag file in the directort. '''
+    return max(glob.iglob(pattern), key=os.path.getmtime)
+
+
+def arg_or_most_recent(pattern):
+    if len(sys.argv) > 1:
+        fname = sys.argv[1]
+    else:
+        fname = most_recent_file('*.bag')
+    return fname
