@@ -49,6 +49,8 @@ int MPCOptimizer::solve_sqp(OptWeightMatrix& H, OptVector& g, OptVector& lb,
     sqp.getPrimalSolution(step_raw);
     step = Eigen::Map<OptVector>(step_raw); // map back to eigen
 
+    // ROS_INFO_STREAM("obj " << sqp.getObjVal());
+
     return qpOASES::getSimpleStatus(ret);
 }
 
@@ -64,11 +66,11 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
 
     // Error weight matrix.
     Matrix6d Q = Matrix6d::Identity();
-    Q.topLeftCorner<3, 3>() = 100 * Eigen::Matrix3d::Identity();
+    Q.topLeftCorner<3, 3>() = 100000 * Eigen::Matrix3d::Identity();
     Q.bottomRightCorner<3, 3>() = 0 * Eigen::Matrix3d::Identity();
 
     // Effort weight matrix.
-    JointMatrix R = 0.001 * JointMatrix::Identity();
+    JointMatrix R = JointMatrix::Identity();
 
     // Lifted error weight matrix is (block) diagonal.
     OptErrorWeightMatrix Qbar = OptErrorWeightMatrix::Zero();
@@ -164,6 +166,9 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
         // Construct overall objective matrices.
         OptWeightMatrix H = Ebar.transpose() * Jbar.transpose() * Qbar * Jbar * Ebar + Rbar;
         OptVector g = ebar.transpose() * Qbar * Jbar * Ebar + dqbar.transpose() * Rbar;
+
+        Eigen::Matrix<std::complex<double>, NUM_OPT, 1> eivals = H.eigenvalues();
+        ROS_INFO_STREAM("max = " << eivals(0) << ", min = " << eivals(6*NUM_HORIZON-1));
 
         // Bounds
         OptVector lb = dq_min - dqbar;

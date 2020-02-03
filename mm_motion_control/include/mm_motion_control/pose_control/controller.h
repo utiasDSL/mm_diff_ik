@@ -38,6 +38,7 @@ class IKController {
         //   non-zero status code.
         int update(double t, PoseTrajectory& trajectory,
                    const JointVector& q_act, const JointVector& dq_act,
+                   const Eigen::Vector3d& force,
                    const std::vector<ObstacleModel> obstacles,
                    JointVector& dq_cmd);
 
@@ -50,7 +51,7 @@ class IKController {
 
         // Optimizer to solve for joint velocity commands to send to the
         // robot.
-        MPCOptimizer optimizer;
+        IKOptimizer optimizer;
 
 }; // class IKController
 

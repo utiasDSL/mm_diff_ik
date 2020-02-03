@@ -27,6 +27,7 @@ void IKController::set_time(double t) {
 
 int IKController::update(double t, PoseTrajectory& trajectory,
                          const JointVector& q_act, const JointVector& dq_act,
+                         const Eigen::Vector3d& force,
                          const std::vector<ObstacleModel> obstacles,
                          JointVector& dq_cmd) {
     // Update time.
@@ -35,7 +36,8 @@ int IKController::update(double t, PoseTrajectory& trajectory,
 
     // Optimize to solve IK problem.
     // double t1 = ros::Time::now().toSec();
-    int status = optimizer.solve(t, trajectory, q_act, dq_act, obstacles, dt, dq_cmd);
+    int status = optimizer.solve(t, trajectory, q_act, dq_act, force, obstacles,
+                                 dt, dq_cmd);
     // double dt2 = ros::Time::now().toSec() - t1;
 
     // ROS_INFO_STREAM("loop dt = " << dt << ", opt dt = " << dt2);
