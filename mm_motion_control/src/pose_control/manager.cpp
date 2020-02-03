@@ -155,10 +155,10 @@ void IKControllerManager::pos_offset_cb(const geometry_msgs::Vector3Stamped& msg
 }
 
 
-void IKControllerManager::force_cb(const geometry_msgs::WrenchStamped& msg) {
-    force(0) = msg.wrench.force.x;
-    force(1) = msg.wrench.force.y;
-    force(2) = msg.wrench.force.z;
+void IKControllerManager::force_cb(const geometry_msgs::Vector3Stamped& msg) {
+    force(0) = msg.vector.x;
+    force(1) = msg.vector.y;
+    force(2) = msg.vector.z;
 }
 
 

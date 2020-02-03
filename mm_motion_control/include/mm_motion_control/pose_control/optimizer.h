@@ -26,6 +26,8 @@ static const bool POSITIION_LIMITED[] = {
     true, true, true, true, true, true /* arm  */
 };
 
+static const double MAX_COMPLIANCE_FORCE = 100; // N
+
 // For numerical differentiation
 // NOTE pushing this down to even 1e-5 makes the numerical Hessian fail
 static const double STEP_SIZE = 1e-3;

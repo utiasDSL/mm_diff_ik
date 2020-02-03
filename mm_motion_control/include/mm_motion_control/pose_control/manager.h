@@ -4,18 +4,14 @@
 #include <ros/ros.h>
 #include <realtime_tools/realtime_publisher.h>
 
-#include <trajectory_msgs/JointTrajectory.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/Twist.h>
 #include <sensor_msgs/JointState.h>
-#include <geometry_msgs/Vector3.h>
-#include <geometry_msgs/WrenchStamped.h>
+#include <geometry_msgs/Vector3Stamped.h>
 
 #include <mm_msgs/PoseTrajectory.h>
 #include <mm_msgs/PoseControlState.h>
 #include <mm_msgs/Obstacles.h>
 #include <mm_kinematics/kinematics.h>
-#include <mm_math_util/filter.h>
 
 #include "mm_motion_control/pose_control/optimizer.h"
 #include "mm_motion_control/pose_control/trajectory.h"
@@ -105,7 +101,7 @@ class IKControllerManager {
         void obstacle_cb(const mm_msgs::Obstacles& msg);
 
         // Receive wrench measured by EE force/torque sensor.
-        void force_cb(const geometry_msgs::WrenchStamped& msg);
+        void force_cb(const geometry_msgs::Vector3Stamped& msg);
 
         // Publish joint speeds computed by the controller to the arm and base.
         void publish_joint_speeds(const JointVector& dq_cmd);

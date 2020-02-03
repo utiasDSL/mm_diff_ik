@@ -130,8 +130,16 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 
     /* 6. Force compliance */
 
-    Eigen::Matrix3d Kf = Eigen::Matrix3d::Identity();
-    Eigen::Matrix3d Bf = Eigen::Matrix3d::Identity();
+    // Limit the maximum force applied by compliance. Not a feature of the
+    // controller, but reasonable for safety when interacting with people.
+    double f_norm = f.norm();
+    Eigen::Vector3d f_compliant = f;
+    if (f_norm > MAX_COMPLIANCE_FORCE) {
+        f_compliant = MAX_COMPLIANCE_FORCE * f / f_norm;
+    }
+
+    Eigen::Matrix3d Kf = 0.2 * Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d Bf = 0.0 * Eigen::Matrix3d::Identity();
 
     Eigen::Affine3d w_T_e;
     Kinematics::calc_w_T_e(q, w_T_e);
@@ -142,8 +150,9 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     Kinematics::jacobian(q, J);
     Matrix3x9 Jp = J.topRows<3>();
 
+    // TODO we can include feedforward velocity here
     Matrix3x9 Af = -(Bf + dt * Kf) * Jp;
-    Eigen::Vector3d df = Kf * (pd - pe) + f;
+    Eigen::Vector3d df = Kf * (pd - pe) - f;
 
     Eigen::Matrix3d W6 = Eigen::Matrix3d::Identity();
     JointMatrix Q6 = Af.transpose() * W6 * Af;
@@ -157,7 +166,6 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     // double ft = 1; // force threshold
     // double fc = 2; // contact force
     //
-    // double f_norm = f.norm();
     // if (f_norm > 0) {
     //     // TODO this is a weird discontinuous jump
     //     double fd = f_norm;
@@ -179,7 +187,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     double w1 = 1.0; // velocity
     double w2 = 0.0; // manipulability
     double w3 = 0.0; // joint limits
-    double w4 = 100000.0; // pose error
+    double w4 = 0.0; // pose error // 100,000 works well for RMSE reduction
     double w5 = 0.0; // acceleration
     double w6 = 1.0;
 
