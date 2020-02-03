@@ -74,7 +74,9 @@ class PoseTrajectory {
         }
 
         bool done(double t) {
-            return t > tf;
+            // Stationary trajectories don't end
+            // Other trajectories end once their duration is expired
+            return !stationary && t > tf;
         }
 
     private:
