@@ -96,6 +96,9 @@ listed.
 # on board
 > roslaunch mm_motion_control mm_motion_control.launch
 
+# on laptop, if using force control
+> rosrun mm_force_control force.py
+
 # on laptop
 > rosrun mm_trajectories line.py
 ```

@@ -78,9 +78,7 @@ class IKControllerManager {
         PoseTrajectory trajectory;
 
         // Lowpass filter for force measurements.
-        ExponentialSmoother<Eigen::Vector3d> filter_force;
         Eigen::Vector3d force;
-        double f_time_prev;
 
         std::vector<ObstacleModel> obstacles;
 

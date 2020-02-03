@@ -43,7 +43,7 @@ bool IKControllerManager::init(ros::NodeHandle& nh) {
     force_position_offset_sub = nh.subscribe("/force_control/position_offset",
             1, &IKControllerManager::pos_offset_cb, this);
 
-    force_sub = nh.subscribe("/robotiq_force_torque_wrench",
+    force_sub = nh.subscribe("/force",
             1, &IKControllerManager::force_cb, this);
 
     obstacle_sub = nh.subscribe("/obstacles", 1,
@@ -60,9 +60,7 @@ bool IKControllerManager::init(ros::NodeHandle& nh) {
     dq_act = JointVector::Zero();
 
     // tau value taken from original parallel force controller
-    filter_force.init(0.1, Eigen::Vector3d::Zero());
     force = Eigen::Vector3d::Zero();
-    f_time_prev = ros::Time::now().toSec();
 
     traj_active = false;
 }
@@ -158,13 +156,9 @@ void IKControllerManager::pos_offset_cb(const geometry_msgs::Vector3Stamped& msg
 
 
 void IKControllerManager::force_cb(const geometry_msgs::WrenchStamped& msg) {
-    double t = ros::Time::now().toSec();
-    double dt = t - f_time_prev;
-    f_time_prev = t;
-
-    Eigen::Vector3d f_meas;
-    f_meas << msg.wrench.force.x, msg.wrench.force.x, msg.wrench.force.z;
-    force = filter_force.next(f_meas, dt);
+    force(0) = msg.wrench.force.x;
+    force(1) = msg.wrench.force.y;
+    force(2) = msg.wrench.force.z;
 }
 
 
