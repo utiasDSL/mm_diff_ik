@@ -33,6 +33,18 @@ inline void pose_msg_from_eigen(const Eigen::Vector3d& p,
     msg.orientation.z = q.z();
 }
 
+// Populate Eigen types from Pose message.
+// Parameters:
+//   msg: Pose message
+//   p:   position vector to be populated
+//   q:   quaternion to be populated
+inline void pose_msg_to_eigen(const geometry_msgs::Pose& msg,
+                              Eigen::Vector3d& p, Eigen::Quaterniond& q) {
+    p << msg.position.x, msg.position.y, msg.position.z;
+    q = Eigen::Quaterniond(msg.orientation.w, msg.orientation.x,
+                           msg.orientation.y, msg.orientation.z);
+}
+
 
 // Convert a vector of joint velocities to ROS messages for base and arm.
 // Parameters:

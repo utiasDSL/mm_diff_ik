@@ -18,6 +18,8 @@ class PoseTrajectory {
     public:
         PoseTrajectory() {
             p_off = Eigen::Vector3d::Zero();
+            stationary_position = Eigen::Vector3d::Zero();
+            stationary_rotation = Eigen::Quaterniond(1, 0, 0, 0);
         }
 
         // Follow a trajectory of waypoints.
@@ -25,8 +27,8 @@ class PoseTrajectory {
             t0 = ros::Time::now().toSec();
             dt = trajectory.dt.toSec();
             waypoints = trajectory.points;
-            tf = t0 + (waypoints.size()-1) * dt;
-            // ROS_INFO_STREAM("traj t0 = " << t0 << ", tf = " << tf << ", duration = " << tf - t0);
+            tf = t0 + (waypoints.size() - 1) * dt;
+
             w_prev = Eigen::Vector3d::Zero();
             stationary = false;
 
@@ -37,15 +39,17 @@ class PoseTrajectory {
             p_off = p;
         }
 
-        // Stay at a single pose.
-        bool stay_at(const geometry_msgs::Pose pose) {
-            mm_msgs::PoseTrajectoryPoint waypoint;
-            waypoint.pose = pose;
-
+        // If we're staying at a point, it is assumed the desired velocity is
+        // zero.
+        bool stay_at(const Eigen::Vector3d& p, const Eigen::Quaterniond& q) {
+            // Clear existing trajectory.
             waypoints.clear();
-            waypoints.push_back(waypoint);
 
             stationary = true;
+            stationary_position = p;
+            stationary_rotation = q;
+
+            return true;
         }
 
         // Sample the trajectory at time t.
@@ -53,7 +57,10 @@ class PoseTrajectory {
                     Eigen::Quaterniond& q, Eigen::Vector3d& w) {
             bool status = true;
             if (stationary) {
-                pose_traj_point_to_eigen(waypoints.back(), p, q, v, w);
+                p = stationary_position;
+                v = Eigen::Vector3d::Zero();
+                q = stationary_rotation;
+                w = Eigen::Vector3d::Zero();
             } else {
                 status = interpolate(t, p, v, q, w);
             }
@@ -102,6 +109,8 @@ class PoseTrajectory {
         Eigen::Vector3d p_off;
 
         bool stationary;
+        Eigen::Vector3d stationary_position;
+        Eigen::Quaterniond stationary_rotation;
 
         /* FUNCTIONS */
 

@@ -11,6 +11,7 @@
 #include <mm_msgs/PoseTrajectory.h>
 #include <mm_msgs/PoseControlState.h>
 #include <mm_msgs/Obstacles.h>
+#include <mm_msgs/ForceInfo.h>
 #include <mm_kinematics/kinematics.h>
 
 #include "mm_motion_control/pose_control/optimizer.h"
@@ -73,8 +74,8 @@ class IKControllerManager {
         // Trajectory interpolator.
         PoseTrajectory trajectory;
 
-        // Lowpass filter for force measurements.
-        Eigen::Vector3d force;
+        Eigen::Vector3d force;  // Applied end effector force.
+        bool first_contact;  // True if contact has been made.
 
         std::vector<ObstacleModel> obstacles;
 
@@ -101,7 +102,7 @@ class IKControllerManager {
         void obstacle_cb(const mm_msgs::Obstacles& msg);
 
         // Receive wrench measured by EE force/torque sensor.
-        void force_cb(const geometry_msgs::Vector3Stamped& msg);
+        void force_cb(const mm_msgs::ForceInfo& msg);
 
         // Publish joint speeds computed by the controller to the arm and base.
         void publish_joint_speeds(const JointVector& dq_cmd);

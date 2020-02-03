@@ -5,29 +5,21 @@ import tf.transformations as tfs
 
 from geometry_msgs.msg import Vector3Stamped, WrenchStamped
 from sensor_msgs.msg import JointState
-from mm_msgs.msg import ForceControlState
+from mm_msgs.msg import ForceInfo
 
 import mm_kinematics.kinematics as kinematics
 
 import mm_force_control.util as util
 from mm_force_control.filter import ExponentialSmoother
-from mm_force_control.pid import PID
 from mm_force_control.bias import FTBiasEstimator
 
 
-FORCE_THRESHOLD = 5  # Force required for force control to be used
-CONTACT_FORCE = 5  # Desired contact force, when contact is detected
-MAX_INPUT_FORCE = 10  # Maximum force value that can input to the PID controller
+CONTACT_THRESHOLD = 5  # Desired contact force, when contact is detected
+DESIRED_CONTACT_FORCE = 5
 
 HZ = 20  # Control loop rate (Hz)
 
 N_BIAS = 100  # Number of samples to use for force bias estimation.
-
-# Controller gains
-Kp = np.zeros(3)
-Kd = np.zeros(3)
-Ki = 0.02 * np.ones(3)  # 0.02
-DECAY = 0
 
 # Transform from EE frame to force torque sensor frame - just a small offset.
 e_T_f = tfs.translation_matrix([0.02, 0, 0])
@@ -43,6 +35,9 @@ class ForceControlNode(object):
         self.q = np.zeros(9)
         self.time_prev = rospy.Time.now().to_sec()
 
+        self.first_contact = False  # True if contact was ever made
+        self.contact = False  # True if EE is currently in contact
+
         # subs/pubs are initialized last since callbacks are multithreaded and
         # can actually be called before other variables in __init__ have been
         # declared
@@ -53,13 +48,8 @@ class ForceControlNode(object):
         self.force_sub = rospy.Subscriber('/robotiq_force_torque_wrench',
                                           WrenchStamped, self.force_cb)
 
-        # just the filtered force vector
-        self.force_pub = rospy.Publisher('/force', Vector3Stamped,
-                                         queue_size=10)
-
         # more information about the force processing
-        self.state_pub = rospy.Publisher('/force/state',
-                                         ForceControlState, queue_size=10)
+        self.info_pub = rospy.Publisher('/force/info', ForceInfo, queue_size=10)
 
     def force_cb(self, msg):
         f = msg.wrench.force
@@ -78,35 +68,26 @@ class ForceControlNode(object):
         # TODO should handle locking at some point
         self.q = msg.position
 
-    def publish_state(self, stamp, force_raw, force_filt, force_world, p_off):
-        msg = ForceControlState()
+    def publish_info(self, stamp, force_world, force_desired):
+        msg = ForceInfo()
         msg.header.stamp = stamp
 
-        msg.force_raw.x = force_raw[0]
-        msg.force_raw.y = force_raw[1]
-        msg.force_raw.z = force_raw[2]
+        msg.force_raw.x = self.force_raw[0]
+        msg.force_raw.y = self.force_raw[1]
+        msg.force_raw.z = self.force_raw[2]
 
-        msg.force_filtered.x = force_filt[0]
-        msg.force_filtered.y = force_filt[1]
-        msg.force_filtered.z = force_filt[2]
+        msg.force_filtered.x = self.force_filt[0]
+        msg.force_filtered.y = self.force_filt[1]
+        msg.force_filtered.z = self.force_filt[2]
 
         msg.force_world.x = force_world[0]
         msg.force_world.y = force_world[1]
         msg.force_world.z = force_world[2]
 
-        msg.position_offset.x = p_off[0]
-        msg.position_offset.y = p_off[1]
-        msg.position_offset.z = p_off[2]
+        msg.first_contact = self.first_contact
+        msg.contact = self.contact
 
         self.state_pub.publish(msg)
-
-    def publish_force(self, stamp, f):
-        msg = Vector3Stamped()
-        msg.header.stamp = stamp
-        msg.vector.x = f[0]
-        msg.vector.y = f[1]
-        msg.vector.z = f[2]
-        self.force_pub.publish(msg)
 
     def loop(self, hz):
         rate = rospy.Rate(hz)
@@ -121,12 +102,20 @@ class ForceControlNode(object):
 
             # Reverse input so that output offset pushes back against applied
             # force.
-            force_in = -force_world
+            force_world = -force_world
+
+            # determine if contact is made
+            f_norm = np.linalg.norm(force_world)
+            if f_norm > CONTACT_THRESHOLD:
+                if not self.first_contact:
+                    rospy.loginfo('First contact made.')
+                self.first_contact = True
+                self.contact = True
+            else:
+                self.contact = False
 
             now = rospy.Time.now()
-            self.publish_force(now, force_in)
-            self.publish_state(now, self.force_raw, self.force_filt,
-                               force_world, np.zeros(3))
+            self.publish_info(now, force_world)
 
             rate.sleep()
 

@@ -152,7 +152,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 
     // TODO we can include feedforward velocity here
     Matrix3x9 Af = -(Bf + dt * Kf) * Jp;
-    Eigen::Vector3d df = Kf * (pd - pe) - f;
+    Eigen::Vector3d df = Kf * (pd - pe) - f_compliant;
 
     Eigen::Matrix3d W6 = Eigen::Matrix3d::Identity();
     JointMatrix Q6 = Af.transpose() * W6 * Af;
@@ -166,6 +166,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     // double ft = 1; // force threshold
     // double fc = 2; // contact force
     //
+    // double f_norm = f.norm();
     // if (f_norm > 0) {
     //     // TODO this is a weird discontinuous jump
     //     double fd = f_norm;

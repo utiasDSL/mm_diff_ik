@@ -15,6 +15,7 @@
 #include <mm_msgs/PoseTrajectory.h>
 #include <mm_msgs/PoseControlState.h>
 #include <mm_msgs/Obstacles.h>
+#include <mm_msgs/ForceInfo.h>
 #include <mm_kinematics/kinematics.h>
 
 #include "mm_motion_control/util/messages.h"
@@ -43,7 +44,7 @@ bool IKControllerManager::init(ros::NodeHandle& nh) {
     force_position_offset_sub = nh.subscribe("/force_control/position_offset",
             1, &IKControllerManager::pos_offset_cb, this);
 
-    force_sub = nh.subscribe("/force",
+    force_sub = nh.subscribe("/force/info",
             1, &IKControllerManager::force_cb, this);
 
     obstacle_sub = nh.subscribe("/obstacles", 1,
@@ -61,6 +62,7 @@ bool IKControllerManager::init(ros::NodeHandle& nh) {
 
     // tau value taken from original parallel force controller
     force = Eigen::Vector3d::Zero();
+    first_contact = false;
 
     traj_active = false;
 }
@@ -134,7 +136,10 @@ void IKControllerManager::pose_traj_cb(const mm_msgs::PoseTrajectory& msg) {
 
 
 void IKControllerManager::point_traj_cb(const geometry_msgs::PoseStamped& msg) {
-    trajectory.stay_at(msg.pose);
+    Eigen::Vector3d p;
+    Eigen::Quaterniond q;
+    pose_msg_to_eigen(msg.pose, p, q);
+    trajectory.stay_at(p, q);
     traj_active = true;
     ROS_INFO("Maintaining current pose.");
 }
@@ -155,10 +160,22 @@ void IKControllerManager::pos_offset_cb(const geometry_msgs::Vector3Stamped& msg
 }
 
 
-void IKControllerManager::force_cb(const geometry_msgs::Vector3Stamped& msg) {
-    force(0) = msg.vector.x;
-    force(1) = msg.vector.y;
-    force(2) = msg.vector.z;
+void IKControllerManager::force_cb(const mm_msgs::ForceInfo& msg) {
+    force(0) = msg.force_world.x;
+    force(1) = msg.force_world.y;
+    force(2) = msg.force_world.z;
+
+    // If this is the first time contact is made, switch to maintaining the
+    // current pose.
+    if (first_contact != msg.first_contact) {
+        Eigen::Affine3d w_T_e;
+        Kinematics::calc_w_T_e(q_act, w_T_e);
+        Eigen::Vector3d p = w_T_e.translation();
+        Eigen::Quaterniond q(w_T_e.rotation());
+        trajectory.stay_at(p, q);
+
+        first_contact = msg.first_contact;
+    }
 }
 
 

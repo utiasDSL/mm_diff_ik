@@ -43,6 +43,7 @@ add_message_files(
   PoseControlState.msg
   OptimizationState.msg
   ForceControlState.msg
+  ForceInfo.msg
   Obstacle.msg
   Obstacles.msg
 )
