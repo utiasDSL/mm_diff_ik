@@ -93,6 +93,9 @@ listed.
 # on laptop
 > roslaunch mm_vicon vicon.launch
 
+# alternatively, if Vicon is not available
+> roslaunch mm_vicon spoof.launch
+
 # on board
 > roslaunch mm_motion_control mm_motion_control.launch
 
