@@ -56,17 +56,4 @@ class ViconEstimatorNode {
 
 }; // class ViconEstimatorNode
 
-
-class ViconEstimatorNodeSim {
-    public:
-        ViconEstimatorNodeSim() {}
-
-        bool init(ros::NodeHandle& nh);
-
-        void loop(const double hz);
-
-    private:
-        ros::Publisher rb_joint_states_pub;
-};
-
 } // namespace mm

@@ -1,4 +1,4 @@
-#include "mm_vicon/estimator.h"
+#include "mm_vicon/estimator/real.h"
 
 #include <mm_math_util/wrap.h>
 #include <mm_math_util/filter.h>
@@ -100,35 +100,6 @@ void ViconEstimatorNode::publish_joint_states() {
     rb_joint_states.velocity.push_back(vyaw);
 
     rb_joint_states_pub.publish(rb_joint_states);
-}
-
-
-bool ViconEstimatorNodeSim::init(ros::NodeHandle& nh) {
-    rb_joint_states_pub = nh.advertise<sensor_msgs::JointState>(
-            "/rb_joint_states", 1);
-}
-
-void ViconEstimatorNodeSim::loop(const double hz) {
-    ros::Rate rate(hz);
-
-    while (ros::ok()) {
-        ros::spinOnce();
-
-        sensor_msgs::JointState rb_joint_states;
-        rb_joint_states.header.stamp = ros::Time::now();
-
-        rb_joint_states.position.push_back(0); // x
-        rb_joint_states.position.push_back(0); // y
-        rb_joint_states.position.push_back(-M_PI_2); // yaw
-
-        rb_joint_states.velocity.push_back(0);
-        rb_joint_states.velocity.push_back(0);
-        rb_joint_states.velocity.push_back(0);
-
-        rb_joint_states_pub.publish(rb_joint_states);
-
-        rate.sleep();
-    }
 }
 
 } // namespace mm

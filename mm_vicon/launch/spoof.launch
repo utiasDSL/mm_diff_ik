@@ -1,6 +1,7 @@
 <launch>
-  <!-- Spoof Vicon by always publishes zero for base joints. -->
+  <!-- Spoof Vicon by numerically integrating base velocity commands rather
+       than measuring them from Vicon system.  -->
   <!-- Note this is to be used with *real hardware* in place of the actual
        Vicon system, not for computational simulations. -->
-  <node pkg="mm_vicon" type="vicon_estimator_node_sim" name="mm_vicon_estimator_node" output="screen" />
+  <node pkg="mm_vicon" type="vicon_estimator_node_spoof" name="mm_vicon_estimator_node" output="screen" />
 </launch>
