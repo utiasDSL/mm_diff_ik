@@ -74,6 +74,7 @@ class IKControllerManager {
         // Trajectory interpolator.
         PoseTrajectory trajectory;
 
+        double fd; // Desired force.
         Eigen::Vector3d force;  // Applied end effector force.
         bool first_contact;  // True if contact has been made.
 

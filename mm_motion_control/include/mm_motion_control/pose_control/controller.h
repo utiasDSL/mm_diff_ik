@@ -28,19 +28,19 @@ class IKController {
         // Parameters:
         //   t:          current time (sec)
         //   trajectory: desired EE pose trajectory
-        //   q_act:      current joint angles
-        //   dq_act:     current joint velocities
+        //   q:          current joint angles
+        //   dq:         current joint velocities
         //   obstacles:  list of currently perceived obstacles
-        //   dq_cmd:     populated with joint velocity commands to send
+        //   u:          populated with joint velocity commands to send
         //
         // Returns:
         //   0 if the optimization problem was solved sucessfully, otherwise a
         //   non-zero status code.
         int update(double t, PoseTrajectory& trajectory,
-                   const JointVector& q_act, const JointVector& dq_act,
-                   const Eigen::Vector3d& force,
+                   const JointVector& q, const JointVector& dq,
+                   double fd, const Eigen::Vector3d& f,
                    const std::vector<ObstacleModel> obstacles,
-                   JointVector& dq_cmd);
+                   JointVector& u);
 
         // Reset the stored previous time to time t.
         void set_time(double t);

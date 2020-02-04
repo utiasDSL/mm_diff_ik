@@ -60,7 +60,7 @@ bool IKControllerManager::init(ros::NodeHandle& nh) {
     q_act = JointVector::Zero();
     dq_act = JointVector::Zero();
 
-    // tau value taken from original parallel force controller
+    fd = 0;
     force = Eigen::Vector3d::Zero();
     first_contact = false;
 
@@ -91,9 +91,9 @@ void IKControllerManager::loop(const double hz) {
             continue;
         }
 
-        JointVector dq_cmd = JointVector::Zero();
-        int status = controller.update(t, trajectory, q_act, dq_act, force,
-                                       obstacles, dq_cmd);
+        JointVector u = JointVector::Zero();
+        int status = controller.update(t, trajectory, q_act, dq_act, fd, force,
+                                       obstacles, u);
 
         // Return value is 0 is successful, non-zero otherwise.
         if (status) {
@@ -102,7 +102,7 @@ void IKControllerManager::loop(const double hz) {
             ROS_WARN_STREAM("Optimization failed with status = " << status);
             publish_joint_speeds(JointVector::Zero());
         } else {
-            publish_joint_speeds(dq_cmd);
+            publish_joint_speeds(u);
         }
 
         Eigen::Affine3d Td;
@@ -173,6 +173,8 @@ void IKControllerManager::force_cb(const mm_msgs::ForceInfo& msg) {
         Eigen::Vector3d p = w_T_e.translation();
         Eigen::Quaterniond q(w_T_e.rotation());
         trajectory.stay_at(p, q);
+
+        fd = 5;
 
         first_contact = msg.first_contact;
     }

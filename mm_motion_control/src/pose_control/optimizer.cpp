@@ -73,8 +73,8 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
 
 void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twistd,
                                   const JointVector& q, const JointVector& dq,
-                                  const Eigen::Vector3d& f, double dt,
-                                  JointMatrix& H, JointVector& g) {
+                                  double fd, const Eigen::Vector3d& f,
+                                  double dt, JointMatrix& H, JointVector& g) {
     /* 1. Minimize velocity objective. */
 
     JointMatrix Q1 = JointMatrix::Identity();
@@ -160,25 +160,16 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 
     /* 7. Force regulation */
 
-    // JointMatrix Q7 = JointMatrix::Zero();
-    // JointVector C7 = JointVector::Zero();
-    // double kp = 1;
-    // double ft = 1; // force threshold
-    // double fc = 2; // contact force
-    //
-    // double f_norm = f.norm();
-    // if (f_norm > 0) {
-    //     // TODO this is a weird discontinuous jump
-    //     double fd = f_norm;
-    //     if (f_norm > ft) {
-    //         fd = fc;
-    //     }
-    //     double df = fd - f_norm;
-    //
-    //     Eigen::Vector3d nf = f / f_norm;
-    //     Q7 = Jp.transpose() * nf * nf.transpose() * Jp;
-    //     C7 = kp * df * nf.transpose() * Jp;
-    // }
+    JointMatrix Q7 = JointMatrix::Zero();
+    JointVector C7 = JointVector::Zero();
+    double kp = 1;
+
+    if (f_norm > 0) {
+        double df = fd - f_norm;
+        Eigen::Vector3d nf = f / f_norm;
+        Q7 = Jp.transpose() * nf * nf.transpose() * Jp;
+        C7 = kp * df * nf.transpose() * Jp;
+    }
 
 
     /* Objective weighting */
@@ -190,18 +181,19 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     double w3 = 0.0; // joint limits
     double w4 = 0.0; // pose error // 100,000 works well for RMSE reduction
     double w5 = 0.0; // acceleration
-    double w6 = 1.0;
+    double w6 = 0.0;
+    double w7 = 1.0;
 
     // TODO obstacle avoidance can also be done here
 
-    H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w6*Q6;
-    g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w6*C6;
+    H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w6*Q6 + w7*Q7;
+    g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w6*C6 + w7*C7;
 }
 
 
 int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
                        const JointVector& q, const JointVector& dq,
-                       const Eigen::Vector3d& force,
+                       double fd, const Eigen::Vector3d& f,
                        const std::vector<ObstacleModel>& obstacles, double dt,
                        JointVector& dq_opt) {
     // TODO is this slow? Could potentially be improved by pre-processing the
@@ -229,7 +221,7 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
 
     JointMatrix H;
     JointVector g;
-    build_objective(Td, twistd, q, dq, force, dt, H, g);
+    build_objective(Td, twistd, q, dq, fd, f, dt, H, g);
 
 
     /*** BOUNDS ***/
