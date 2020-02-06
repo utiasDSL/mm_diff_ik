@@ -68,7 +68,7 @@ class ForceControlNode(object):
         # TODO should handle locking at some point
         self.q = msg.position
 
-    def publish_info(self, stamp, force_world, force_desired):
+    def publish_info(self, stamp, force_world):
         msg = ForceInfo()
         msg.header.stamp = stamp
 
@@ -87,7 +87,7 @@ class ForceControlNode(object):
         msg.first_contact = self.first_contact
         msg.contact = self.contact
 
-        self.state_pub.publish(msg)
+        self.info_pub.publish(msg)
 
     def loop(self, hz):
         rate = rospy.Rate(hz)

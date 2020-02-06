@@ -110,13 +110,21 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     pose_error(Td, q, e4);
     pose_error_jacobian(Td, q, J4);
 
+    Eigen::Matrix3d Kp = Eigen::Matrix3d::Identity();
+    Eigen::Vector3d vd;
+    vd << 0.1, 0, 0;
+    Eigen::Vector3d pos_err = e4.head<3>();
+    e4.head<3>() = Kp * pos_err + vd;
+
     Matrix6d W4 = Matrix6d::Identity();
 
     // We may choose to weight orientation error differently than position.
     W4.bottomRightCorner<3, 3>() = Eigen::Matrix3d::Zero();
 
-    JointMatrix Q4 = dt * dt * J4.transpose() * W4 * J4;
-    JointVector C4 = dt * e4.transpose() * W4 * J4;
+    // JointMatrix Q4 = dt * dt * J4.transpose() * W4 * J4;
+    // JointVector C4 = dt * e4.transpose() * W4 * J4;
+    JointMatrix Q4 = J4.transpose() * W4 * J4;
+    JointVector C4 = e4.transpose() * W4 * J4;
 
     /* 5. Minimize joint acceleration */
 
@@ -164,12 +172,19 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     JointVector C7 = JointVector::Zero();
     double kp = 1;
 
-    if (f_norm > 0) {
-        double df = fd - f_norm;
-        Eigen::Vector3d nf = f / f_norm;
-        Q7 = Jp.transpose() * nf * nf.transpose() * Jp;
-        C7 = kp * df * nf.transpose() * Jp;
-    }
+    // if (f_norm > 0) {
+    //     double f_err = fd - f_norm;
+    //     Eigen::Vector3d nf = f / f_norm;
+    //     Q7 = Jp.transpose() * nf * nf.transpose() * Jp;
+    //     C7 = kp * df * nf.transpose() * Jp;
+    // }
+    //
+    // TODO just testing with x-direction only
+    double f_err = fd - f(0);
+    Eigen::Vector3d nf;
+    nf << 1, 0, 0;
+    Q7 = Jp.transpose() * nf * nf.transpose() * Jp;
+    C7 = kp * f_err * nf.transpose() * Jp;
 
 
     /* Objective weighting */
@@ -179,10 +194,12 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     double w1 = 1.0; // velocity
     double w2 = 0.0; // manipulability
     double w3 = 0.0; // joint limits
-    double w4 = 0.0; // pose error // 100,000 works well for RMSE reduction
+    double w4 = 1.0; // pose error // 100,000 works well for RMSE reduction
     double w5 = 0.0; // acceleration
     double w6 = 0.0;
-    double w7 = 1.0;
+    double w7 = 0.0;
+
+    ROS_INFO_STREAM("pos err = " << pos_err);
 
     // TODO obstacle avoidance can also be done here
 
@@ -201,7 +218,8 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
     // Look one timestep into the future to see where we want to end up.
     Eigen::Affine3d Td;
     Vector6d twistd;
-    trajectory.sample(t + CONTROL_TIMESTEP, Td, twistd);
+    // trajectory.sample(t + CONTROL_TIMESTEP, Td, twistd);
+    trajectory.sample(t, Td, twistd);
 
     // Calculate desired EE velocity.
     /*

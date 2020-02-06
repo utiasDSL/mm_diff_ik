@@ -67,9 +67,9 @@ class IKControllerManager {
 
         IKController controller;
 
-        // Actual joint positions, updated by the subscriber
-        JointVector q_act;
-        JointVector dq_act;
+        // Actual joint positions and velocities, updated by the subscriber
+        JointVector q;
+        JointVector dq;
 
         // Trajectory interpolator.
         PoseTrajectory trajectory;
@@ -111,7 +111,7 @@ class IKControllerManager {
         // Publish the current control state of the robot: actual and desired
         // poses, and pose error.
         void publish_robot_state(const Eigen::Affine3d& Td,
-                                 const JointVector& q, const JointVector& dq);
+                                 const JointVector& u);
 }; // class IKControllerManager
 
 } // namespace mm

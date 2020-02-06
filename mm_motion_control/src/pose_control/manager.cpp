@@ -57,8 +57,8 @@ bool IKControllerManager::init(ros::NodeHandle& nh) {
 
     controller.init(ros::Time::now().toSec());
 
-    q_act = JointVector::Zero();
-    dq_act = JointVector::Zero();
+    q = JointVector::Zero();
+    dq = JointVector::Zero();
 
     fd = 0;
     force = Eigen::Vector3d::Zero();
@@ -92,7 +92,7 @@ void IKControllerManager::loop(const double hz) {
         }
 
         JointVector u = JointVector::Zero();
-        int status = controller.update(t, trajectory, q_act, dq_act, fd, force,
+        int status = controller.update(t, trajectory, q, dq, fd, force,
                                        obstacles, u);
 
         // Return value is 0 is successful, non-zero otherwise.
@@ -108,7 +108,7 @@ void IKControllerManager::loop(const double hz) {
         Eigen::Affine3d Td;
         Vector6d twist;
         trajectory.sample(t, Td, twist);
-        publish_robot_state(Td, q_act, dq_act);
+        publish_robot_state(Td, u);
 
         rate.sleep();
     }
@@ -147,8 +147,8 @@ void IKControllerManager::point_traj_cb(const geometry_msgs::PoseStamped& msg) {
 
 void IKControllerManager::mm_joint_states_cb(const sensor_msgs::JointState& msg) {
     for (int i = 0; i < mm::NUM_JOINTS; ++i) {
-        q_act(i) = msg.position[i];
-        dq_act(i) = msg.velocity[i];
+        q(i) = msg.position[i];
+        dq(i) = msg.velocity[i];
     }
 }
 
@@ -169,7 +169,7 @@ void IKControllerManager::force_cb(const mm_msgs::ForceInfo& msg) {
     // current pose.
     if (first_contact != msg.first_contact) {
         Eigen::Affine3d w_T_e;
-        Kinematics::calc_w_T_e(q_act, w_T_e);
+        Kinematics::calc_w_T_e(q, w_T_e);
         Eigen::Vector3d p = w_T_e.translation();
         Eigen::Quaterniond q(w_T_e.rotation());
         trajectory.stay_at(p, q);
@@ -190,8 +190,7 @@ void IKControllerManager::obstacle_cb(const mm_msgs::Obstacles& msg) {
 
 
 void IKControllerManager::publish_robot_state(const Eigen::Affine3d& Td,
-                                              const JointVector& q,
-                                              const JointVector& dq) {
+                                              const JointVector& u) {
     // Desired pose.
     Eigen::Vector3d pos_des = Td.translation();
     Eigen::Quaterniond quat_des(Td.rotation());
@@ -216,6 +215,10 @@ void IKControllerManager::publish_robot_state(const Eigen::Affine3d& Td,
         state_pub->msg_.actual = pose_act_msg;
         state_pub->msg_.desired = pose_des_msg;
         state_pub->msg_.error = pose_err_msg;
+
+        state_pub->msg_.q = std::vector<double>(q.data(), q.data() + q.size());
+        state_pub->msg_.dq = std::vector<double>(dq.data(), dq.data() + dq.size());
+        state_pub->msg_.u = std::vector<double>(u.data(), u.data() + u.size());
 
         state_pub->msg_.header.frame_id = "world";
         state_pub->msg_.header.stamp = ros::Time::now();

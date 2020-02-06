@@ -17,6 +17,8 @@ class RobotSim(object):
         self.dq = dq
         self.last_time = time.time()
 
+        self.fh = open('/home/adam/dl/log.txt', 'w')
+
         # publish joint states
         self.rb_state_pub = rospy.Publisher('/rb_joint_states', JointState, queue_size=10)
         self.ur10_state_pub = rospy.Publisher('/ur10_joint_states', JointState, queue_size=10)
@@ -69,6 +71,11 @@ class RobotSim(object):
         # Integrate to get current joint angles.
         self.q += dt * self.dq
 
+        max_dq = np.max(self.dq)
+        min_dq = np.min(self.dq)
+        if max_dq > min_dq:
+            self.fh.write('{}, {}\n'.format(max_dq, min_dq))
+
         self.publish_joint_states()
 
 
@@ -87,6 +94,7 @@ def main():
     while not rospy.is_shutdown():
         sim.step()
         rospy.sleep(dt)
+    sim.fh.close()
 
 
 if __name__ == '__main__':
