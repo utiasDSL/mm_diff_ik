@@ -17,7 +17,7 @@ def main():
     err_msgs = [msg.error.position for msg in pose_msgs]
     errs = util.vec3_msg_to_np(err_msgs)
     norms = np.linalg.norm(errs, axis=1)
-    rmse = util.rms(norms) * 1000.0
+    rmse = util.rms(norms) * 1000.0  # convert to mm
 
     print('RMSE = {} mm'.format(rmse))
 
