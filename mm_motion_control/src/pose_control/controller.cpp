@@ -7,6 +7,7 @@
 
 #include "mm_motion_control/pose_control/trajectory.h"
 #include "mm_motion_control/pose_control/obstacle.h"
+#include "mm_motion_control/pose_control/rate.h"
 
 
 namespace mm {
@@ -33,6 +34,10 @@ int IKController::update(double t, PoseTrajectory& trajectory,
     // Update time.
     double dt = t - time_prev;
     time_prev = t;
+
+    // May improve stability to set the timestep as a fixed value (assuming it
+    // is accurate).
+    dt = CONTROL_TIMESTEP;
 
     // Optimize to solve IK problem.
     // double t1 = ros::Time::now().toSec();

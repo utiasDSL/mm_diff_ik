@@ -94,7 +94,6 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     JointVector C2 = -dt * dm;
 
     /* 3. Avoid joint limits objective. */
-    // TODO this is experimental
 
     // Base has no limits, so first three joints are unweighted.
     JointMatrix Q3 = dt * dt * JointMatrix::Identity();
@@ -110,21 +109,16 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     pose_error(Td, q, e4);
     pose_error_jacobian(Td, q, J4);
 
-    Eigen::Matrix3d Kp = Eigen::Matrix3d::Identity();
-    Eigen::Vector3d vd;
-    vd << 0.1, 0, 0;
-    Eigen::Vector3d pos_err = e4.head<3>();
-    e4.head<3>() = Kp * pos_err + vd;
-
+    Matrix6d Kp = Matrix6d::Identity();
     Matrix6d W4 = Matrix6d::Identity();
 
     // We may choose to weight orientation error differently than position.
     W4.bottomRightCorner<3, 3>() = Eigen::Matrix3d::Zero();
 
-    // JointMatrix Q4 = dt * dt * J4.transpose() * W4 * J4;
-    // JointVector C4 = dt * e4.transpose() * W4 * J4;
+    // Use feedforward to improve tracking performance without requiring huge
+    // gains.
     JointMatrix Q4 = J4.transpose() * W4 * J4;
-    JointVector C4 = e4.transpose() * W4 * J4;
+    JointVector C4 = (Kp * e4 + twistd).transpose() * W4 * J4;
 
     /* 5. Minimize joint acceleration */
 
@@ -133,21 +127,24 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     if (dt * dt > 0) {
         Q5 = JointMatrix::Identity() / (dt * dt);
     }
-    // TODO this must be wrong
     JointVector C5 = -dq.transpose() * Q5;
 
     /* 6. Force compliance */
 
     // Limit the maximum force applied by compliance. Not a feature of the
     // controller, but reasonable for safety when interacting with people.
-    // Second clause makes it so that we only start to comply with forces above
-    // a certain magnitude, to reject noise.
     double f_norm = f.norm();
     Eigen::Vector3d f_compliant = f;
     if (f_norm > MAX_COMPLIANCE_FORCE) {
         f_compliant = MAX_COMPLIANCE_FORCE * f / f_norm;
-    } else if (f_norm < FORCE_THRESHOLD) {
+    }
+
+    // Only start to comply with forces above a certain magnitude, to reject
+    // noise.
+    if (f_norm > FORCE_THRESHOLD) {
         f_compliant = f * (1 - FORCE_THRESHOLD / f_norm);
+    } else {
+        f_compliant = Eigen::Vector3d::Zero();
     }
 
     Eigen::Matrix3d Kf = 0.2 * Eigen::Matrix3d::Identity();
@@ -203,7 +200,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     double w6 = 0.0;
     double w7 = 0.0;
 
-    ROS_INFO_STREAM("pos err = " << pos_err);
+    ROS_INFO_STREAM("pos err = " << e4.head<3>());
 
     // TODO obstacle avoidance can also be done here
 
@@ -224,20 +221,6 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
     Vector6d twistd;
     trajectory.sample(t + CONTROL_TIMESTEP, Td, twistd);
     // trajectory.sample(t, Td, twistd);
-
-    // Calculate desired EE velocity.
-    /*
-    Eigen::Vector3d pd = Td.translation();
-    Eigen::Affine3d w_T_e;
-    Kinematics::calc_w_T_e(q, w_T_e);
-    Eigen::Vector3d pe = w_T_e.translation();
-    Eigen::Vector3d vd = twist.head<3>();
-    Eigen::Vector3d dp = (pd - pe) + vd;
-
-    JacobianMatrix J;
-    Kinematics::jacobian(q, J);
-    Matrix3x9 Jp = J.topRows<3>();
-    */
 
     /*** OBJECTIVE ***/
 
