@@ -174,6 +174,9 @@ void IKControllerManager::force_cb(const mm_msgs::ForceInfo& msg) {
         Eigen::Quaterniond q(w_T_e.rotation());
         trajectory.stay_at(p, q);
 
+        traj_active = true;
+        ROS_INFO("Maintaining current pose.");
+
         fd = 5;
 
         first_contact = msg.first_contact;

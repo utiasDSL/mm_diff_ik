@@ -140,10 +140,14 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 
     // Limit the maximum force applied by compliance. Not a feature of the
     // controller, but reasonable for safety when interacting with people.
+    // Second clause makes it so that we only start to comply with forces above
+    // a certain magnitude, to reject noise.
     double f_norm = f.norm();
     Eigen::Vector3d f_compliant = f;
     if (f_norm > MAX_COMPLIANCE_FORCE) {
         f_compliant = MAX_COMPLIANCE_FORCE * f / f_norm;
+    } else if (f_norm < FORCE_THRESHOLD) {
+        f_compliant = f * (1 - FORCE_THRESHOLD / f_norm);
     }
 
     Eigen::Matrix3d Kf = 0.2 * Eigen::Matrix3d::Identity();
@@ -194,7 +198,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     double w1 = 1.0; // velocity
     double w2 = 0.0; // manipulability
     double w3 = 0.0; // joint limits
-    double w4 = 1.0; // pose error // 100,000 works well for RMSE reduction
+    double w4 = 100.0; // pose error // 100,000 works well for RMSE reduction
     double w5 = 0.0; // acceleration
     double w6 = 0.0;
     double w7 = 0.0;
@@ -218,8 +222,8 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
     // Look one timestep into the future to see where we want to end up.
     Eigen::Affine3d Td;
     Vector6d twistd;
-    // trajectory.sample(t + CONTROL_TIMESTEP, Td, twistd);
-    trajectory.sample(t, Td, twistd);
+    trajectory.sample(t + CONTROL_TIMESTEP, Td, twistd);
+    // trajectory.sample(t, Td, twistd);
 
     // Calculate desired EE velocity.
     /*

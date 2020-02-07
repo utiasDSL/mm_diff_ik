@@ -26,7 +26,9 @@ static const bool POSITIION_LIMITED[] = {
     true, true, true, true, true, true /* arm  */
 };
 
-static const double MAX_COMPLIANCE_FORCE = 100; // N
+// Force values are in Newtons
+static const double MAX_COMPLIANCE_FORCE = 100;
+static const double FORCE_THRESHOLD = 3;
 
 // For numerical differentiation
 // NOTE pushing this down to even 1e-5 makes the numerical Hessian fail
