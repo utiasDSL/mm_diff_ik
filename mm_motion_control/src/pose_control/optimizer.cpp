@@ -18,6 +18,7 @@ static const int NUM_WSR = 50;
 
 
 bool IKOptimizer::init() {
+    nf << -1, 0, 0;
     return true;
 }
 
@@ -169,30 +170,36 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 
     /* 7. Force regulation */
 
+
     JointMatrix Q7 = JointMatrix::Zero();
     JointVector C7 = JointVector::Zero();
     double kp = 1;
 
-    // if (f_norm > 0) {
-    //     double f_err = fd - f_norm;
-    //     Eigen::Vector3d nf = f / f_norm;
-    //     Q7 = Jp.transpose() * nf * nf.transpose() * Jp;
-    //     C7 = kp * df * nf.transpose() * Jp;
-    // }
-    //
-    // TODO just testing with x-direction only
-    double f_err = fd - f(0);
-    Eigen::Vector3d nf;
-    nf << 1, 0, 0;
-    Q7 = Jp.transpose() * nf * nf.transpose() * Jp;
-    C7 = kp * f_err * nf.transpose() * Jp;
+    // If applied force is suitably large, then we update the contact direction
+    // unit vector nf.
+    if (f_norm > FORCE_THRESHOLD) {
+        nf = f / f_norm;
 
-    ROS_INFO_STREAM(f_err);
+        // TODO if testing only in x-direction
+        // nf = Eigen::Vector3d::Zero();
+        // nf(0) = 1;
+    }
+    ROS_INFO_STREAM(nf);
+
+    // For now, only do regulation for > 0 desired forces. TODO generalize to 0
+    // and negative values.
+    if (fd > 0) {
+        // TODO just testing with x-direction only
+        double f_err = fd - f(0);
+        Eigen::Vector3d nf;
+        Q7 = Jp.transpose() * nf * nf.transpose() * Jp;
+        C7 = kp * f_err * nf.transpose() * Jp;
+        ROS_INFO_STREAM(f_err);
+    }
+
 
 
     /* Objective weighting */
-
-    // w1=0.1, w2=0, w3=1.0 worked well for line with no orientation control
 
     double w1 = 1.0; // velocity
     double w2 = 0.0; // manipulability
@@ -201,10 +208,6 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     double w5 = 0.0; // acceleration
     double w6 = 0.0; // force compliance
     double w7 = 0.0; // force regulation
-
-    ROS_INFO_STREAM("pos err = " << e4.head<3>());
-
-    // TODO obstacle avoidance can also be done here
 
     H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w6*Q6 + w7*Q7;
     g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w6*C6 + w7*C7;

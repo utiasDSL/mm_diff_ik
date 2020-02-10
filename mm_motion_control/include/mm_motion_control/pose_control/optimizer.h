@@ -28,7 +28,7 @@ static const bool POSITIION_LIMITED[] = {
 
 // Force values are in Newtons
 static const double MAX_COMPLIANCE_FORCE = 100;
-static const double FORCE_THRESHOLD = 3;
+static const double FORCE_THRESHOLD = 5;
 
 // For numerical differentiation
 // NOTE pushing this down to even 1e-5 makes the numerical Hessian fail
@@ -110,6 +110,9 @@ class IKOptimizer {
 
     private:
         IKOptimizerState state;
+
+        // Normal direction of applied force.
+        Eigen::Vector3d nf;
 
         // Construct and solve the QP given our problem-specific matrices.
         // Note that the underlying data for input arguments is not copied.
