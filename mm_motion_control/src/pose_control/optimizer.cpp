@@ -160,6 +160,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     Kinematics::jacobian(q, J);
     Matrix3x9 Jp = J.topRows<3>();
 
+
     // TODO we can include feedforward velocity here
     Matrix3x9 Af = -(Bf + dt * Kf) * Jp;
     Eigen::Vector3d df = Kf * (pd - pe) - f_compliant;
@@ -189,14 +190,23 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     // For now, only do regulation for > 0 desired forces. TODO generalize to 0
     // and negative values.
     if (fd > 0) {
-        // TODO just testing with x-direction only
-        double f_err = fd - f(0);
-        Eigen::Vector3d nf;
+        double f_err = fd - f_norm;
         Q7 = Jp.transpose() * nf * nf.transpose() * Jp;
         C7 = kp * f_err * nf.transpose() * Jp;
         ROS_INFO_STREAM(f_err);
     }
 
+    /* 8. Orientation of EE tracks nf. */
+
+    Eigen::Matrix3d Re = w_T_e.rotation();
+    Eigen::Vector3d ne = Re.col(0);
+
+    Matrix3x9 Jn, Js, Ja;
+    rotation_error_jacobians(q, Jn, Js, Ja);
+
+    Eigen::Matrix3d W8 = Eigen::Matrix3d::Identity();
+    JointMatrix Q8 = dt * dt * Jn.transpose() * W8 * Jn;
+    JointVector C8 = dt * (ne - nf).transpose() * W8 * Jn;
 
 
     /* Objective weighting */
@@ -208,9 +218,10 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     double w5 = 0.0; // acceleration
     double w6 = 0.0; // force compliance
     double w7 = 0.0; // force regulation
+    double w8 = 0.0; // orientation tracks nf
 
-    H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w6*Q6 + w7*Q7;
-    g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w6*C6 + w7*C7;
+    H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w6*Q6 + w7*Q7 + w8*Q8;
+    g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w6*C6 + w7*C7 + w8*C8;
 }
 
 
