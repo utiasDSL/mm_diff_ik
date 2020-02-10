@@ -148,7 +148,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
         f_compliant = Eigen::Vector3d::Zero();
     }
 
-    Eigen::Matrix3d Kf = 0.2 * Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d Kf = 0.5 * Eigen::Matrix3d::Identity();
     Eigen::Matrix3d Bf = 0.0 * Eigen::Matrix3d::Identity();
 
     Eigen::Affine3d w_T_e;
@@ -174,7 +174,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 
     JointMatrix Q7 = JointMatrix::Zero();
     JointVector C7 = JointVector::Zero();
-    double kp = 1;
+    double kp = 0.01;
 
     // If applied force is suitably large, then we update the contact direction
     // unit vector nf.
