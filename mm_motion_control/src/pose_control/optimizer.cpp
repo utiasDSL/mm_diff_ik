@@ -187,6 +187,8 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     Q7 = Jp.transpose() * nf * nf.transpose() * Jp;
     C7 = kp * f_err * nf.transpose() * Jp;
 
+    ROS_INFO_STREAM(f_err);
+
 
     /* Objective weighting */
 
@@ -195,10 +197,10 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     double w1 = 1.0; // velocity
     double w2 = 0.0; // manipulability
     double w3 = 0.0; // joint limits
-    double w4 = 100.0; // pose error // 100,000 works well for RMSE reduction
+    double w4 = 100.0; // pose error
     double w5 = 0.0; // acceleration
-    double w6 = 0.0;
-    double w7 = 0.0;
+    double w6 = 0.0; // force compliance
+    double w7 = 0.0; // force regulation
 
     ROS_INFO_STREAM("pos err = " << e4.head<3>());
 
@@ -219,8 +221,8 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
     // Look one timestep into the future to see where we want to end up.
     Eigen::Affine3d Td;
     Vector6d twistd;
-    trajectory.sample(t + CONTROL_TIMESTEP, Td, twistd);
-    // trajectory.sample(t, Td, twistd);
+    // trajectory.sample(t + CONTROL_TIMESTEP, Td, twistd);
+    trajectory.sample(t, Td, twistd);
 
     /*** OBJECTIVE ***/
 

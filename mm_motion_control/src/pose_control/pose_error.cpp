@@ -19,6 +19,8 @@ void position_error_jacobian(const JointVector& q, Matrix3x9& Jp) {
 }
 
 
+/*** PUBLIC ***/
+
 void rotation_error(const Eigen::Matrix3d& Rd, const Eigen::Matrix3d& Re,
                     Eigen::Vector3d& e) {
     Eigen::Vector3d nd = Rd.col(0);
@@ -48,8 +50,6 @@ void rotation_error_jacobian(const Eigen::Matrix3d& Rd, const JointVector& q,
     Je = -0.5 * (Nd * Jn + Sd * Js + Ad * Ja);
 }
 
-
-/*** PUBLIC ***/
 
 void pose_error(const Eigen::Affine3d& Td, const JointVector& q, Vector6d& e) {
     Eigen::Matrix3d Rd = Td.rotation();

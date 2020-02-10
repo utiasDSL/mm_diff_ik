@@ -196,17 +196,21 @@ void IKControllerManager::publish_robot_state(const Eigen::Affine3d& Td,
                                               const JointVector& u) {
     // Desired pose.
     Eigen::Vector3d pos_des = Td.translation();
-    Eigen::Quaterniond quat_des(Td.rotation());
+    Eigen::Matrix3d Rd = Td.rotation();
+    Eigen::Quaterniond quat_des(Rd);
 
     // Actual pose.
     Eigen::Affine3d w_T_e;
     Kinematics::calc_w_T_e(q, w_T_e);
     Eigen::Vector3d pos_act = w_T_e.translation();
-    Eigen::Quaterniond quat_act(w_T_e.rotation());
+    Eigen::Matrix3d Re = w_T_e.rotation();
+    Eigen::Quaterniond quat_act(Re);
 
     // Error.
     Eigen::Vector3d pos_err = pos_des - pos_act;
     Eigen::Quaterniond quat_err = quat_des * quat_act.inverse();
+    Eigen::Vector3d rot_err;
+    rotation_error(Rd, Re, rot_err);
 
     if (state_pub->trylock()) {
         geometry_msgs::Pose pose_act_msg, pose_des_msg, pose_err_msg;
@@ -218,6 +222,10 @@ void IKControllerManager::publish_robot_state(const Eigen::Affine3d& Td,
         state_pub->msg_.actual = pose_act_msg;
         state_pub->msg_.desired = pose_des_msg;
         state_pub->msg_.error = pose_err_msg;
+
+        state_pub->msg_.rotation_error.x = rot_err(0);
+        state_pub->msg_.rotation_error.y = rot_err(1);
+        state_pub->msg_.rotation_error.z = rot_err(2);
 
         state_pub->msg_.q = std::vector<double>(q.data(), q.data() + q.size());
         state_pub->msg_.dq = std::vector<double>(dq.data(), dq.data() + dq.size());

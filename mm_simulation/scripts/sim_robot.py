@@ -8,13 +8,17 @@ from trajectory_msgs.msg import JointTrajectory
 from geometry_msgs.msg import Twist
 
 
+HZ = 125
+
+
 class RobotSim(object):
     ''' Simulation of Thing platform: Ridgeback omnidirectional base + UR10
         6-DOF arm. '''
-    def __init__(self, q, dq):
+    def __init__(self, q):
         # maintain an internal robot state
         self.q = q
-        self.dq = dq
+        self.dq = np.zeros(q.shape)
+        self.ddq = np.zeros(q.shape)
         self.last_time = time.time()
 
         self.fh = open('/home/adam/dl/log.txt', 'w')
@@ -34,42 +38,53 @@ class RobotSim(object):
     def rb_joint_speed_cb(self, msg):
         ''' Callback for velocity commands for the base. '''
         # print('Received RB speeds = {}'.format(msg.linear))
-        self.dq[:3] = np.array([msg.linear.x, msg.linear.y, msg.angular.z])
+        dq_base = np.array([msg.linear.x, msg.linear.y, msg.angular.z])
+        self.ddq[:3] = (dq_base - self.dq[:3]) * 125.0
+        self.dq[:3] = dq_base
+        self.q[:3] += 0.008 * dq_base
 
     def ur10_joint_speed_cb(self, msg):
         ''' Callback for velocity commands to the arm joints. '''
         # msg is of type trajectory_msgs/JointTrajectory
         # take the velocities from the first point
-        # print('Received UR10 speeds = {}'.format(msg.points[0].velocities))
-        self.dq[3:] = np.array(msg.points[0].velocities)
+        dq_arm = np.array(msg.points[0].velocities)
+        self.ddq[3:] = (dq_arm - self.dq[3:]) * 125.0
+        self.dq[3:] = dq_arm
+        self.q[3:] += 0.008 * dq_arm
 
     def publish_joint_states(self):
         ''' Publish current joint states (position and velocity). '''
+        now = rospy.Time.now()
+
         # Base
         rb_joint_state = JointState()
+        rb_joint_state.header.stamp = now
         rb_joint_state.position = list(self.q[:3])
         rb_joint_state.velocity = list(self.dq[:3])
         self.rb_state_pub.publish(rb_joint_state)
 
         # Arm
         ur10_joint_state = JointState()
+        ur10_joint_state.header.stamp = now
         ur10_joint_state.position = list(self.q[3:])
         ur10_joint_state.velocity = list(self.dq[3:])
         self.ur10_state_pub.publish(ur10_joint_state)
 
         # All joints together, for convenience (e.g. for simulation)
         joint_state = JointState()
+        joint_state.header.stamp = now
         joint_state.position = list(self.q)
         joint_state.velocity = list(self.dq)
+        joint_state.effort = list(self.ddq)  # abuse of notation
         self.state_pub.publish(joint_state)
 
     def step(self):
-        now = time.time()
-        dt = now - self.last_time
-        self.last_time = now
+        # now = time.time()
+        # dt = now - self.last_time
+        # self.last_time = now
 
         # Integrate to get current joint angles.
-        self.q += dt * self.dq
+        # self.q += dt * self.dq
 
         max_dq = np.max(self.dq)
         min_dq = np.min(self.dq)
@@ -81,19 +96,18 @@ class RobotSim(object):
 
 def main():
     rospy.init_node('mm_robot_sim')
-    dt = 0.01
+    rate = rospy.Rate(HZ)
 
     q = np.zeros(9)
-    dq = np.zeros(9)
 
     q[4] = -np.pi*0.75
     q[5] = -np.pi/2
 
-    sim = RobotSim(q, dq)
+    sim = RobotSim(q)
 
     while not rospy.is_shutdown():
         sim.step()
-        rospy.sleep(dt)
+        rate.sleep()
     sim.fh.close()
 
 

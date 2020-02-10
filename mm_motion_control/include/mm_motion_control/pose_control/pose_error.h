@@ -25,6 +25,16 @@ void pose_error(const Eigen::Affine3d& Td, const JointVector& q, Vector6d& e);
 void pose_error_jacobian(const Eigen::Affine3d& Td, const JointVector& q,
                          JacobianMatrix& J);
 
+
+// Calculate rotation error.
+// Parameters:
+//   Rd: desired rotation matrix
+//   Re: current rotation matrix
+//   e:  populated with rotation error
+void rotation_error(const Eigen::Matrix3d& Rd, const Eigen::Matrix3d& Re,
+                    Eigen::Vector3d& e);
+
+
 // Calculate Jacobians w.r.t. each column of the forward kinematics rotation
 // matrix, R(q) = [n, s, a].
 // Parameters:
