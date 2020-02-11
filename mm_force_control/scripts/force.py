@@ -1,15 +1,13 @@
 #!/usr/bin/env python2
 import rospy
 import numpy as np
-import tf.transformations as tfs
 
-from geometry_msgs.msg import Vector3Stamped, WrenchStamped
+from geometry_msgs.msg import WrenchStamped
 from sensor_msgs.msg import JointState
 from mm_msgs.msg import ForceInfo
 
 import mm_kinematics.kinematics as kinematics
 
-import mm_force_control.util as util
 from mm_force_control.filter import ExponentialSmoother
 from mm_force_control.bias import FTBiasEstimator
 
@@ -17,12 +15,9 @@ from mm_force_control.bias import FTBiasEstimator
 CONTACT_THRESHOLD = 5  # Desired contact force, when contact is detected
 DESIRED_CONTACT_FORCE = 5
 
-HZ = 20  # Control loop rate (Hz)
+HZ = 100  # Control loop rate (Hz)
 
 N_BIAS = 100  # Number of samples to use for force bias estimation.
-
-# Transform from EE frame to force torque sensor frame - just a small offset.
-e_T_f = tfs.translation_matrix([0.02, 0, 0])
 
 
 class ForceControlNode(object):
@@ -95,10 +90,9 @@ class ForceControlNode(object):
 
         while not rospy.is_shutdown():
             # Transform force to the world frame
-            w_T_e = kinematics.forward(self.q)
-            w_T_f = w_T_e.dot(e_T_f)
-            w_R_f = w_T_f[:3, :3]
-            force_world = w_R_f.dot(self.force_filt)
+            w_T_ft = kinematics.calc_w_T_ft(self.q)
+            w_R_ft = w_T_ft[:3, :3]
+            force_world = w_R_ft.dot(self.force_filt)
 
             # Reverse input so that output offset pushes back against applied
             # force.

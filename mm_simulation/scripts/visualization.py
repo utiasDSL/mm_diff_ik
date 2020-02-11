@@ -43,15 +43,16 @@ class RobotPlotter(object):
         self.z_traj = []
         self.traj_changed = False
 
-        w_p_b, w_p_e, xs, ys, zs = self._calc_arm_positions()
+        w_p_b, w_p_e, w_p_t, xs, ys, zs = self._calc_arm_positions()
         x_obs, y_obs, z_obs = self._calc_obs_positions()
 
         self.line, = self.ax.plot(xs, ys, zs=zs, marker='o')
-        self.ax.plot([0], [0], zs=[0], c='b', marker='o', label='Origin')
+        self.ax.plot([0], [0], zs=[0], c='k', marker='o', label='Origin')
         self.base_pt, = self.ax.plot([w_p_b[0]], [w_p_b[1]], zs=[w_p_b[2]],
                                      c='g', marker='o', label='Base')
-        self.ee_pt, = self.ax.plot([w_p_e[0]], [w_p_e[1]], zs=[w_p_e[2]],
-                                   c='r', marker='o', label='EE')
+        self.ee_pt, = self.ax.plot([w_p_e[0], w_p_t[0]], [w_p_e[1], w_p_t[1]],
+                                   zs=[w_p_e[2], w_p_t[2]], c='r', marker='o',
+                                   label='EE/Tool')
 
         self.obs_plot, = self.ax.plot(x_obs, y_obs, zs=z_obs, marker='o', c='k')
 
@@ -73,18 +74,20 @@ class RobotPlotter(object):
         self.traj_changed = True
 
     def _calc_arm_positions(self):
-        Ts = kinematics.forward_chain(self.q)
+        Ts = kinematics.chain(self.q)
         w_T_b = Ts[3]
-        w_T_e = Ts[-1]
+        w_T_e = Ts[-2]  # EE
+        w_T_t = Ts[-1]  # tool
 
         w_p_b = tfs.translation_from_matrix(w_T_b)
         w_p_e = tfs.translation_from_matrix(w_T_e)
+        w_p_t = tfs.translation_from_matrix(w_T_t)
 
-        xs = [T[0,3] for T in Ts[3:]]
-        ys = [T[1,3] for T in Ts[3:]]
-        zs = [T[2,3] for T in Ts[3:]]
+        xs = [T[0, 3] for T in Ts[3:]]
+        ys = [T[1, 3] for T in Ts[3:]]
+        zs = [T[2, 3] for T in Ts[3:]]
 
-        return w_p_b, w_p_e, xs, ys, zs
+        return w_p_b, w_p_e, w_p_t, xs, ys, zs
 
     def _calc_obs_positions(self):
         x_obs = [obs.centre.x for obs in self.obstacles]
@@ -95,7 +98,7 @@ class RobotPlotter(object):
 
     def refresh(self):
         ''' Update plot based on current transforms. '''
-        w_p_b, w_p_e, xs, ys, zs = self._calc_arm_positions()
+        w_p_b, w_p_e, w_p_t, xs, ys, zs = self._calc_arm_positions()
         x_obs, y_obs, z_obs = self._calc_obs_positions()
 
         self.line.set_xdata(xs)
@@ -106,9 +109,9 @@ class RobotPlotter(object):
         self.base_pt.set_ydata([w_p_b[1]])
         self.base_pt.set_3d_properties([w_p_b[2]])
 
-        self.ee_pt.set_xdata([w_p_e[0]])
-        self.ee_pt.set_ydata([w_p_e[1]])
-        self.ee_pt.set_3d_properties([w_p_e[2]])
+        self.ee_pt.set_xdata([w_p_e[0], w_p_t[0]])
+        self.ee_pt.set_ydata([w_p_e[1], w_p_t[1]])
+        self.ee_pt.set_3d_properties([w_p_e[2], w_p_t[2]])
 
         self.obs_plot.set_xdata(x_obs)
         self.obs_plot.set_ydata(y_obs)

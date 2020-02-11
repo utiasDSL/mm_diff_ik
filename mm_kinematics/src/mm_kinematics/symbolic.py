@@ -41,9 +41,9 @@ class SymbolicKinematics(object):
         px, py, pz = sym.symbols('px,py,pz')
 
         # Arm D-H parameters.
-        d1, a2, a3, d4, d5, d6 = sym.symbols('d1,a2,a3,d4,d5,d6')
+        d1, a2, a3, d4, d5, d6, d7 = sym.symbols('d1,a2,a3,d4,d5,d6,d7')
 
-        self.T = [None] * 12
+        self.T = [None] * 13
 
         # Transform from base to world.
         self.T[0] = dh_tf(sym.pi/2, 0, 0,       sym.pi/2)
@@ -62,9 +62,10 @@ class SymbolicKinematics(object):
         self.T[9]  = dh_tf(self.q4, 0,  d4,  sym.pi/2)
         self.T[10] = dh_tf(self.q5, 0,  d5, -sym.pi/2)
         self.T[11] = dh_tf(self.q6, 0,  d6,  0)
+        self.T[12] = dh_tf(0,       0,  d7,  0)
 
         # Transforms from intermediate points to world.
-        self.T0 = [None] * 13
+        self.T0 = [None] * 14
 
         # Construct intermediate transforms.
         self.T0[0]  = sym.eye(4)
@@ -80,6 +81,7 @@ class SymbolicKinematics(object):
         self.T0[10] = self.T0[9]  * self.T[9]   # q4
         self.T0[11] = self.T0[10] * self.T[10]  # q5
         self.T0[12] = self.T0[11] * self.T[11]  # q6
+        self.T0[13] = self.T0[12] * self.T[12]  # tool offset
 
     def _calc_sym_jacobian(self):
         R0_0,  t0_0  = R_t_from_T(self.T0[0])
@@ -95,9 +97,10 @@ class SymbolicKinematics(object):
         R0_10, t0_10 = R_t_from_T(self.T0[10])
         R0_11, t0_11 = R_t_from_T(self.T0[11])
         R0_12, t0_12 = R_t_from_T(self.T0[12])
+        R0_13, t0_13 = R_t_from_T(self.T0[13])
 
-        # Angular derivatives - this is the unit vector pointing along the z-axis for
-        # the corresponding joint.
+        # Angular derivatives - this is the unit vector pointing along the
+        # z-axis for the corresponding joint.
         k = sym.Matrix([0, 0, 1])  # Unit vector along z-axis
 
         z_xb = R0_2 * k
@@ -112,21 +115,23 @@ class SymbolicKinematics(object):
         z_q6 = R0_12 * k
 
         # joints xb and yb are prismatic, and so cause no angular velocity.
-        Jw = sym.Matrix.hstack(0*z_xb, 0*z_yb, z_tb, z_q1, z_q2, z_q3, z_q4, z_q5, z_q6)
+        Jw = sym.Matrix.hstack(0*z_xb, 0*z_yb, z_tb, z_q1, z_q2, z_q3, z_q4,
+                               z_q5, z_q6)
 
         # Linear derivatives
-        dt_dxb = sym.diff(t0_12, self.xb)
-        dt_dyb = sym.diff(t0_12, self.yb)
-        dt_dtb = sym.diff(t0_12, self.tb)
+        dt_dxb = sym.diff(t0_13, self.xb)
+        dt_dyb = sym.diff(t0_13, self.yb)
+        dt_dtb = sym.diff(t0_13, self.tb)
 
-        dt_dq1 = sym.diff(t0_12, self.q1)
-        dt_dq2 = sym.diff(t0_12, self.q2)
-        dt_dq3 = sym.diff(t0_12, self.q3)
-        dt_dq4 = sym.diff(t0_12, self.q4)
-        dt_dq5 = sym.diff(t0_12, self.q5)
-        dt_dq6 = sym.diff(t0_12, self.q6)
+        dt_dq1 = sym.diff(t0_13, self.q1)
+        dt_dq2 = sym.diff(t0_13, self.q2)
+        dt_dq3 = sym.diff(t0_13, self.q3)
+        dt_dq4 = sym.diff(t0_13, self.q4)
+        dt_dq5 = sym.diff(t0_13, self.q5)
+        dt_dq6 = sym.diff(t0_13, self.q6)
 
-        Jv = sym.Matrix.hstack(dt_dxb, dt_dyb, dt_dtb, dt_dq1, dt_dq2, dt_dq3, dt_dq4, dt_dq5, dt_dq6)
+        Jv = sym.Matrix.hstack(dt_dxb, dt_dyb, dt_dtb, dt_dq1, dt_dq2, dt_dq3,
+                               dt_dq4, dt_dq5, dt_dq6)
 
         # Full Jacobian
         self.J_sym = sym.Matrix.vstack(Jv, Jw)
@@ -168,7 +173,7 @@ class SymbolicKinematics(object):
             'xb': qb[0], 'yb': qb[1], 'tb': qb[2],
             'q1': qa[0], 'q2': qa[1], 'q3': qa[2], 'q4': qa[3], 'q5': qa[4], 'q6': qa[5],
             'px': 0.27, 'py': 0.01, 'pz': 0.653,
-            'd1': 0.1273, 'a2': -0.612, 'a3': -0.5723, 'd4': 0.163941, 'd5': 0.1157, 'd6': 0.0922,
+            'd1': 0.1273, 'a2': -0.612, 'a3': -0.5723, 'd4': 0.163941, 'd5': 0.1157, 'd6': 0.0922, 'd7': 0.290
         }
 
     def forward_chain(self, q):
