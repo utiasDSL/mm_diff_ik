@@ -18,7 +18,7 @@ static const int NUM_WSR = 50;
 
 
 bool IKOptimizer::init() {
-    nf << -1, 0, 0;
+    nf << 1, 0, 0;
     return true;
 }
 
@@ -114,7 +114,8 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     Matrix6d W4 = Matrix6d::Identity();
 
     // We may choose to weight orientation error differently than position.
-    W4.bottomRightCorner<3, 3>() = Eigen::Matrix3d::Zero();
+    W4.topLeftCorner<3, 3>() = Eigen::Matrix3d::Identity();
+    W4.bottomRightCorner<3, 3>() = 0.0*Eigen::Matrix3d::Identity();
 
     // Use feedforward to improve tracking performance without requiring huge
     // gains.
@@ -192,21 +193,21 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     if (fd > 0) {
         double f_err = fd - f_norm;
         Q7 = Jp.transpose() * nf * nf.transpose() * Jp;
-        C7 = kp * f_err * nf.transpose() * Jp;
+        C7 = -kp * f_err * nf.transpose() * Jp;
         ROS_INFO_STREAM(f_err);
     }
 
     /* 8. Orientation of EE tracks nf. */
 
     Eigen::Matrix3d Re = w_T_e.rotation();
-    Eigen::Vector3d ne = Re.col(0);
+    Eigen::Vector3d ae = Re.col(0);
 
     Matrix3x9 Jn, Js, Ja;
     rotation_error_jacobians(q, Jn, Js, Ja);
 
     Eigen::Matrix3d W8 = Eigen::Matrix3d::Identity();
-    JointMatrix Q8 = dt * dt * Jn.transpose() * W8 * Jn;
-    JointVector C8 = dt * (ne - nf).transpose() * W8 * Jn;
+    JointMatrix Q8 = dt * dt * Ja.transpose() * W8 * Ja;
+    JointVector C8 = dt * (ae - nf).transpose() * W8 * Ja;
 
 
     /* Objective weighting */
