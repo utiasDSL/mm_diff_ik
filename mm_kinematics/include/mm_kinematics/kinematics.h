@@ -63,23 +63,20 @@ class Kinematics {
         // J: populated with Jacobian matrix
         static void jacobian(const JointVector& q, JacobianMatrix& J);
 
-        // Forward kinematics
-        // q: joint values
-        // P: populated with pose of end effector
-        static void forward(const JointVector& q, Eigen::Affine3d& w_T_e);
+        // Transform from mobile base to world.
+        static void calc_w_T_base(const JointVector& q,
+                                  Eigen::Affine3d& w_T_base);
 
-        // Transform from base to world.
-        static void calc_w_T_b(const JointVector& q, Eigen::Affine3d& w_T_b);
-
-        // Transform from arm to world.
-        static void calc_w_T_a(const JointVector& q, Eigen::Affine3d& w_T_a);
+        // Transform from base of arm to world.
+        static void calc_w_T_arm(const JointVector& q,
+                                 Eigen::Affine3d& w_T_arm);
 
         // Transform from EE to world.
-        static void calc_w_T_e(const JointVector& q, Eigen::Affine3d& w_T_e);
+        static void calc_w_T_ee(const JointVector& q, Eigen::Affine3d& w_T_ee);
 
-        // Forward velocity kinematics.
-        static void forward_vel(const JointVector& q,
-                                const JointVector& dq, Vector6d& v);
+        // Transform from tool to world.
+        static void calc_w_T_tool(const JointVector& q,
+                                  Eigen::Affine3d& w_T_tool);
 
         // Manipulability index.
         static double manipulability(const JointVector& q);
@@ -98,6 +95,7 @@ class Kinematics {
         static constexpr double d4 = 0.163941;
         static constexpr double d5 = 0.1157;
         static constexpr double d6 = 0.0922;
+        static constexpr double d7 = 0.290;
 
         // Create transformation matrix from D-H parameters.
         static void dh_transform(double q, double a, double d, double alpha,

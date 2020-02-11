@@ -43,8 +43,8 @@ def launch(trajectory, duration, dt=0.1):
     # wait until current joint state is received
     q0, dq0 = JointInitializer.wait_for_msg(dt)
 
-    # calculate initial EE position and velocity
-    T0 = kinematics.forward(q0)
+    # calculate initial tool position and velocity
+    T0 = kinematics.calc_w_T_tool(q0)
     p0 = tfs.translation_from_matrix(T0)
     quat0 = tfs.quaternion_from_matrix(T0)
 

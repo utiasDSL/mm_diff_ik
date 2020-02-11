@@ -27,8 +27,8 @@ class PosePublisher {
 
             Eigen::Affine3d w_T_b;
             Eigen::Affine3d w_T_e;
-            Kinematics::calc_w_T_b(q, w_T_b);
-            Kinematics::calc_w_T_e(q, w_T_e);
+            Kinematics::calc_w_T_base(q, w_T_b);
+            Kinematics::calc_w_T_tool(q, w_T_e);
 
             Eigen::Vector3d p_b = w_T_b.translation();
             Eigen::Quaterniond q_b(w_T_b.rotation());

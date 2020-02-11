@@ -152,9 +152,9 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     Eigen::Matrix3d Kf = 0.5 * Eigen::Matrix3d::Identity();
     Eigen::Matrix3d Bf = 0.0 * Eigen::Matrix3d::Identity();
 
-    Eigen::Affine3d w_T_e;
-    Kinematics::calc_w_T_e(q, w_T_e);
-    Eigen::Vector3d pe = w_T_e.translation();
+    Eigen::Affine3d w_T_tool;
+    Kinematics::calc_w_T_tool(q, w_T_tool);
+    Eigen::Vector3d pe = w_T_tool.translation();
     Eigen::Vector3d pd = Td.translation();
 
     JacobianMatrix J;
@@ -186,7 +186,6 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
         // nf = Eigen::Vector3d::Zero();
         // nf(0) = 1;
     }
-    ROS_INFO_STREAM(nf);
 
     // For now, only do regulation for > 0 desired forces. TODO generalize to 0
     // and negative values.
@@ -199,7 +198,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 
     /* 8. Orientation of EE tracks nf. */
 
-    Eigen::Matrix3d Re = w_T_e.rotation();
+    Eigen::Matrix3d Re = w_T_tool.rotation();
     Eigen::Vector3d ae = Re.col(0);
 
     Matrix3x9 Jn, Js, Ja;
@@ -208,6 +207,8 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     Eigen::Matrix3d W8 = Eigen::Matrix3d::Identity();
     JointMatrix Q8 = dt * dt * Ja.transpose() * W8 * Ja;
     JointVector C8 = dt * (ae - nf).transpose() * W8 * Ja;
+
+    ROS_INFO_STREAM(pd-pe);
 
 
     /* Objective weighting */

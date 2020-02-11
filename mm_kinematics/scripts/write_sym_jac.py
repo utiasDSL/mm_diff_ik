@@ -4,7 +4,7 @@ from mm_kinematics.symbolic import SymbolicKinematics
 
 def write_sym_jac():
     kin = SymbolicKinematics()
-    kin.write_sym_jac('jac.txt', fmt='py')
+    kin.write_sym_jac('jac.txt', fmt='c++')
 
 
 if __name__ == '__main__':

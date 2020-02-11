@@ -168,10 +168,10 @@ void IKControllerManager::force_cb(const mm_msgs::ForceInfo& msg) {
     // If this is the first time contact is made, switch to maintaining the
     // current pose.
     if (first_contact != msg.first_contact) {
-        Eigen::Affine3d w_T_e;
-        Kinematics::calc_w_T_e(q, w_T_e);
-        Eigen::Vector3d p = w_T_e.translation();
-        Eigen::Quaterniond q(w_T_e.rotation());
+        Eigen::Affine3d w_T_tool;
+        Kinematics::calc_w_T_tool(q, w_T_tool);
+        Eigen::Vector3d p = w_T_tool.translation();
+        Eigen::Quaterniond q(w_T_tool.rotation());
         trajectory.stay_at(p, q);
 
         traj_active = true;
@@ -200,10 +200,10 @@ void IKControllerManager::publish_robot_state(const Eigen::Affine3d& Td,
     Eigen::Quaterniond quat_des(Rd);
 
     // Actual pose.
-    Eigen::Affine3d w_T_e;
-    Kinematics::calc_w_T_e(q, w_T_e);
-    Eigen::Vector3d pos_act = w_T_e.translation();
-    Eigen::Matrix3d Re = w_T_e.rotation();
+    Eigen::Affine3d w_T_tool;
+    Kinematics::calc_w_T_tool(q, w_T_tool);
+    Eigen::Vector3d pos_act = w_T_tool.translation();
+    Eigen::Matrix3d Re = w_T_tool.rotation();
     Eigen::Quaterniond quat_act(Re);
 
     // Error.

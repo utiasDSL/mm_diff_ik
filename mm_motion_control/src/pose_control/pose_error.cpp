@@ -56,10 +56,10 @@ void pose_error(const Eigen::Affine3d& Td, const JointVector& q, Vector6d& e) {
     Eigen::Vector3d pd = Td.translation();
 
     // Current EE pose.
-    Eigen::Affine3d w_T_e;
-    Kinematics::calc_w_T_e(q, w_T_e);
-    Eigen::Matrix3d Re = w_T_e.rotation();
-    Eigen::Vector3d pe = w_T_e.translation();
+    Eigen::Affine3d w_T_tool;
+    Kinematics::calc_w_T_tool(q, w_T_tool);
+    Eigen::Matrix3d Re = w_T_tool.rotation();
+    Eigen::Vector3d pe = w_T_tool.translation();
 
     // Calculate errors.
     Eigen::Vector3d pos_err, rot_err;

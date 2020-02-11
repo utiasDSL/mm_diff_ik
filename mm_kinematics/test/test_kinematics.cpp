@@ -19,8 +19,8 @@ void test_jac_finite_diff(const JointVector& q, const double eps) {
         epsv(i) = eps;
 
         Affine3d T1, T2;
-        mm::Kinematics::forward(q + epsv, T1);
-        mm::Kinematics::forward(q - epsv, T2);
+        mm::Kinematics::calc_w_T_tool(q + epsv, T1);
+        mm::Kinematics::calc_w_T_tool(q - epsv, T2);
 
         // Calculate numerical approximation of derivative via central finite
         // difference and compare to analytical derivative from the Jacobian.
