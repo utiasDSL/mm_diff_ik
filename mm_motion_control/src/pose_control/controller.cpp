@@ -42,6 +42,7 @@ int IKController::update(double t, PoseTrajectory& trajectory,
     // Optimize to solve IK problem.
     // double t1 = ros::Time::now().toSec();
     int status = optimizer.solve(t, trajectory, q, dq, fd, f, obstacles, dt, u);
+    // int status = optimizer.solve(t, trajectory, q, dq, obstacles, dt, u);
     // double dt2 = ros::Time::now().toSec() - t1;
 
     // ROS_INFO_STREAM("loop dt = " << dt << ", opt dt = " << dt2);

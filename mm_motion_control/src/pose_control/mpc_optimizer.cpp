@@ -66,7 +66,7 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
 
     // Error weight matrix.
     Matrix6d Q = Matrix6d::Identity();
-    Q.topLeftCorner<3, 3>() = 100000 * Eigen::Matrix3d::Identity();
+    Q.topLeftCorner<3, 3>() = 100 * Eigen::Matrix3d::Identity();
     Q.bottomRightCorner<3, 3>() = 0 * Eigen::Matrix3d::Identity();
 
     // Effort weight matrix.
@@ -92,8 +92,10 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
                 timestep = CONTROL_TIMESTEP;
             }
 
+            // Ebar.block<NUM_JOINTS, NUM_JOINTS>(i*NUM_JOINTS, j*NUM_JOINTS)
+            //     = timestep * JointMatrix::Identity();
             Ebar.block<NUM_JOINTS, NUM_JOINTS>(i*NUM_JOINTS, j*NUM_JOINTS)
-                = timestep * JointMatrix::Identity();
+                = JointMatrix::Identity();
         }
     }
 
@@ -125,14 +127,17 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
     // TODO handling overshooting the end of the trajectory isn't good
     // because it spreads error for final position over time
     std::vector<Eigen::Affine3d> Tds;
+    std::vector<Vector6d> twistds;
     for (int k = 0; k < NUM_HORIZON; ++k) {
-        double t = t0 + CONTROL_TIMESTEP + k * LOOKAHEAD_TIMESTEP;
+        // TODO recall we had the CONTROL_TIMESTEP added in here
+        double t = t0 + k * LOOKAHEAD_TIMESTEP;
 
         Eigen::Affine3d Td;
-        Vector6d twist;  // unused
-        trajectory.sample(t, Td, twist);
+        Vector6d twistd;
+        trajectory.sample(t, Td, twistd);
 
         Tds.push_back(Td);
+        twistds.push_back(twistd);
     }
 
     int status = 0;
@@ -148,14 +153,16 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
         // contrast to the above loop rolling out the lookahead trajectory.
         for (int k = 0; k < NUM_HORIZON; ++k) {
             Eigen::Affine3d Td = Tds[k];
+            Vector6d twistd = twistds[k];
 
             // current guess for joint values k steps in the future
             JointVector qk = qbar.segment<NUM_JOINTS>(NUM_JOINTS * k);
 
             // calculate pose error
+            Matrix6d Kp = Matrix6d::Identity();
             Vector6d ek;
             pose_error(Td, qk, ek);
-            ebar.segment<6>(6 * k) = ek;
+            ebar.segment<6>(6 * k) = Kp * ek + twistd;
 
             // calculate Jacobian of pose error
             JacobianMatrix Jk;
@@ -167,8 +174,8 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
         OptWeightMatrix H = Ebar.transpose() * Jbar.transpose() * Qbar * Jbar * Ebar + Rbar;
         OptVector g = ebar.transpose() * Qbar * Jbar * Ebar + dqbar.transpose() * Rbar;
 
-        Eigen::Matrix<std::complex<double>, NUM_OPT, 1> eivals = H.eigenvalues();
-        ROS_INFO_STREAM("max = " << eivals(0) << ", min = " << eivals(6*NUM_HORIZON-1));
+        // Eigen::Matrix<std::complex<double>, NUM_OPT, 1> eivals = H.eigenvalues();
+        // ROS_INFO_STREAM("max = " << eivals(0) << ", min = " << eivals(6*NUM_HORIZON-1));
 
         // Bounds
         OptVector lb = dq_min - dqbar;
