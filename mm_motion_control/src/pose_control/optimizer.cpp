@@ -88,7 +88,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 
     JointVector dm = JointVector::Zero();
     JointMatrix Hm = JointMatrix::Zero();
-    linearize_manipulability1(q, dm, STEP_SIZE);
+    // linearize_manipulability1(q, dm, STEP_SIZE);
     // linearize_manipulability2(q, dm, Hm, STEP_SIZE);
 
     JointMatrix Q2 = -dt * dt * Hm;
@@ -119,6 +119,8 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 
     // Use feedforward to improve tracking performance without requiring huge
     // gains.
+    // TODO here we're relying on the fact that J4 is negative, which is
+    // actually quite confusing
     JointMatrix Q4 = J4.transpose() * W4 * J4;
     JointVector C4 = (Kp * e4 + twistd).transpose() * W4 * J4;
 
@@ -161,7 +163,6 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     Kinematics::jacobian(q, J);
     Matrix3x9 Jp = J.topRows<3>();
 
-
     // TODO we can include feedforward velocity here
     Matrix3x9 Af = -(Bf + dt * Kf) * Jp;
     Eigen::Vector3d df = Kf * (pd - pe) - f_compliant;
@@ -172,7 +173,6 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 
     /* 7. Force regulation */
 
-
     JointMatrix Q7 = JointMatrix::Zero();
     JointVector C7 = JointVector::Zero();
     double kp = 0.01;
@@ -181,10 +181,6 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     // unit vector nf.
     if (f_norm > FORCE_THRESHOLD) {
         nf = f / f_norm;
-
-        // TODO if testing only in x-direction
-        // nf = Eigen::Vector3d::Zero();
-        // nf(0) = 1;
     }
 
     // For now, only do regulation for > 0 desired forces. TODO generalize to 0
@@ -208,7 +204,48 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     JointMatrix Q8 = dt * dt * Ja.transpose() * W8 * Ja;
     JointVector C8 = dt * (ae - nf).transpose() * W8 * Ja;
 
-    ROS_INFO_STREAM(pd-pe);
+    /* 9. Tangent trajectory tracking. */
+
+    // TODO in the case of Task 1, instead of enforcing a position trajectory,
+    // we could actually enforce velocity in the tangent directions should be
+    // zero. This may work better.
+
+    // We use pd(1:2) as our 2D trajectory, and project pe into the tangent
+    // (null) space.
+    Eigen::Vector2d pd2 = pd.tail<2>();
+    Eigen::Vector2d vd2 = twistd.segment<2>(1);
+    Eigen::FullPivLU<Eigen::Matrix<double, 1, 3>> lu(nf.transpose());
+    Eigen::MatrixXd V = lu.kernel();
+
+    Eigen::Vector2d d9 = -(pd2 - V.transpose()*pe) - vd2;
+    Eigen::Matrix<double, 2, 9> J9 = V.transpose()*Jp;
+
+    Eigen::Matrix2d W9 = Eigen::Matrix2d::Identity();
+    JointMatrix Q9 = J9.transpose() * W9 * J9;
+    JointVector C9 = d9.transpose() * W9 * J9;
+
+    /* 10. Push object */
+
+    // Desired velocity vector.
+    // TODO we could actually make this 3D to punish velocity in the other
+    // directions. -- except the other directions should be used to return to
+    // the correct force orientation.
+    // TODO we can try this with and without the force orientation stuff
+    Eigen::Vector3d vd;
+    vd << 0.1, 0, 0;
+    double vd_norm = vd.norm();
+    Eigen::Vector3d vd_unit = vd / vd_norm;
+
+    // Track desired EE velocity along a single direction.
+    JointMatrix Q10 = Jp.transpose() * vd_unit * vd_unit.transpose() * Jp;
+    JointVector C10 = -vd.transpose() * Jp;
+
+    Eigen::Matrix3d Kv = Eigen::Matrix3d::Identity();
+
+    // Make nf track direction of velocity.
+    Eigen::Matrix3d W11 = Eigen::Matrix3d::Identity();
+    JointMatrix Q11 = Jp.transpose() * W11 * Jp;
+    JointVector C11 = -(Kv * (vd_unit - nf)).transpose() * W11 * Jp;
 
 
     /* Objective weighting */
@@ -216,14 +253,17 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     double w1 = 1.0; // velocity
     double w2 = 0.0; // manipulability
     double w3 = 0.0; // joint limits
-    double w4 = 100.0; // pose error
+    double w4 = 0.0; // pose error
     double w5 = 0.0; // acceleration
     double w6 = 0.0; // force compliance
-    double w7 = 0.0; // force regulation
-    double w8 = 0.0; // orientation tracks nf
+    double w7 = 1.0; // force regulation
+    double w8 = 1.0; // orientation tracks nf
+    double w9 = 1.0; // 2d position error
+    double w10 = 0.0;
+    double w11 = 0.0;
 
-    H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w6*Q6 + w7*Q7 + w8*Q8;
-    g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w6*C6 + w7*C7 + w8*C8;
+    H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w6*Q6 + w7*Q7 + w8*Q8 + w9*Q9 + w10*Q10 + w11*Q11;
+    g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w6*C6 + w7*C7 + w8*C8 + w9*C9 + w10*C10 + w11*C11;
 }
 
 
