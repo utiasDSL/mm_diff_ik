@@ -12,8 +12,8 @@ from mm_force_control.filter import ExponentialSmoother
 from mm_force_control.bias import FTBiasEstimator
 
 
-CONTACT_THRESHOLD = 5  # Desired contact force, when contact is detected
-DESIRED_CONTACT_FORCE = 5
+CONTACT_THRESHOLD = 5  # Threshold when contact is detected
+DESIRED_CONTACT_FORCE = 10
 
 HZ = 100  # Control loop rate (Hz)
 

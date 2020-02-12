@@ -199,7 +199,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     /* 8. Orientation of EE tracks nf. */
 
     Eigen::Matrix3d Re = w_T_tool.rotation();
-    Eigen::Vector3d ae = Re.col(0);
+    Eigen::Vector3d ae = Re.col(2);
 
     Matrix3x9 Jn, Js, Ja;
     rotation_error_jacobians(q, Jn, Js, Ja);

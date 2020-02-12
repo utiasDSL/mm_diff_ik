@@ -22,7 +22,7 @@ def launch_stationary_traj():
 
     q0, _ = JointInitializer.wait_for_msg(0.1)
 
-    T0 = kinematics.forward(q0)
+    T0 = kinematics.calc_w_T_tool(q0)
     p0 = tfs.translation_from_matrix(T0)
     quat0 = tfs.quaternion_from_matrix(T0)
 
