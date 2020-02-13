@@ -217,6 +217,8 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     Eigen::FullPivLU<Eigen::Matrix<double, 1, 3>> lu(nf.transpose());
     Eigen::MatrixXd V = lu.kernel();
 
+    // TODO if we put d9 = 0, this enforces a zero velocity constraint in the
+    // tangent plane.
     Eigen::Vector2d d9 = -(pd2 - V.transpose()*pe) - vd2;
     Eigen::Matrix<double, 2, 9> J9 = V.transpose()*Jp;
 
@@ -259,8 +261,8 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     double w7 = 1.0; // force regulation
     double w8 = 1.0; // orientation tracks nf
     double w9 = 1.0; // 2d position error
-    double w10 = 0.0;
-    double w11 = 0.0;
+    double w10 = 0.0; // track velocity line
+    double w11 = 0.0; // nf tracks velocity direction
 
     H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w6*Q6 + w7*Q7 + w8*Q8 + w9*Q9 + w10*Q10 + w11*Q11;
     g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w6*C6 + w7*C7 + w8*C8 + w9*C9 + w10*C10 + w11*C11;
