@@ -2,6 +2,7 @@
 import rospy
 import numpy as np
 import time
+import os
 
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory
@@ -26,7 +27,7 @@ class RobotSim(object):
         # publish joint states
         self.rb_state_pub = rospy.Publisher('/rb_joint_states', JointState, queue_size=10)
         self.ur10_state_pub = rospy.Publisher('/ur10_joint_states', JointState, queue_size=10)
-        self.state_pub = rospy.Publisher('/joint_states', JointState, queue_size=10)
+        self.state_pub = rospy.Publisher('/mm_joint_states', JointState, queue_size=10)
 
         # subscribe to joint speed commands
         self.rb_joint_speed_sub = rospy.Subscriber(

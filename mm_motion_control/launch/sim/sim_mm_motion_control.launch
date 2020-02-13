@@ -1,11 +1,8 @@
 <?xml version="1.0"?>
 
-<!-- In simulation we don't need the UR driver. -->
+<!-- In simulation we don't need the UR driver, nor do we need the joint_state_mux node since the simulator publishes this information directly. -->
 
 <launch>
-  <!-- Combine base and arm joint_state messages into a single one. -->
-  <node pkg="mm_motion_control" type="joint_state_mux" name="joint_state_mux_node" output="screen" />
-
   <!-- Start the controller. -->
   <node pkg="mm_motion_control" type="mm_control_node" name="mm_control_node" output="screen" />
 </launch>

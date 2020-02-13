@@ -16,7 +16,7 @@ def main():
     bagname = util.arg_or_most_recent('*.bag')
     print(bagname)
     bag = rosbag.Bag(bagname)
-    msgs = [msg for _, msg, _ in bag.read_messages('/joint_states')]
+    msgs = [msg for _, msg, _ in bag.read_messages('/mm_joint_states')]
 
     t = util.parse_time(msgs)
     qs = np.array([msg.position for msg in msgs])

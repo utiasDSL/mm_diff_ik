@@ -13,7 +13,7 @@ import mm_kinematics.kinematics as kinematics
 
 class RobotPlotter(object):
     def __init__(self):
-        self.joint_state_sub = rospy.Subscriber('/joint_states', JointState,
+        self.joint_state_sub = rospy.Subscriber('/mm_joint_states', JointState,
                                                 self._joint_state_cb)
 
         self.obstacle_sub = rospy.Subscriber('/obstacles', Obstacles,

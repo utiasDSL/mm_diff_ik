@@ -255,12 +255,12 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     double w1 = 1.0; // velocity
     double w2 = 0.0; // manipulability
     double w3 = 0.0; // joint limits
-    double w4 = 0.0; // pose error
-    double w5 = 0.0; // acceleration
+    double w4 = 100.0; // pose error
+    double w5 = 1.0; // acceleration
     double w6 = 0.0; // force compliance
-    double w7 = 1.0; // force regulation
-    double w8 = 1.0; // orientation tracks nf
-    double w9 = 1.0; // 2d position error
+    double w7 = 0.0; // force regulation
+    double w8 = 0.0; // orientation tracks nf
+    double w9 = 0.0; // 2d position error
     double w10 = 0.0; // track velocity line
     double w11 = 0.0; // nf tracks velocity direction
 
