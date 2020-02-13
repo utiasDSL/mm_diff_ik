@@ -175,7 +175,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 
     JointMatrix Q7 = JointMatrix::Zero();
     JointVector C7 = JointVector::Zero();
-    double kp = 0.01;
+    double kp = 0.001;
 
     // If applied force is suitably large, then we update the contact direction
     // unit vector nf.
@@ -242,12 +242,12 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     JointMatrix Q10 = Jp.transpose() * vd_unit * vd_unit.transpose() * Jp;
     JointVector C10 = -vd.transpose() * Jp;
 
-    Eigen::Matrix3d Kv = Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d Kv = 0.1*Eigen::Matrix3d::Identity();
 
     // Make nf track direction of velocity.
     Eigen::Matrix3d W11 = Eigen::Matrix3d::Identity();
     JointMatrix Q11 = Jp.transpose() * W11 * Jp;
-    JointVector C11 = -(Kv * (vd_unit - nf)).transpose() * W11 * Jp;
+    JointVector C11 = (Kv * (vd_unit - nf)).transpose() * W11 * Jp;
 
 
     /* Objective weighting */
