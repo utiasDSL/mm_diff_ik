@@ -25,6 +25,9 @@ const static double MAX_DQ = 0.2;
 const static JointVector HOME((JointVector()
             << 0.0, 0.0, 0.0,
                0.0, -0.75*M_PI, -M_PI_2, -0.75*M_PI, -M_PI_2, M_PI_2).finished());
+// const static JointVector HOME((JointVector()
+//             << 0.0, 0.0, 0.0,
+//                0.0, -2.70526, -M_PI_2, -2.007128, -M_PI_2, M_PI_2).finished());
 
 
 // Manager for joint-space controllers.

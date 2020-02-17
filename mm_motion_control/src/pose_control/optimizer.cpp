@@ -75,6 +75,7 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
 void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twistd,
                                   const JointVector& q, const JointVector& dq,
                                   double fd, const Eigen::Vector3d& f,
+                                  const Eigen::Vector3d& pc,
                                   double dt, JointMatrix& H, JointVector& g) {
     /* 1. Minimize velocity objective. */
 
@@ -206,7 +207,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 
     /* 9. Tangent trajectory tracking. */
 
-    // TODO in the case of Task 1, instead of enforcing a position trajectory,
+    // Note: for Task 1, instead of enforcing a position trajectory,
     // we could actually enforce velocity in the tangent directions should be
     // zero. This may work better.
 
@@ -217,9 +218,12 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     Eigen::FullPivLU<Eigen::Matrix<double, 1, 3>> lu(nf.transpose());
     Eigen::MatrixXd V = lu.kernel();
 
-    // TODO if we put d9 = 0, this enforces a zero velocity constraint in the
-    // tangent plane.
-    Eigen::Vector2d d9 = -(pd2 - V.transpose()*pe) - vd2;
+    // TODO we only want to do this if there is a desired force
+    //
+    // Note: if we put d9 = 0, this enforces a zero velocity constraint in the
+    // tangent plane. This is useful for Task 1.
+    Eigen::Vector3d dp = pe - pc;
+    Eigen::Vector2d d9 = -(pd2 - V.transpose()*dp) - vd2;
     Eigen::Matrix<double, 2, 9> J9 = V.transpose()*Jp;
 
     Eigen::Matrix2d W9 = Eigen::Matrix2d::Identity();
@@ -272,6 +276,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
                        const JointVector& q, const JointVector& dq,
                        double fd, const Eigen::Vector3d& f,
+                       const Eigen::Vector3d& pc,
                        const std::vector<ObstacleModel>& obstacles, double dt,
                        JointVector& dq_opt) {
     // TODO is this slow? Could potentially be improved by pre-processing the
@@ -286,7 +291,7 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
 
     JointMatrix H;
     JointVector g;
-    build_objective(Td, twistd, q, dq, fd, f, dt, H, g);
+    build_objective(Td, twistd, q, dq, fd, f, pc, dt, H, g);
 
 
     /*** BOUNDS ***/

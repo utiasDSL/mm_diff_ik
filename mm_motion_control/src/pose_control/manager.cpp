@@ -11,6 +11,7 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Vector3Stamped.h>
 #include <sensor_msgs/JointState.h>
+#include <std_msgs/Float64.h>
 
 #include <mm_msgs/PoseTrajectory.h>
 #include <mm_msgs/PoseControlState.h>
@@ -44,8 +45,11 @@ bool IKControllerManager::init(ros::NodeHandle& nh) {
     force_position_offset_sub = nh.subscribe("/force_control/position_offset",
             1, &IKControllerManager::pos_offset_cb, this);
 
-    force_sub = nh.subscribe("/force/info",
-            1, &IKControllerManager::force_cb, this);
+    force_info_sub = nh.subscribe("/force/info",
+            1, &IKControllerManager::force_info_cb, this);
+
+    force_des_sub = nh.subscribe("/force/desired",
+            1, &IKControllerManager::force_des_cb, this);
 
     obstacle_sub = nh.subscribe("/obstacles", 1,
                                 &IKControllerManager::obstacle_cb, this);
@@ -63,6 +67,7 @@ bool IKControllerManager::init(ros::NodeHandle& nh) {
     fd = 0;
     force = Eigen::Vector3d::Zero();
     first_contact = false;
+    pc = Eigen::Vector3d::Zero();
 
     traj_active = false;
 }
@@ -78,6 +83,7 @@ void IKControllerManager::loop(const double hz) {
 
         double t = ros::Time::now().toSec();
 
+        // Do nothing if there is no trajectory active.
         if (!traj_active) {
             publish_joint_speeds(JointVector::Zero());
             controller.set_time(t);
@@ -92,10 +98,10 @@ void IKControllerManager::loop(const double hz) {
         }
 
         JointVector u = JointVector::Zero();
-        int status = controller.update(t, trajectory, q, dq, fd, force,
+        int status = controller.update(t, trajectory, q, dq, fd, force, pc,
                                        obstacles, u);
 
-        // Return value is 0 is successful, non-zero otherwise.
+        // Return value is 0 if successful, non-zero otherwise.
         if (status) {
             // Send zero velocity command if optimization fails (the velocity
             // commands are garbage in this case).
@@ -141,6 +147,7 @@ void IKControllerManager::point_traj_cb(const geometry_msgs::PoseStamped& msg) {
     pose_msg_to_eigen(msg.pose, p, q);
     trajectory.stay_at(p, q);
     traj_active = true;
+
     ROS_INFO("Maintaining current pose.");
 }
 
@@ -160,7 +167,7 @@ void IKControllerManager::pos_offset_cb(const geometry_msgs::Vector3Stamped& msg
 }
 
 
-void IKControllerManager::force_cb(const mm_msgs::ForceInfo& msg) {
+void IKControllerManager::force_info_cb(const mm_msgs::ForceInfo& msg) {
     force(0) = msg.force_world.x;
     force(1) = msg.force_world.y;
     force(2) = msg.force_world.z;
@@ -173,14 +180,20 @@ void IKControllerManager::force_cb(const mm_msgs::ForceInfo& msg) {
         Eigen::Vector3d p = w_T_tool.translation();
         Eigen::Quaterniond q(w_T_tool.rotation());
         trajectory.stay_at(p, q);
-
         traj_active = true;
-        ROS_INFO("Maintaining current pose.");
 
-        fd = 5;
+        // Set the initial contact point.
+        pc = p;
 
         first_contact = msg.first_contact;
+        ROS_INFO("Maintaining current pose.");
     }
+}
+
+
+void IKControllerManager::force_des_cb(const std_msgs::Float64 msg) {
+    fd = msg.data;
+    ROS_INFO_STREAM("Set desired force = " << fd);
 }
 
 

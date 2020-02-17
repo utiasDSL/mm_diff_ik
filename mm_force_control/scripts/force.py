@@ -13,7 +13,6 @@ from mm_force_control.bias import FTBiasEstimator
 
 
 CONTACT_THRESHOLD = 5  # Threshold when contact is detected
-DESIRED_CONTACT_FORCE = 10
 
 HZ = 100  # Control loop rate (Hz)
 

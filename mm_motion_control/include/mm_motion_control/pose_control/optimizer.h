@@ -75,6 +75,7 @@ class IKOptimizer {
         int solve(double t, PoseTrajectory& trajectory,
                   const JointVector& q, const JointVector& dq,
                   double fd, const Eigen::Vector3d& f,
+                  const Eigen::Vector3d& pc,
                   const std::vector<ObstacleModel>& obstacles, double dt,
                   JointVector& dq_opt);
 
@@ -124,7 +125,8 @@ class IKOptimizer {
         // x'Hx + g'x.
         void build_objective(const Eigen::Affine3d& Td, const Vector6d& twistd,
                              const JointVector& q, const JointVector& dq,
-                             double fd, const Eigen::Vector3d& f, double dt,
+                             double fd, const Eigen::Vector3d& f,
+                             const Eigen::Vector3d& pc, double dt,
                              JointMatrix& H, JointVector& g);
 }; // class IKOptimizer
 

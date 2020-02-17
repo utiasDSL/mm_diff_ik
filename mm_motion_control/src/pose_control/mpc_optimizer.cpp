@@ -83,6 +83,7 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
     // E matrix is a lower block triangular matrix of identity matrices
     // multiplied by timesteps.
     OptWeightMatrix Ebar = OptWeightMatrix::Zero();
+    OptWeightMatrix Ebart = OptWeightMatrix::Zero();
     for (int i = 0; i < NUM_HORIZON; ++i) {
         for (int j = 0; j <= i; ++j) {
             // For the first column of blocks, timestep is the control
@@ -92,8 +93,8 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
                 timestep = CONTROL_TIMESTEP;
             }
 
-            // Ebar.block<NUM_JOINTS, NUM_JOINTS>(i*NUM_JOINTS, j*NUM_JOINTS)
-            //     = timestep * JointMatrix::Identity();
+            Ebart.block<NUM_JOINTS, NUM_JOINTS>(i*NUM_JOINTS, j*NUM_JOINTS)
+                = timestep * JointMatrix::Identity();
             Ebar.block<NUM_JOINTS, NUM_JOINTS>(i*NUM_JOINTS, j*NUM_JOINTS)
                 = JointMatrix::Identity();
         }
@@ -144,7 +145,8 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
 
     // Outer loop iterates over linearizations (i.e. QP solves).
     for (int i = 0; i < NUM_ITER; ++i) {
-        qbar = q0bar + Ebar * dqbar;
+        // Integrate to get joint positions.
+        qbar = q0bar + Ebart * dqbar;
 
         // Inner loop iterates over timesteps to build up the matrices.
         // We're abusing indexing notation slightly here: mathematically, we
@@ -165,10 +167,13 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
             ebar.segment<6>(6 * k) = Kp * ek + twistd;
 
             // calculate Jacobian of pose error
+            // TODO recall that Jk is confusingly negative, which is why the
+            // feedforward term is not
             JacobianMatrix Jk;
             pose_error_jacobian(Td, qk, Jk);
             Jbar.block<6, NUM_JOINTS>(6 * k, NUM_JOINTS * k) = Jk;
         }
+        ROS_INFO_STREAM("i = " << i << ", ex = " << ebar.tail<6>()(0));
 
         // Construct overall objective matrices.
         OptWeightMatrix H = Ebar.transpose() * Jbar.transpose() * Qbar * Jbar * Ebar + Rbar;

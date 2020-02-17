@@ -179,7 +179,7 @@ class CircleTrajectory(object):
         self.w = 2 * np.pi / (duration / 2.0)
 
     def sample_linear(self, t):
-        R = 0.3
+        R = 0.2
 
         x = self.p0[0]
         dx = 0

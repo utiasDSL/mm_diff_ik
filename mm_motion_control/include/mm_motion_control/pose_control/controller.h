@@ -39,6 +39,7 @@ class IKController {
         int update(double t, PoseTrajectory& trajectory,
                    const JointVector& q, const JointVector& dq,
                    double fd, const Eigen::Vector3d& f,
+                   const Eigen::Vector3d& pc,
                    const std::vector<ObstacleModel> obstacles,
                    JointVector& u);
 
