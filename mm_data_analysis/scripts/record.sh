@@ -11,4 +11,5 @@ rosbag record -o "$1"    \
   /robotiq_force_torque_wrench \
   /force_control/state \
   /force/info \
+  /force/desired \
   /obstacles

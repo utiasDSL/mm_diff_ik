@@ -2,6 +2,7 @@
 import rospy
 import numpy as np
 
+from std_msgs.msg import Float64
 from geometry_msgs.msg import WrenchStamped
 from sensor_msgs.msg import JointState
 from mm_msgs.msg import ForceInfo
@@ -17,17 +18,19 @@ CONTACT_THRESHOLD = 5  # Threshold when contact is detected
 HZ = 100  # Control loop rate (Hz)
 
 N_BIAS = 100  # Number of samples to use for force bias estimation.
+FILTER_TAU = 0.1  # Exponential smoothing time constant
 
 
 class ForceControlNode(object):
     def __init__(self, bias=np.zeros(3)):
-        self.smoother = ExponentialSmoother(tau=0.1, x0=np.zeros(3))
+        self.smoother = ExponentialSmoother(tau=FILTER_TAU, x0=np.zeros(3))
 
         self.bias = bias
         self.force_raw = np.zeros(3)
         self.force_filt = np.zeros(3)
         self.q = np.zeros(9)
         self.time_prev = rospy.Time.now().to_sec()
+        self.fd = 0
 
         self.first_contact = False  # True if contact was ever made
         self.contact = False  # True if EE is currently in contact
@@ -41,6 +44,9 @@ class ForceControlNode(object):
 
         self.force_sub = rospy.Subscriber('/robotiq_force_torque_wrench',
                                           WrenchStamped, self.force_cb)
+
+        self.force_des_sub = rospy.Subscriber('/force/desired',
+                                              Float64, self.force_des_cb)
 
         # more information about the force processing
         self.info_pub = rospy.Publisher('/force/info', ForceInfo, queue_size=10)
@@ -57,6 +63,9 @@ class ForceControlNode(object):
         # can include the maximum number of messages in the filter (for best
         # accuracy)
         self.force_filt = self.smoother.next(self.force_raw, dt)
+
+    def force_des_cb(self, msg):
+        self.fd = msg.data
 
     def joint_states_cb(self, msg):
         # TODO should handle locking at some point
@@ -77,6 +86,8 @@ class ForceControlNode(object):
         msg.force_world.x = force_world[0]
         msg.force_world.y = force_world[1]
         msg.force_world.z = force_world[2]
+
+        msg.force_desired = self.fd
 
         msg.first_contact = self.first_contact
         msg.contact = self.contact

@@ -10,6 +10,8 @@ geometry_msgs/Vector3 force_filtered
 # (Filtered) force after having been transformed to the world frame.
 geometry_msgs/Vector3 force_world
 
+float64 force_desired
+
 # True if contact has been made at any point in the past.
 bool first_contact
 

@@ -222,7 +222,8 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     //
     // Note: if we put d9 = 0, this enforces a zero velocity constraint in the
     // tangent plane. This is useful for Task 1.
-    Eigen::Vector3d dp = pe - pc;
+    Eigen::Vector3d dp;
+    dp << pe(0) - pc(0), pe(1), pe(2);
     Eigen::Vector2d d9 = -(pd2 - V.transpose()*dp) - vd2;
     Eigen::Matrix<double, 2, 9> J9 = V.transpose()*Jp;
 
