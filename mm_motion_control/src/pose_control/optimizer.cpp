@@ -213,17 +213,14 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 
     // We use pd(1:2) as our 2D trajectory, and project pe into the tangent
     // (null) space.
-    Eigen::Vector2d pd2 = pd.tail<2>();
+    Eigen::Vector2d pd2 = (pd - pc).tail<2>();
     Eigen::Vector2d vd2 = twistd.segment<2>(1);
     Eigen::FullPivLU<Eigen::Matrix<double, 1, 3>> lu(nf.transpose());
     Eigen::MatrixXd V = lu.kernel();
 
-    // TODO we only want to do this if there is a desired force
-    //
     // Note: if we put d9 = 0, this enforces a zero velocity constraint in the
     // tangent plane. This is useful for Task 1.
-    Eigen::Vector3d dp;
-    dp << pe(0) - pc(0), pe(1), pe(2);
+    Eigen::Vector3d dp = pe - pc;
     Eigen::Vector2d d9 = -(pd2 - V.transpose()*dp) - vd2;
     Eigen::Matrix<double, 2, 9> J9 = V.transpose()*Jp;
 
