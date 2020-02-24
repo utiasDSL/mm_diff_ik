@@ -1,11 +1,13 @@
 #!/usr/bin/env python2
 from __future__ import print_function
 
-import sys
 import numpy as np
 import rosbag
+import tf.transformations as tfs
 
 import mm_data_analysis.util as util
+
+import IPython
 
 
 def main():
@@ -19,7 +21,18 @@ def main():
     norms = np.linalg.norm(errs, axis=1)
     rmse = util.rms(norms) * 1000.0  # convert to mm
 
-    print('RMSE = {} mm'.format(rmse))
+    rot_err_msgs = [msg.error.orientation for msg in pose_msgs]
+    quats = np.array([[msg.x, msg.y, msg.z, msg.w] for msg in rot_err_msgs])
+    euler_errs = np.zeros((len(quats), 3))
+    for i in xrange(len(quats)):
+        euler_errs[i, :] = tfs.euler_from_quaternion(quats[i, :])
+    euler_norms = np.linalg.norm(euler_errs, axis=1)
+    euler_rmse = util.rms(euler_norms)
+
+    # IPython.embed()
+
+    print('Position RMSE = {} mm'.format(rmse))
+    print('Rotation RMSE = {} rad'.format(euler_rmse))
 
 
 if __name__ == '__main__':
