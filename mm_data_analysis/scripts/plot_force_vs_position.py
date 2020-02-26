@@ -67,36 +67,39 @@ def main():
     t1,  f1,  p1  = parse_compliance_bag(bag_w1)
     t10, f10, p10 = parse_compliance_bag(bag_w10)
 
-    fig = plt.figure(figsize=(3.25, 2.5))
-    ax = plt.gca()
+    fig = plt.figure(figsize=(3.25, 2.1))
     matplotlib.rcParams.update({'font.size': 8,
                         'text.usetex': True,
-                        'legend.fontsize': 8})
-    plt.rc('text', usetex=True)
+                        'legend.fontsize': 6})
 
-    #ax.grid()
-    ax.plot(t0,  f0[:, 0],  label='$f_x$', color='k')
+    plt.subplot(211)
+    ax = plt.gca()
+    ax.set_xticklabels([])
+    plt.plot(t0,  f0[:, 0], label='$f_x$', color='k')
+    plt.ylabel('$\mathrm{Force\ (N)}$', labelpad=0.1)
+    ax.set_yticks([-12, -8, -4, 0])
 
-    ax2 = ax.twinx()
+    plt.subplot(212)
+    ax2 = plt.gca()
 
-    ax2.plot(t0,  p0[:, 0],  label='$w_p=0$')
-    ax2.plot(t01, p01[:, 0], label='$w_p=0.1$')
-    ax2.plot(t1,  p1[:, 0],  label='$w_p=1$')
-    ax2.plot(t10, p10[:, 0], label='$w_p=10$')
+    plt.plot(t0,  p0[:, 0],  label='$w_p=0$')
+    plt.plot(t01, p01[:, 0], label='$w_p=0.1$')
+    plt.plot(t1,  p1[:, 0],  label='$w_p=1$')
+    plt.plot(t10, p10[:, 0], label='$w_p=10$')
 
-    ax2.set_ylabel('$\mathrm{Position\ (m)}$')
-    ax2.set_ylim([-2.5, 1.0])
-    ax2.set_yticks([-2.0, -1.5, -1.0, -0.5, 0.0, 0.5])
+    plt.ylabel('$\mathrm{Position\ (m)}$', labelpad=0.1)
+    # plt.set_ylim([-2.5, 1.0])
+    ax2.set_yticks([-2.0, -1.5, -1.0, -0.5, 0.0])
 
-    ax.set_ylim([-16, 4])
-    ax.set_xlabel('$\mathrm{Time\ (s)}$')
-    ax.set_ylabel('$\mathrm{Force\ (N)}$')
-    # plt.title('$\mathrm{Compliant\ Position\ Offset\ vs.\ Applied\ Force}$')
-    plt.legend(loc='upper center', ncol=2)
+    # plt.set_ylim([-16, 4])
+    plt.xlabel('$\mathrm{Time\ (s)}$', labelpad=0)
+    plt.legend(loc='lower left', ncol=2)
 
+    # fig.subplots_adjust(hspace=0.5)
+    fig.align_ylabels()
     fig.tight_layout(pad=0.1)
     fig.savefig('compliance.pdf')
-    plt.show()
+    # plt.show()
 
 
 if __name__ == '__main__':

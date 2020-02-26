@@ -22,12 +22,12 @@ const static JointMatrix K = 0.5*JointMatrix::Identity();
 const static double MAX_DQ = 0.2;
 
 // Home location.
-const static JointVector HOME((JointVector()
-            << 0.0, 0.0, 0.0,
-               0.0, -0.75*M_PI, -M_PI_2, -0.75*M_PI, -M_PI_2, M_PI_2).finished());
 // const static JointVector HOME((JointVector()
-//             << 0.0, 0.0, 0.0,
-//                0.0, -2.70526, -M_PI_2, -2.007128, -M_PI_2, M_PI_2).finished());
+//             << -0.5, 0.0, 0.0,
+//                0.0, -0.75*M_PI, -M_PI_2, -0.75*M_PI, -M_PI_2, M_PI_2).finished());
+const static JointVector HOME((JointVector()
+            << -2.0, 0.0, 0.0,
+               0.0, -2.70526, -M_PI_2, -2.007128, -M_PI_2, M_PI_2).finished());
 
 
 // Manager for joint-space controllers.

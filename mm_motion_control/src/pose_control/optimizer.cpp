@@ -116,7 +116,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 
     // We may choose to weight orientation error differently than position.
     W4.topLeftCorner<3, 3>() = Eigen::Matrix3d::Identity();
-    W4.bottomRightCorner<3, 3>() = 0.0*Eigen::Matrix3d::Identity();
+    W4.bottomRightCorner<3, 3>() = 0.0 * Eigen::Matrix3d::Identity();
 
     // Use feedforward to improve tracking performance without requiring huge
     // gains.
@@ -124,6 +124,12 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     // actually quite confusing
     JointMatrix Q4 = J4.transpose() * W4 * J4;
     JointVector C4 = (Kp * e4 + twistd).transpose() * W4 * J4;
+
+    // TODO alternative, we can formulate as two seperate objectives
+    // double w41 = 125;
+    // double w42 = 1;
+    // JointMatrix Q4 = (w42) * J4.transpose() * W4 * J4;
+    // JointVector C4 = (w41 * dt * e4 + w42 * twistd).transpose() * W4 * J4;
 
     /* 5. Minimize joint acceleration */
 
@@ -234,7 +240,6 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     // TODO we could actually make this 3D to punish velocity in the other
     // directions. -- except the other directions should be used to return to
     // the correct force orientation.
-    // TODO we can try this with and without the force orientation stuff
     Eigen::Vector3d vd;
     vd << 0.1, 0, 0;
     double vd_norm = vd.norm();
@@ -258,7 +263,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     double w2 = 0.0; // manipulability
     double w3 = 0.0; // joint limits
     double w4 = 100.0; // pose error
-    double w5 = 1.0; // acceleration
+    double w5 = 0.0; // acceleration
     double w6 = 0.0; // force compliance
     double w7 = 0.0; // force regulation
     double w8 = 0.0; // orientation tracks nf

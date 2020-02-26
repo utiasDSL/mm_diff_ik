@@ -148,11 +148,12 @@ class SineXYTrajectory(object):
 
 
 class RotationalTrajectory(object):
-    ''' Rotate the EE about the z-axis with no linear movement. '''
+    ''' Rotate pi/2 about z then pi/2 about y '''
     def __init__(self, p0, quat0, duration):
         self.name = 'Rotational'
         self.p0 = p0
         self.quat0 = quat0
+        self.duration = duration
 
     def sample_linear(self, t):
         # Positions do not change
@@ -160,11 +161,22 @@ class RotationalTrajectory(object):
 
     def sample_rotation(self, t):
         # small rotation about the z-axis
-        w = 0.05
-        theta = w * t
-        axis = np.array([0, 0, 1])
+        w = np.pi / self.duration
+        az = np.array([0, 0, 1])
+        ay = np.array([-1, 0, 0])
 
-        dq = tfs.quaternion_about_axis(theta, axis)
+        if t < self.duration / 2.0:
+            rz = w * t
+            ry = 0.0
+            axis = az
+        else:
+            rz = w * self.duration / 2.0
+            ry = w * (t - self.duration / 2.0)
+            axis = ay
+
+        qy = tfs.quaternion_about_axis(ry, ay)
+        qz = tfs.quaternion_about_axis(rz, az)
+        dq = tfs.quaternion_multiply(qy, qz)
         quat = tfs.quaternion_multiply(dq, self.quat0)
 
         return quat, w * axis
@@ -179,7 +191,7 @@ class CircleTrajectory(object):
         self.w = 2 * np.pi / (duration / 2.0)
 
     def sample_linear(self, t):
-        R = 0.2
+        R = 0.3
 
         x = self.p0[0]
         dx = 0
