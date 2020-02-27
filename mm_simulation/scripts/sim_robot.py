@@ -100,9 +100,9 @@ def main():
     rate = rospy.Rate(HZ)
 
     q = np.zeros(9)
-
-    q[4] = -np.pi*0.75
-    q[5] = -np.pi/2
+    q = np.array([0, 0, 0, 0, -0.75*np.pi, -0.5*np.pi, -0.75*np.pi, -0.5*np.pi, 0.5*np.pi])
+    # q[4] = -np.pi*0.75
+    # q[5] = -np.pi/2
 
     sim = RobotSim(q)
 
