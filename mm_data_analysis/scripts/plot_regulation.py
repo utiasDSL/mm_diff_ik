@@ -78,10 +78,10 @@ def main():
     # bagname = util.arg_or_most_recent('*.bag')
     # print(bagname)
 
-    bag_w0 = rosbag.Bag('2020-02-27-01-56-08.bag')
-    bag_w10 = rosbag.Bag('2020-02-26-22-28-02.bag')
-    bag_w30 = rosbag.Bag('2020-02-26-23-42-38.bag')
-    bag_w100 = rosbag.Bag('2020-02-26-23-45-51.bag')
+    bag_w0 = rosbag.Bag('2020-02-26/regulation/sim/2020-02-27-01-56-08.bag')
+    bag_w10 = rosbag.Bag('2020-02-26/regulation/sim/2020-02-26-22-28-02.bag')
+    bag_w30 = rosbag.Bag('2020-02-26/regulation/sim/2020-02-26-23-42-38.bag')
+    bag_w100 = rosbag.Bag('2020-02-26/regulation/sim/2020-02-26-23-45-51.bag')
 
     t0, f0, thetas0 = parse_regulation_bag(bag_w0)
     t10, f10, thetas10 = parse_regulation_bag(bag_w10)

@@ -10,10 +10,10 @@ import mm_data_analysis.util as util
 import IPython
 
 
-BAG_W0  = 'compliance/compliance_wp0.bag'
-BAG_W01 = 'compliance/compliance_wp0.1.bag'
-BAG_W1  = 'compliance/compliance_wp1.bag'
-BAG_W10 = 'compliance/compliance_wp10.bag'
+BAG_W0  = '2020-02-25/compliance/compliance_wp0.bag'
+BAG_W01 = '2020-02-25/compliance/compliance_wp0.1.bag'
+BAG_W1  = '2020-02-25/compliance/compliance_wp1.bag'
+BAG_W10 = '2020-02-25/compliance/compliance_wp10.bag'
 
 T_MAX = 60
 

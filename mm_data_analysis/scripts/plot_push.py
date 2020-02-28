@@ -91,31 +91,45 @@ def parse_push_bag(bag):
 def main():
     # bagname = util.arg_or_most_recent('*.bag')
     # print(bagname)
-    bag = rosbag.Bag('push/2020-02-25-20-51-25.bag')
-    # bag = rosbag.Bag('push/2020-02-25-20-54-53.bag')
-    # bag = rosbag.Bag('push/2020-02-25-21-14-25.bag')
-    # bag = rosbag.Bag('push/push_w11_5.bag')
+    # bag = rosbag.Bag(bagname)
+    bag = rosbag.Bag('2020-02-27/push/2020-02-27-15-21-07.bag')
+    # bag = rosbag.Bag('2020-02-25/push/2020-02-25-20-54-53.bag')
+    # bag = rosbag.Bag('2020-02-25/push/2020-02-25-21-14-25.bag')
+    # bag = rosbag.Bag('2020-02-25/push/push_w11_5.bag')
 
     t, f, p, v, bp = parse_push_bag(bag)
+
+    IPython.embed()
 
     fig = plt.figure(figsize=(3.25, 3))
     matplotlib.rcParams.update({'font.size': 8,
                         'text.usetex': True,
+                        'text.latex.preamble': ['\usepackage{bm}'],
                         'legend.fontsize': 6})
 
     plt.subplot(311)
     ax = plt.gca()
     ax.set_xticklabels([])
     plt.plot(t,  f[:, 0], label='$f_x$', color='k')
-    plt.ylabel('$\mathrm{Force\ (N)}$', labelpad=0.1)
+    plt.ylabel('$\|\\bm{f}_e\|\mathrm{\ (N)}$', labelpad=0.1)
     # ax.set_yticks([-16, -12, -8, -4, 0])
 
     plt.subplot(312)
     ax2 = plt.gca()
     ax2.set_xticklabels([])
 
-    plt.plot(t,  p[:, 1],  label='EE')
-    plt.plot(t,  bp[:, 1],  label='Barrel')
+    plt.plot(t,  p[:, 1],  label='$\mathrm{EE}$')
+    plt.plot(t,  bp[:, 1],  label='$\mathrm{Barrel}$')
+
+    # ax2.add_patch(plt.Circle((20, 0), 0.2, color='r', linewidth=1, fill=False), xycoords='figure pixels')
+    patch1 = plt.Circle((0.73, 0.45), 0.05, fill=False, color='r', linewidth=1,
+                       linestyle='--', alpha=1, zorder=1000,
+                       transform=fig.transFigure, figure=fig)
+    patch2 = plt.Circle((0.55, 0.55), 0.05, fill=False, color='r', linewidth=1,
+                       linestyle='--', alpha=1, zorder=1000,
+                       transform=fig.transFigure, figure=fig)
+
+    fig.patches.extend([patch1, patch2])
 
     plt.ylabel('$y\mathrm{\ (m)}$', labelpad=0.1)
     # plt.set_ylim([-2.5, 1.0])

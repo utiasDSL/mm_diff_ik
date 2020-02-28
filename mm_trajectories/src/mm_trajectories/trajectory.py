@@ -188,27 +188,28 @@ class CircleTrajectory(object):
         self.p0 = p0
         self.quat0 = quat0
         self.duration = duration
-        self.w = 2 * np.pi / (duration / 2.0)
+        # self.w = 2 * np.pi / (duration / 2.0)
+        self.w = 2 * np.pi / duration
 
     def sample_linear(self, t):
-        R = 0.3
+        R = 0.2
 
         x = self.p0[0]
         dx = 0
 
-        if t < self.duration / 2.0:
-            y = self.p0[1] + R * np.cos(self.w * t) - R
-            z = self.p0[2] + R * np.sin(self.w * t)
+        # if t < self.duration / 2.0:
+        y = self.p0[1] + R * np.cos(self.w * t) - R
+        z = self.p0[2] + R * np.sin(self.w * t)
 
-            dy = -self.w * R * np.sin(self.w * t)
-            dz =  self.w * R * np.cos(self.w * t)
-        else:
-            # y is negated, z stays the same
-            y = self.p0[1] - R * np.cos(self.w * t) + R
-            z = self.p0[2] + R * np.sin(self.w * t)
-
-            dy = self.w * R * np.sin(self.w * t)
-            dz = self.w * R * np.cos(self.w * t)
+        dy = -self.w * R * np.sin(self.w * t)
+        dz =  self.w * R * np.cos(self.w * t)
+        # else:
+        #     # y is negated, z stays the same
+        #     y = self.p0[1] - R * np.cos(self.w * t) + R
+        #     z = self.p0[2] + R * np.sin(self.w * t)
+        #
+        #     dy = self.w * R * np.sin(self.w * t)
+        #     dz = self.w * R * np.cos(self.w * t)
 
         return np.array([x, y, z]), np.array([dx, dy, dz])
 
