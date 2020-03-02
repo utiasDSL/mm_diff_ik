@@ -116,7 +116,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 
     // We may choose to weight orientation error differently than position.
     W4.topLeftCorner<3, 3>() = Eigen::Matrix3d::Identity();
-    W4.bottomRightCorner<3, 3>() = 0.0 * Eigen::Matrix3d::Identity();
+    W4.bottomRightCorner<3, 3>() = Eigen::Matrix3d::Identity();
 
     // Use feedforward to improve tracking performance without requiring huge
     // gains.

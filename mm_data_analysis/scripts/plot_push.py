@@ -48,12 +48,20 @@ def parse_push_bag(bag):
     # parse force
     fs = np.array([[msg.force_world.x, msg.force_world.y, msg.force_world.z]
                    for msg in force_info_msgs])
+    fs = np.linalg.norm(fs, axis=1)
+    # fs = fs[:, 0]
+
+    for i in xrange(fs.shape[0]):
+        if fs[i] > 5:
+            contact_idx = i
+            break
 
     # EE positions
     pos_msgs = [msg.actual.position for msg in pose_msgs_aligned]
     ps = np.array([[msg.x, msg.y, msg.z] for msg in pos_msgs])
     p0 = ps[0, :]
     ps = ps - p0  # normalize to 0 initial position
+
 
     # v = np.zeros(ps.shape)
     # for i in xrange(len(pose_msgs_aligned)):
@@ -70,7 +78,6 @@ def parse_push_bag(bag):
 
     for i in xrange(bps.shape[0]):
         if np.linalg.norm(bps[i, :] - bps[0, :]) > 0.01:
-            print(t[i])
             move_idx = i
             break
 
@@ -81,25 +88,25 @@ def parse_push_bag(bag):
         v[i-1, :] = dp / dt
 
     cutoff = len(t)
-    print(np.mean(v[move_idx:, 0]))
+
+    print('mean(v[x]) = {}'.format(np.mean(v[move_idx:, 0])))
+
+    # TODO this should be from time of contact
+    print('mean(f_norms) = {}'.format(np.mean(fs[contact_idx:])))
 
     # IPython.embed()
 
-    return t[:cutoff], fs[:cutoff, :], ps[:cutoff, :], v[:cutoff, :], bps[:cutoff, :]
+    return t[:cutoff], fs[:cutoff], ps[:cutoff, :], v[:cutoff, :], bps[:cutoff, :]
 
 
 def main():
-    # bagname = util.arg_or_most_recent('*.bag')
-    # print(bagname)
-    # bag = rosbag.Bag(bagname)
-    bag = rosbag.Bag('2020-02-27/push/2020-02-27-15-21-07.bag')
-    # bag = rosbag.Bag('2020-02-25/push/2020-02-25-20-54-53.bag')
-    # bag = rosbag.Bag('2020-02-25/push/2020-02-25-21-14-25.bag')
-    # bag = rosbag.Bag('2020-02-25/push/push_w11_5.bag')
+    bag = rosbag.Bag('../../bags/2020-02-27/push/2020-02-27-15-21-07.bag')
 
     t, f, p, v, bp = parse_push_bag(bag)
 
-    IPython.embed()
+    fd = 10 * np.ones(t.shape)
+
+    # IPython.embed()
 
     fig = plt.figure(figsize=(3.25, 3))
     matplotlib.rcParams.update({'font.size': 8,
@@ -110,8 +117,15 @@ def main():
     plt.subplot(311)
     ax = plt.gca()
     ax.set_xticklabels([])
-    plt.plot(t,  f[:, 0], label='$f_x$', color='k')
+    plt.plot(t,  fd, label='$\mathrm{Desired}$', color='gray', linestyle='--')
+    plt.plot(t,  f, label='$\mathrm{Actual}$', color='k')
     plt.ylabel('$\|\\bm{f}_e\|\mathrm{\ (N)}$', labelpad=0.1)
+    ax.set_yticks([0, 10])
+
+    # reverse legend entry order
+    handles, labels = ax.get_legend_handles_labels()
+    labels, handles = zip(*reversed(zip(labels, handles)))
+    plt.legend(handles, labels, facecolor='white', framealpha=1, loc='upper right')
     # ax.set_yticks([-16, -12, -8, -4, 0])
 
     plt.subplot(312)
@@ -136,6 +150,7 @@ def main():
     # ax2.set_yticks([-2.0, -1.5, -1.0, -0.5, 0.0])
     # plt.set_ylim([-16, 4])
     plt.legend()
+
 
     plt.subplot(313)
     plt.plot(t, p[:, 0], label='EE')

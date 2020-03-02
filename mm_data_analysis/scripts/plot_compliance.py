@@ -10,10 +10,10 @@ import mm_data_analysis.util as util
 import IPython
 
 
-BAG_W0  = '2020-02-25/compliance/compliance_wp0.bag'
-BAG_W01 = '2020-02-25/compliance/compliance_wp0.1.bag'
-BAG_W1  = '2020-02-25/compliance/compliance_wp1.bag'
-BAG_W10 = '2020-02-25/compliance/compliance_wp10.bag'
+BAG_W0  = '../../bags/2020-02-25/compliance/compliance_wp0.bag'
+BAG_W01 = '../../bags/2020-02-25/compliance/compliance_wp0.1.bag'
+BAG_W1  = '../../bags/2020-02-25/compliance/compliance_wp1.bag'
+BAG_W10 = '../../bags/2020-02-25/compliance/compliance_wp10.bag'
 
 T_MAX = 60
 
@@ -76,7 +76,7 @@ def main():
     ax = plt.gca()
     ax.set_xticklabels([])
     plt.plot(t0,  f0[:, 0], label='$f_x$', color='k')
-    plt.ylabel('$\mathrm{Force\ (N)}$', labelpad=0.1)
+    plt.ylabel('$f_{e,x}\mathrm{\ (N)}$', labelpad=0.1)
     ax.set_yticks([-12, -8, -4, 0])
 
     plt.subplot(212)
@@ -87,7 +87,7 @@ def main():
     plt.plot(t1,  p1[:, 0],  label='$w_p=1$')
     plt.plot(t10, p10[:, 0], label='$w_p=10$')
 
-    plt.ylabel('$\mathrm{Position\ (m)}$', labelpad=0.1)
+    plt.ylabel('$\Delta x\mathrm{\ (m)}$', labelpad=0.1)
     # plt.set_ylim([-2.5, 1.0])
     ax2.set_yticks([-2.0, -1.5, -1.0, -0.5, 0.0])
 

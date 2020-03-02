@@ -63,11 +63,11 @@ def parse_bag(bag):
 
 
 def main():
-    bagname = util.arg_or_most_recent('2020-02-27/draw/circle_okay.bag')
-    print(bagname)
-    bag = rosbag.Bag(bagname)
+    bag = rosbag.Bag('../../bags/2020-02-27/draw/circle_okay.bag')
 
     t, pa, pd, f = parse_bag(bag)
+
+    fd = 10 * np.ones(t.shape)
 
     fig1 = plt.figure(1, figsize=(3.25, 2))
     matplotlib.rcParams.update({'font.size': 8,
@@ -78,8 +78,13 @@ def main():
     plt.subplot(211)
     ax1 = plt.gca()
     ax1.set_xticklabels([])
-    plt.plot(t, f, color='k')
+    plt.plot(t,  fd, label='$\mathrm{Desired}$', color='gray', linestyle='--')
+    plt.plot(t, f, label='$\mathrm{Actual}$', color='k')
     plt.ylabel('$\|\\bm{f}_e\|\mathrm{\ (N)}$')
+
+    handles, labels = ax1.get_legend_handles_labels()
+    labels, handles = zip(*reversed(zip(labels, handles)))
+    plt.legend(handles, labels, facecolor='white', framealpha=1)
 
     plt.subplot(212)
     ax2 = plt.gca()

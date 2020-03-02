@@ -11,7 +11,7 @@ import tf.transformations as tfs
 import IPython
 
 
-T_MAX = 45
+T_MAX = 30
 
 
 def cutoff_idx(t):
@@ -34,7 +34,6 @@ def parse_regulation_bag(bag):
 
     # parse time
     t = np.array(force_msg_times) - force_msg_times[0]
-    cutoff = cutoff_idx(t)
 
     # parse force
     fs = np.array([[msg.force_world.x, msg.force_world.y, msg.force_world.z]
@@ -69,6 +68,8 @@ def parse_regulation_bag(bag):
     nf = fs / f_norms[:, None]
     f_err = 10 - f_norms
 
+    cutoff = cutoff_idx(t - t[start_idx])
+
     thetas = np.arccos(np.sum(nf * ne, axis=1))
 
     return t[start_idx:cutoff] - t[start_idx], f_err[start_idx:cutoff], thetas[start_idx:cutoff]
@@ -78,15 +79,17 @@ def main():
     # bagname = util.arg_or_most_recent('*.bag')
     # print(bagname)
 
-    bag_w0 = rosbag.Bag('2020-02-26/regulation/sim/2020-02-27-01-56-08.bag')
-    bag_w10 = rosbag.Bag('2020-02-26/regulation/sim/2020-02-26-22-28-02.bag')
-    bag_w30 = rosbag.Bag('2020-02-26/regulation/sim/2020-02-26-23-42-38.bag')
-    bag_w100 = rosbag.Bag('2020-02-26/regulation/sim/2020-02-26-23-45-51.bag')
+    bag_w0 = rosbag.Bag('../../bags/2020-03-01/2020-03-01-23-01-42.bag')
+    bag_w10 = rosbag.Bag('../../bags/2020-02-26/regulation/sim/2020-02-26-22-28-02.bag')
+    bag_w30 = rosbag.Bag('../../bags/2020-02-26/regulation/sim/2020-02-26-23-42-38.bag')
+    bag_w100 = rosbag.Bag('../../bags/2020-02-26/regulation/sim/2020-02-26-23-45-51.bag')
 
     t0, f0, thetas0 = parse_regulation_bag(bag_w0)
     t10, f10, thetas10 = parse_regulation_bag(bag_w10)
     t30, f30, thetas30 = parse_regulation_bag(bag_w30)
     t100, f100, thetas100 = parse_regulation_bag(bag_w100)
+
+    # IPython.embed()
 
     fig = plt.figure(figsize=(3.25, 2.1))
     matplotlib.rcParams.update({'font.size': 8,
@@ -97,7 +100,7 @@ def main():
     ax1 = plt.gca()
     ax1.set_xticklabels([])
 
-    plt.grid()
+    # plt.grid()
     plt.plot(t100, f100, label='$w_{\epsilon,f}=100$')
     plt.plot(t30, f30, label='$w_{\epsilon,f}=30$')
     plt.plot(t10, f10, label='$w_{\epsilon,f}=10$')
@@ -112,12 +115,12 @@ def main():
 
     plt.subplot(212)
     ax2 = plt.gca()
-    plt.grid()
+    # plt.grid()
     plt.plot(t100, thetas100, label='100')
     plt.plot(t30, thetas30, label='30')
     plt.plot(t10, thetas10, label='10')
-    # plt.plot(t0, thetas0, label='0')
-    plt.ylabel('$\\theta\mathrm{\ (rad)}$')
+    plt.plot(t0, thetas0, label='0')
+    plt.ylabel('$\\theta_f\mathrm{\ (rad)}$')
     plt.xlabel('$\mathrm{Time\ (s)}$')
     ax2.set_yticks([0, 0.4, 0.8])
 
