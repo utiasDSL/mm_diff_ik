@@ -9,8 +9,8 @@ import tf.transformations as tfs
 import IPython
 
 
-LINE_BAG = 'bags/2019-09-15/slalom/line/line_v0.4_slalom_2019-09-15-14-10-43.bag'
-FORCE_BAG = 'bags/2019-09-15/slalom/force/slalom_force2_2019-09-15-14-27-16.bag'
+LINE_BAG = '../../bags/2019-09-15/slalom/line/line_v0.4_slalom_2019-09-15-14-10-43.bag'
+FORCE_BAG = '../../bags/2019-09-15/slalom/force/slalom_force2_2019-09-15-14-27-16.bag'
 
 
 # Obstacle locations
@@ -32,7 +32,7 @@ def plot_line(fig):
     pos_es = []  # EE positions
 
     for q in qs:
-        Ts = kinematics.forward_chain(q)
+        Ts = kinematics.chain(q)
         w_T_b = Ts[3]
         w_T_e = Ts[-1]
         w_p_b = tfs.translation_from_matrix(w_T_b)
@@ -44,7 +44,7 @@ def plot_line(fig):
     pos_es = np.array(pos_es)
 
     ax = plt.gca()
-    ax.set_title('Experiment 1: Trajectory Tracking', fontsize=8)
+    # ax.set_title('Experiment 1: Trajectory Tracking', fontsize=8)
 
     # Obstacles
     for i in range(len(OBS_X)):
@@ -60,13 +60,18 @@ def plot_line(fig):
     plt.plot(pos_es[:,0], pos_es[:,1], label='End effector', linewidth=2, color='b')
 
     ax.set_xticklabels([])
-    plt.ylabel('y (m)')
+    plt.ylabel('$y$ (m)')
+    plt.xlabel('$x$ (m)')
 
     plt.xlim([-2.1, 4.3])
     plt.ylim([-1, 1])
 
     plt.yticks([-1, 0, 1])
     plt.grid()
+
+    plt.legend(labelspacing=0.1, borderpad=0.3, loc=4)
+    plt.xlim([-2.1, 4.3])
+    ax.set_xticklabels(['', '$0$', '$1$', '$2$', '$3$', '$4$', '$5$', '$6$'])
 
 
 def plot_force(fig):
@@ -124,11 +129,11 @@ def main():
                          'text.usetex': True,
                          'legend.fontsize': 8})
 
-    plt.subplot(211)
+    # plt.subplot(211)
     plot_line(fig)
 
-    plt.subplot(212)
-    plot_force(fig)
+    # plt.subplot(212)
+    # plot_force(fig)
 
     fig.tight_layout(pad=0.1)
     fig.savefig('slalom.pdf')

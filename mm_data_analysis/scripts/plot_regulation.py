@@ -101,10 +101,10 @@ def main():
     ax1.set_xticklabels([])
 
     # plt.grid()
-    plt.plot(t100, f100, label='$w_{\epsilon,f}=100$')
-    plt.plot(t30, f30, label='$w_{\epsilon,f}=30$')
-    plt.plot(t10, f10, label='$w_{\epsilon,f}=10$')
-    plt.plot(t0, f0, label='$w_{\epsilon,f}=0$')
+    plt.plot(t100, f100, label='$w_o=100$')
+    plt.plot(t30, f30, label='$w_o=30$')
+    plt.plot(t10, f10, label='$w_o=10$')
+    plt.plot(t0, f0, label='$w_o=0$')
     plt.ylabel('$\Delta f\mathrm{\ (N)}$')
 
     # reverse order of legend entries, since they're added in reverse order for
