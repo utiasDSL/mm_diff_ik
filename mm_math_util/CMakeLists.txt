@@ -8,7 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
 )
 find_package(cmake_modules REQUIRED)
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 
 ###################################
@@ -22,8 +22,6 @@ find_package(Eigen REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  #  LIBRARIES mm_math_util
-  DEPENDS eigen
 )
 
 ###########

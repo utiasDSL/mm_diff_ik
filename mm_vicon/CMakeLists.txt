@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   mm_math_util
 )
 find_package(cmake_modules REQUIRED)
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 
 ###################################
@@ -28,7 +28,7 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES mm_vicon
   CATKIN_DEPENDS mm_math_util
-  DEPENDS eigen
+  # DEPENDS eigen
 )
 
 ###########
@@ -41,7 +41,7 @@ include_directories(
   include
   ${mm_math_util_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
-  ${Eigen_INCLUDE_DIRS}
+  ${Eigen3_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library

@@ -21,7 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_runtime
 )
 find_package(cmake_modules REQUIRED) # required for eigen
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 
 ###################################
@@ -35,7 +35,6 @@ find_package(Eigen REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   CATKIN_DEPENDS mm_msgs mm_kinematics mm_math_util
-  DEPENDS eigen
 )
 
 ###########
@@ -47,7 +46,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ${Eigen_INCLUDE_DIRS}
+  ${Eigen3_INCLUDE_DIRS}
   ${mm_kinematics_INCLUDE_DIRS}
   ${mm_math_util_INCLUDE_DIRS}
   /usr/local/include/eigen-quadprog

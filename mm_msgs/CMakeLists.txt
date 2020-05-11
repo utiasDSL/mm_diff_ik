@@ -48,20 +48,6 @@ add_message_files(
   Obstacles.msg
 )
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
-
-## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
-
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
@@ -80,8 +66,6 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES mm_msgs
-#  CATKIN_DEPENDS other_catkin_pkg
-  DEPENDS eigen
 )
 
 include_directories(
@@ -93,6 +77,9 @@ include_directories(
 add_library(${PROJECT_NAME}
   src/conversions.cpp
 )
+
+# required to tell cmake that message headers must be generated first
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
 )
