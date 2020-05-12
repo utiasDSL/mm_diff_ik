@@ -1,7 +1,48 @@
-# Mobile Manipulator Code
+# Mobile Manipulation
 
-Redundancy resolution for the Thing mobile manipulator via optimization to
-solve the IK problem.
+High-performance optimization-based control for mobile manipulation.
+
+This repository contains ROS packages for control of the UTIAS mobile
+manipulator. It is designed to be install on Ubuntu 14.04 with ROS Indigo,
+because these are the versions in use on the robot itself (as of May 2020).
+
+If you have a later version of Ubuntu, you can emulate a 14.04 environment
+using [docker](https://github.com/adamheins/rosdocked-thing).
+
+## Installation
+
+First, install required dependencies we can get from `apt`:
+```
+sudo apt install ros-indigo-soem ros-indigo-ur-modern-driver libeigen3-dev
+```
+Symlink to Eigen:
+```
+sudo ln -s /usr/include/eigen3/Eigen /usr/include/Eigen
+```
+
+Clone [vicon_bridge](https://github.com/ethz-asl/vicon_bridge) into the `src`
+directory of your catkin workspace.
+
+You'll also need to install [qpOASES](https://github.com/coin-or/qpOASES).
+Clone the repository somewhere convenient (not your catkin workspace; it's not
+a ROS package). Then, to compile, simply enter the cloned repo and type `make`.
+To get ROS to find the qpOASES headers, you'll need to make some symlinks:
+```
+sudo ln -s <path/to/qpOASES>/include/qpOASES.hpp /usr/local/include/qpOASES.hpp
+sudo ln -s <path/to/qpOASES>/include/qpOASES     /usr/local/include/qpOASES
+sudo ln -s <path/to/qpOASES>/bin/libqpOASES.so   /usr/local/lib/libqpOASES.so
+```
+
+Now, clone this repository into the `src` directory of your catkin workspace.
+Then you should be able to build with `catkin` (alternatively use `catkin_make`
+or `catkin_make_isolated`):
+```bash
+# normal build
+catkin build
+
+# with compiler optimizations
+catkin build -DCMAKE_BUILD_TYPE=Release
+```
 
 ## Packages
 
@@ -9,8 +50,7 @@ solve the IK problem.
 
 Inner-loop motion controller that implements proportional control with velocity
 feedforward in task space, followed by an optimization over the joint
-velocities to send to the robot. Written in C++. Optimizer is
-[qpOASES](https://projects.coin-or.org/qpOASES).
+velocities to send to the robot. Written in C++. Optimizer is qpOASES.
 
 #### Subscribers
 * `/trajectory/point` (`geometry_msgs/PoseStamped`): Takes a single pose in
@@ -59,15 +99,6 @@ published.
 
 Contains forward kinematics code in both C++ and Python for use by other
 packages.
-
-## Build
-```bash
-# normal build
-catkin build
-
-# with compiler optimizations
-catkin build -DCMAKE_BUILD_TYPE=Release
-```
 
 ## Run
 ### Simulation
