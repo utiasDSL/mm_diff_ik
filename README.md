@@ -7,7 +7,7 @@ manipulator. It is designed to be install on Ubuntu 14.04 with ROS Indigo,
 because these are the versions in use on the robot itself (as of May 2020).
 
 If you have a later version of Ubuntu, you can emulate a 14.04 environment
-using [docker](https://github.com/adamheins/rosdocked-thing).
+using [docker](https://github.com/adamheins/mm-docker).
 
 ## Installation
 
