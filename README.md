@@ -20,10 +20,11 @@ Symlink to Eigen:
 sudo ln -s /usr/include/eigen3/Eigen /usr/include/Eigen
 ```
 
-Clone [vicon_bridge](https://github.com/ethz-asl/vicon_bridge) into the `src`
-directory of your catkin workspace.
+Next, clone [vicon_bridge](https://github.com/ethz-asl/vicon_bridge) and
+[robotiq](https://github.com/ros-industrial/robotiq) into the `src` directory
+of your catkin workspace. 
 
-You'll also need to install [qpOASES](https://github.com/coin-or/qpOASES).
+Finally, you'll also need to install [qpOASES](https://github.com/coin-or/qpOASES).
 Clone the repository somewhere convenient (not your catkin workspace; it's not
 a ROS package). Then, to compile, simply enter the cloned repo and type `make`.
 To get ROS to find the qpOASES headers, you'll need to make some symlinks:
