@@ -9,6 +9,11 @@ def rms(e):
     return np.sqrt(np.mean(np.square(e)))
 
 
+def wrap_to_pi(angle):
+    ''' Wrap the angle to [-pi, pi]. '''
+    return (angle + np.pi) % (2 * np.pi) - np.pi
+
+
 def parse_t0(msgs):
     return msgs[0].header.stamp.to_sec()
 

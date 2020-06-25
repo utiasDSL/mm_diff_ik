@@ -24,16 +24,11 @@ def main():
     rot_err_msgs = [msg.error.orientation for msg in pose_msgs]
     quats = np.array([[msg.x, msg.y, msg.z, msg.w] for msg in rot_err_msgs])
 
-    # euler_errs = np.zeros((len(quats), 3))
-    # for i in xrange(len(quats)):
-    #     euler_errs[i, :] = tfs.euler_from_quaternion(quats[i, :])
-    # euler_norms = np.linalg.norm(euler_errs, axis=1)
-    # euler_rmse = util.rms(euler_norms)
     rot_errs = np.zeros(len(quats))
     for i in xrange(len(quats)):
         eps = np.linalg.norm(quats[i, :3])
         eta = quats[i, 3]
-        rot_errs[i] = 2 * np.arctan2(eps, eta)
+        rot_errs[i] = util.wrap_to_pi(2 * np.arctan2(eps, eta))
     rot_rmse = util.rms(rot_errs)
 
     print('Position RMSE = {} mm'.format(rmse))
