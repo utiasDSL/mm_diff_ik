@@ -11,9 +11,12 @@ namespace mm {
 
 
 bool ViconEstimatorNode::init(ros::NodeHandle& nh) {
+    std::string base_vicon_topic;
+    nh.param<std::string>("base_vicon_topic", base_vicon_topic,
+                          "/vicon/ThingBase2/ThingBase2");
     vicon_thing_base_sub = nh.subscribe(
-            "/vicon/ThingBase/ThingBase", 1,
-            &ViconEstimatorNode::vicon_thing_base_cb, this);
+            base_vicon_topic, 1, &ViconEstimatorNode::vicon_thing_base_cb,
+            this);
 
     rb_joint_states_pub = nh.advertise<sensor_msgs::JointState>(
             "/rb_joint_states", 1);
