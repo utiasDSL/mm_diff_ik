@@ -7,7 +7,7 @@
 		<param name="datastream_hostport" value="192.168.2.120:801" type="str" />
 		<param name="tf_ref_frame_id" value="/odom" type="str" />
 
-    <!-- Origin of Vicon constellation is calibrated to correspond with the centre of the robot base. -->
+    <!-- Origin of Vicon constellation is calibrated to correspond with the centre of the robot base. If we want it to be the bottom of the robot base, just set z position to 0. -->
     <param name="$(arg base_vicon_model)/zero_pose/position/x"    value="0.070644" type="double" />
     <param name="$(arg base_vicon_model)/zero_pose/position/y"    value="0.022395" type="double" />
     <param name="$(arg base_vicon_model)/zero_pose/position/z"    value="0.306399" type="double" />

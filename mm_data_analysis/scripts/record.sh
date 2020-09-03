@@ -14,4 +14,5 @@ rosbag record -o "$1"    \
   /force_control/state \
   /force/info \
   /force/desired \
+  /front/scan \
   /obstacles
