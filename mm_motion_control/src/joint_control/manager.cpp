@@ -27,7 +27,15 @@ bool JointControllerManager::init(ros::NodeHandle& nh) {
             "/ridgeback_velocity_controller/cmd_vel", 1);
 
     q_act = JointVector::Zero();
-    q_des = HOME;
+
+    q_des = DEFAULT_HOME;
+
+    // If a home position was passed via parameter, use that as the desired
+    // joint configuration.
+    std::vector<double> joint_home_positions(NUM_JOINTS);
+    if (nh.getParam("joint_home_positions", joint_home_positions)) {
+        q_des = JointVector(joint_home_positions.data());
+    }
 
     joint_state_rec = false;
 

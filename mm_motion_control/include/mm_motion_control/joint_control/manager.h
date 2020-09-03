@@ -21,12 +21,14 @@ const static JointMatrix K = 0.5*JointMatrix::Identity();
 // Maximum joint speed.
 const static double MAX_DQ = 0.2;
 
-// Home location.
-const static JointVector HOME((JointVector()
-            << -1.5, 0.0, 0.0,
+// Default home positions -- this can also be set by parameter.
+const static JointVector DEFAULT_HOME((JointVector()
+            << 0.0, 0.0, 0.0,
                0.0, -0.75*M_PI, -M_PI_2, -0.75*M_PI, -M_PI_2, M_PI_2).finished());
+
+// Lower EE position; good for pushing.
 // const static JointVector HOME((JointVector()
-//             << -1.5, 0.0, 0.0,
+//             << 0.0, 0.0, 0.0,
 //                0.0, -2.70526, -M_PI_2, -2.007128, -M_PI_2, M_PI_2).finished());
 
 
