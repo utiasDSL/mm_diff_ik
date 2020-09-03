@@ -1,8 +1,6 @@
 import numpy as np
 import tf.transformations as tfs
 
-import IPython
-
 
 px = 0.27
 py = 0.01
@@ -31,9 +29,10 @@ def _dh_tf(q, a, d, alpha):
 T0 = _dh_tf(np.pi/2, 0, 0, np.pi/2)
 T4 = _dh_tf(0, px, pz, -np.pi/2)
 T5 = _dh_tf(0, 0,  py,  np.pi/2)
+T12 = _dh_tf(0, 0, d7, 0)
 
 
-def _calc_chain(q):
+def _calc_dh_matrices(q):
     Ts = [None] * 13
 
     # Transform from base to world.
@@ -53,14 +52,14 @@ def _calc_chain(q):
     Ts[9]  = _dh_tf(q[6], 0,  d4,  np.pi/2)
     Ts[10] = _dh_tf(q[7], 0,  d5, -np.pi/2)
     Ts[11] = _dh_tf(q[8], 0,  d6,  0)
-    Ts[12] = _dh_tf(0,    0,  d7,  0)
+    Ts[12] = T12  # tool offset from wrist
 
     return Ts
 
 
 def chain(q):
     ''' Calculate full kinematic chain. '''
-    Ts = _calc_chain(q)
+    Ts = _calc_dh_matrices(q)
     w_T_ = [None] * 13
 
     w_T_[0] = Ts[0]
@@ -71,7 +70,7 @@ def chain(q):
 
 def calc_w_T_ee(q):
     ''' Calculate transform from EE frame to world. '''
-    Ts = _calc_chain(q)
+    Ts = _calc_dh_matrices(q)
     w_T_e = np.eye(4)
     for T in Ts[:-1]:
         w_T_e = w_T_e.dot(T)
@@ -81,13 +80,17 @@ def calc_w_T_ee(q):
 def calc_w_T_ft(q):
     ''' Calculate transform from force/torque frame to world. '''
     w_T_ee = calc_w_T_ee(q)
+
+    # Recall that the D-H notation has the z-axis for each joint aligned with
+    # the link, which is the same as the FT sensor. Then, we only need to add
+    # the small translation the sensor adds atop of the wrist.
     e_T_ft = tfs.translation_matrix([0.02, 0, 0])
     return w_T_ee.dot(e_T_ft)
 
 
 def calc_w_T_tool(q):
     ''' Calculate transform from tool frame to world. '''
-    Ts = _calc_chain(q)
+    Ts = _calc_dh_matrices(q)
     w_T_tool = np.eye(4)
     for T in Ts:
         w_T_tool = w_T_tool.dot(T)
