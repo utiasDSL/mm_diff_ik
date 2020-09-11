@@ -17,7 +17,7 @@
 namespace mm {
 
 
-bool JointControllerManager::init(ros::NodeHandle& nh) {
+bool JointControllerManager::init(ros::NodeHandle& nh, JointVector& q_des) {
     mm_joint_states_sub = nh.subscribe("/mm_joint_states", 1,
             &JointControllerManager::mm_joint_states_cb, this);
 
@@ -27,18 +27,7 @@ bool JointControllerManager::init(ros::NodeHandle& nh) {
             "/ridgeback_velocity_controller/cmd_vel", 1);
 
     q_act = JointVector::Zero();
-
-    q_des = DEFAULT_HOME;
-
-    // If a home position was passed via parameter, use that as the desired
-    // joint configuration.
-    std::vector<double> joint_home_positions(NUM_JOINTS);
-    if (nh.getParam("/joint_home_positions", joint_home_positions)) {
-        ROS_INFO_STREAM("Home joint configuration set from parameter.");
-        q_des = JointVector(joint_home_positions.data());
-    } else {
-        ROS_INFO_STREAM("Using default home joint configuration.");
-    }
+    this->q_des = q_des;
 
     joint_state_rec = false;
 
