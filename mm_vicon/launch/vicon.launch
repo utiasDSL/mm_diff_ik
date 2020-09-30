@@ -1,11 +1,14 @@
 <launch>
   <arg name="base_vicon_model" value="ThingBase2/ThingBase2" />
+  <arg name="ee_vicon_model" value="ThingEE/ThingEE" />
 
   <!-- Communication with Vicon -->
 	<node pkg="vicon_bridge" type="vicon_bridge" name="vicon" output="screen">
 		<param name="stream_mode" value="ClientPull" type="str" />
 		<param name="datastream_hostport" value="192.168.2.120:801" type="str" />
-		<param name="tf_ref_frame_id" value="/odom" type="str" />
+    <param name="tf_ref_frame_id" value="/odom" type="str" />
+
+    <!-- NOTE: when doing vicon_bridge calibration, take the zero_pose from the parameter server (it is not the same as the message printed in the terminal -->
 
     <!-- Origin of Vicon constellation is calibrated to correspond with the
     centre of the robot base, with z = 0 (i.e., the floor). If we want z to
@@ -18,6 +21,14 @@
     <param name="$(arg base_vicon_model)/zero_pose/orientation/y" value="-0.001112" type="double" />
     <param name="$(arg base_vicon_model)/zero_pose/orientation/z" value="0.000624" type="double" />
     <param name="$(arg base_vicon_model)/zero_pose/orientation/w" value="0.999996" type="double" />
+
+    <param name="$(arg ee_vicon_model)/zero_pose/position/x"    value="-0.135391" type="double" />
+    <param name="$(arg ee_vicon_model)/zero_pose/position/y"    value="-0.033176" type="double" />
+    <param name="$(arg ee_vicon_model)/zero_pose/position/z"    value="0.053374" type="double" />
+    <param name="$(arg ee_vicon_model)/zero_pose/orientation/x" value="0.000454" type="double" />
+    <param name="$(arg ee_vicon_model)/zero_pose/orientation/y" value="0.000698" type="double" />
+    <param name="$(arg ee_vicon_model)/zero_pose/orientation/z" value="0.002152" type="double" />
+    <param name="$(arg ee_vicon_model)/zero_pose/orientation/w" value="0.999997" type="double" />
   </node>
 
   <!-- Velocity estimation -->
