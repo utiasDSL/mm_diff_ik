@@ -6,7 +6,7 @@ import rospy
 import numpy as np
 
 from vicon_bridge.msg import Markers
-from geographic_msgs.msg import Twist
+from geometry_msgs.msg import Twist
 
 
 HZ = 10

@@ -1,0 +1,8 @@
+<!-- Result of Ke's base calibration -->
+<param name="$(arg base_vicon_model)/zero_pose/position/x"    value="0.070376" type="double" />
+<param name="$(arg base_vicon_model)/zero_pose/position/y"    value="0.026380" type="double" />
+<param name="$(arg base_vicon_model)/zero_pose/position/z"    value="0.306103" type="double" />
+<param name="$(arg base_vicon_model)/zero_pose/orientation/x" value="0.0007" type="double" />
+<param name="$(arg base_vicon_model)/zero_pose/orientation/y" value="-0.001046" type="double" />
+<param name="$(arg base_vicon_model)/zero_pose/orientation/z" value="0.0007" type="double" />
+<param name="$(arg base_vicon_model)/zero_pose/orientation/w" value="0.99999" type="double" />
