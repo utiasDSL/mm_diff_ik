@@ -97,6 +97,15 @@ def calc_w_T_tool(q):
     return w_T_tool
 
 
+def calc_w_T_palm(q):
+    Ts = _calc_dh_matrices(q)
+    w_T_e = np.eye(4)
+    for T in Ts[:-1]:
+        w_T_e = w_T_e.dot(T)
+    w_T_e = w_T_e.dot(_dh_tf(0, 0, 0.2, 0))
+    return w_T_e
+
+
 def _jacobians(q):
     # Base joints
     xb = q[0]
