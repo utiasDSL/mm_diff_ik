@@ -3,8 +3,8 @@
 <!-- Single launch file for all onboard nodes. -->
 
 <launch>
-  <!-- Motion controller. -->
-  <include file="$(find mm_motion_control)/launch/real/mm_motion_control.launch" />
+  <!-- UR10 and joint state publisher -->
+  <include file="$(find mm_motion_control)/launch/real/bringup.launch" />
 
   <!-- Robotiq force-torque sensor -->
   <node name="ft_sensor" pkg="robotiq_force_torque_sensor" type="rq_sensor" respawn="true" output="screen" />
