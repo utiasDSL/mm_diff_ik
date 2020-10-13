@@ -9,7 +9,4 @@
 
   <!-- Combine base and arm joint_state messages into a single one. -->
   <node pkg="mm_motion_control" type="joint_state_mux" name="joint_state_mux_node" output="screen" />
-
-  <!-- Start the controller. -->
-  <node pkg="mm_motion_control" type="mm_control_node" name="mm_control_node" output="screen" />
 </launch>

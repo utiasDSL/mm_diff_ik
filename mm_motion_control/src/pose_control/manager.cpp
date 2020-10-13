@@ -180,7 +180,7 @@ void IKControllerManager::force_info_cb(const mm_msgs::ForceInfo& msg) {
         Eigen::Vector3d p = w_T_tool.translation();
         Eigen::Quaterniond q(w_T_tool.rotation());
         trajectory.stay_at(p, q);
-        traj_active = true;
+        // traj_active = true;
 
         // Set the initial contact point.
         pc = p;

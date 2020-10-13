@@ -128,8 +128,14 @@ listed.
 # alternatively, if Vicon is not available
 > roslaunch mm_vicon spoof.launch
 
-# on board
-> roslaunch mm_motion_control mm_motion_control.launch
+# Ideally onboard (for lowest latency), but generally also fine on the laptop
+# itself. This starts the UR10 driver (the Ridgeback starts automatically
+# onboard the robot) and the mux node that published the combined
+# /mm_joint_states topic.
+> roslaunch mm_motion_control bringup.launch
+
+# start the motion control node
+> rosrun mm_motion_control mm_control_node
 
 # on laptop, if using force control
 > rosrun mm_force_control force.py
@@ -140,6 +146,7 @@ listed.
 
 Other useful commands (run on the laptop) include:
 ```bash
-# go to home position defined in mm_motion_control/joint_control/manager.h
+# Go to home position defined in in the launch file. Requires bringup.launch to
+# already be launched and running.
 > roslaunch mm_motion_control home.launch
 ```
