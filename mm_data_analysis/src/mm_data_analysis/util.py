@@ -62,7 +62,8 @@ def align_lists(t1, l1, t2, l2):
         t = t1[i1]
         while i2 + 1 < len(l2) and t2[i2 + 1] < t:
             i2 += 1
-        aligned.append((l1[i1], l2[i2]))
+        # aligned.append((l1[i1], l2[i2]))
+        aligned.append(l2[i2])
     return aligned
 
 
