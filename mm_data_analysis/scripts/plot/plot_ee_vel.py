@@ -16,6 +16,18 @@ def numerical_diff(p, t):
     return v
 
 
+def smooth(a):
+    a_smooth = np.zeros_like(a)
+    for i in range(a.shape[0]):
+        if i == 0:
+            a_smooth[i, :] = (a[i,:] + a[i+1,:]) / 2.0
+        elif i == a.shape[0] - 1:
+            a_smooth[i, :] = (a[i-1,:] + a[i,:]) / 2.0
+        else:
+            a_smooth[i, :] = (a[i-1,:] + a[i,:] + a[i+1,:]) / 3.0
+    return a_smooth
+
+
 def Rz(yaw):
     c = np.cos(yaw)
     s = np.sin(yaw)
@@ -78,6 +90,7 @@ def main():
         qb[idx, :] = [x, y, yaw]
     tb = util.parse_time(base_vicon_msgs, t0=t0)
     vb = numerical_diff(qb, tb)
+    vb_smooth = smooth(vb)
 
     cmd_vel_topic = '/ridgeback_velocity_controller/cmd_vel'
     cmd_vel_msgs = [msg for _, msg, _ in bag.read_messages(cmd_vel_topic)]
@@ -148,15 +161,15 @@ def main():
     plt.axvline(tcmd[0], color='k', linestyle='--')
     plt.axvline(tcmd[-1], color='k', linestyle='--')
 
-    # plt.figure()
-    # plt.grid()
-    # plt.plot(tb[:-1], vb[:, 0], label='vx (m/s)')
-    # plt.plot(tb[:-1], vb[:, 1], label='vy (m/s)')
-    # plt.plot(tb[:-1], vb[:, 2], label='wz (rad/s)')
-    # plt.xlabel('Time (s)')
-    # plt.ylabel('Base Velocity')
-    # plt.legend()
-    # plt.title('Actual Base Velocity')
+    plt.figure()
+    plt.grid()
+    plt.plot(tb[:-1], vb_smooth[:, 0], label='vx (m/s)')
+    plt.plot(tb[:-1], vb_smooth[:, 1], label='vy (m/s)')
+    plt.plot(tb[:-1], vb_smooth[:, 2], label='wz (rad/s)')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Base Velocity')
+    plt.legend()
+    plt.title('Actual Base Velocity')
 
     # plt.figure()
     # plt.grid()

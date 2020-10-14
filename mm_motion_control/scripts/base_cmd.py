@@ -2,8 +2,8 @@
 import rospy
 from geometry_msgs.msg import Twist
 
-HZ = 10
-DURATION = 10
+HZ = 25
+DURATION = 5
 
 
 def main():
@@ -40,9 +40,14 @@ def main():
         t = now
 
         # integrate acceleration
-        vx += ax * dt
-        vy += ay * dt
-        wz += az * dt
+        if t - t0 <= 0.5*DURATION:
+            vx += ax * dt
+            vy += ay * dt
+            wz += az * dt
+        else:
+            vx -= ax * dt
+            vy -= ay * dt
+            wz -= az * dt
 
 
 if __name__ == '__main__':
