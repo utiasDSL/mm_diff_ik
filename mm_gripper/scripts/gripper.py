@@ -15,7 +15,11 @@ if __name__ == '__main__':
 
     msg = SModel_robot_output()
     msg.rACT = 1
-    msg.rMOD = 1  # 1 for pinched; 0 for unpinched
+
+    # 0 for normal, 1 for pinched, 2 for wide mode, 3 for scissor mode
+    # NOTE scissor mode may not be working
+    msg.rMOD = 0
+
     msg.rGTO = 1
     msg.rATR = 0
     msg.rICF = 0
