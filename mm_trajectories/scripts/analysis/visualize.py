@@ -85,7 +85,7 @@ def main():
     fig.tight_layout(pad=1)
     fig.savefig('trajectories.pdf')
 
-    # plt.show()
+    plt.show()
 
 
 if __name__ == '__main__':

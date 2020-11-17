@@ -117,6 +117,7 @@ class IKControllerManager {
         // Publish the current control state of the robot: actual and desired
         // poses, and pose error.
         void publish_robot_state(const Eigen::Affine3d& Td,
+                                 const Vector6d& Vd,
                                  const JointVector& u);
 }; // class IKControllerManager
 

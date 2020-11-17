@@ -112,9 +112,9 @@ void IKControllerManager::loop(const double hz) {
         }
 
         Eigen::Affine3d Td;
-        Vector6d twist;
-        trajectory.sample(t, Td, twist);
-        publish_robot_state(Td, u);
+        Vector6d Vd;
+        trajectory.sample(t, Td, Vd);
+        publish_robot_state(Td, Vd, u);
 
         rate.sleep();
     }
@@ -206,6 +206,7 @@ void IKControllerManager::obstacle_cb(const mm_msgs::Obstacles& msg) {
 
 
 void IKControllerManager::publish_robot_state(const Eigen::Affine3d& Td,
+                                              const Vector6d& Vd,
                                               const JointVector& u) {
     // Desired pose.
     Eigen::Vector3d pos_des = Td.translation();
@@ -227,19 +228,29 @@ void IKControllerManager::publish_robot_state(const Eigen::Affine3d& Td,
 
     if (state_pub->trylock()) {
         geometry_msgs::Pose pose_act_msg, pose_des_msg, pose_err_msg;
+        geometry_msgs::Twist Vd_msg;
 
         pose_msg_from_eigen(pos_act, quat_act, pose_act_msg);
         pose_msg_from_eigen(pos_des, quat_des, pose_des_msg);
         pose_msg_from_eigen(pos_err, quat_err, pose_err_msg);
 
+        twist_msg_from_eigen(Vd, Vd_msg);
+
+        // Pose.
         state_pub->msg_.actual = pose_act_msg;
         state_pub->msg_.desired = pose_des_msg;
         state_pub->msg_.error = pose_err_msg;
 
+        // Twist.
+        state_pub->msg_.twist_desired = Vd_msg;
+
+        // Rotation error used for control purposes (not necessarily the same
+        // as the actual orientation error).
         state_pub->msg_.rotation_error.x = rot_err(0);
         state_pub->msg_.rotation_error.y = rot_err(1);
         state_pub->msg_.rotation_error.z = rot_err(2);
 
+        // Joint space.
         state_pub->msg_.q = std::vector<double>(q.data(), q.data() + q.size());
         state_pub->msg_.dq = std::vector<double>(dq.data(), dq.data() + dq.size());
         state_pub->msg_.u = std::vector<double>(u.data(), u.data() + u.size());

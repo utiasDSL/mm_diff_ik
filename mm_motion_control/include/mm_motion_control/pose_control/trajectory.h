@@ -48,7 +48,8 @@ class PoseTrajectory {
         std::vector<mm_msgs::PoseTrajectoryPoint> waypoints;
 
         // Cubic interpolation for the linear component.
-        CubicInterp<3> lerp;
+        // CubicInterp<3> lerp;
+        QuinticInterp<3> lerp;
 
         // Spherical linear interpolation (slerp) for the angular component.
         QuaternionInterp slerp;

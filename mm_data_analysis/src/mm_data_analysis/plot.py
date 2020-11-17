@@ -105,7 +105,6 @@ def plot_pose_actual_vs_desired(pose_msgs):
     plt.plot(t, pay, 'g--', label='$y_a$')
     plt.plot(t, paz, 'b--', label='$z_a$')
 
-
     plt.grid()
     plt.legend()
     plt.title('End Effector Actual and Desired Position')

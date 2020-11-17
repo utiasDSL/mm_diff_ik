@@ -83,24 +83,12 @@ class LineTrajectory(object):
         self.p0 = p0
         self.quat0 = quat0
         self.duration = duration
-        self.t_acc = 0.1 * self.duration
         self.dt = dt
 
     def sample_linear(self, t):
-        # v_max = 0.5  # for speed
-        v_max = 0.1
-        # v, a = trapezoidal_velocity(v_max, t, self.t_acc, self.duration)
-
-        v = v_max
-
-        # p = self.p0 + np.array([v * t, 0, 0])
-        self.p0[0] += v * self.dt
-
-        dx = v
-        dy = dz = 0
-
-        # return p, np.array([dx, dy, dz])
-        return self.p0, np.array([dx, dy, dz])
+        v = np.array([0.1, 0, 0])
+        p = self.p0 + t * v
+        return p, v
 
     def sample_rotation(self, t):
         return self.quat0, np.zeros(3)

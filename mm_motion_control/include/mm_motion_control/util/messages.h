@@ -33,6 +33,17 @@ inline void pose_msg_from_eigen(const Eigen::Vector3d& p,
     msg.orientation.z = q.z();
 }
 
+
+inline void twist_msg_from_eigen(const Vector6d& V, geometry_msgs::Twist& msg) {
+    msg.linear.x = V(0);
+    msg.linear.y = V(1);
+    msg.linear.z = V(2);
+
+    msg.angular.x = V(3);
+    msg.angular.y = V(4);
+    msg.angular.z = V(5);
+}
+
 // Populate Eigen types from Pose message.
 // Parameters:
 //   msg: Pose message

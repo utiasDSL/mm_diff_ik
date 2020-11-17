@@ -116,13 +116,19 @@ bool PoseTrajectory::interpolate(const double t, Eigen::Vector3d& p,
         Eigen::Quaterniond q2;
         pose_traj_point_to_eigen(wp2, p2, q2, v2, w2);
 
-        lerp.interpolate(t1, t2, p1, p2, v1, v2);
+        // TODO accelerations are zero for now
+        Eigen::Vector3d a1 = Eigen::Vector3d::Zero();
+        Eigen::Vector3d a2 = Eigen::Vector3d::Zero();
+
+        lerp.interpolate(t1, t2, p1, p2, v1, v2, a1, a2);
         slerp.interpolate(t1, t2, q1, q2);
 
         w_prev = w1;
     }
 
-    lerp.sample(t, p, v);
+    Eigen::Vector3d a = Eigen::Vector3d::Zero();
+
+    lerp.sample(t, p, v, a);
     slerp.sample(t, q);
     w = w_prev;
     return true;
