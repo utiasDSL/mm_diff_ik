@@ -104,10 +104,12 @@ packages.
 ## Run
 ### Simulation
 ```bash
-> roslaunch mm_motion_control mm_motion_control_sim.launch
+> roscore
 > roslaunch mm_simulation sim.launch
-> rosrun mm_trajectories launch_traj.py
+> rosrun mm_motion_control mm_control_node
+> rosrun mm_trajectories [trajectory].py
 ```
+where `[trajectory]` is replaced the desired trajectory.
 
 ### Experiment
 1. Connect to `DSL_DroneNet_5G` network.
