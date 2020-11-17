@@ -30,7 +30,7 @@ def pose_msg(p, q):
     return msg
 
 
-def waypoint_msg(t, p, v, q, w):
+def waypoint_msg(t, p, v, a, q, w, alpha):
     ''' Generate PoseTrajectoryPoint message from time, position, orientation,
         and linear and angular velocities. '''
     waypoint = PoseTrajectoryPoint()
@@ -40,5 +40,8 @@ def waypoint_msg(t, p, v, q, w):
 
     waypoint.velocity.linear = vec3_msg(v)
     waypoint.velocity.angular = vec3_msg(w)
+
+    waypoint.acceleration.linear = vec3_msg(a)
+    waypoint.acceleration.angular = vec3_msg(alpha)
 
     return waypoint

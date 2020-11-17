@@ -1,5 +1,5 @@
-# Pose and velocity waypoint for trajectory in task space. We don't include
-# acceleration since control is done on the velocity level.
+# Pose and velocity waypoint for trajectory in task space.
 geometry_msgs/Pose pose
 geometry_msgs/Twist velocity
+geometry_msgs/Twist acceleration
 duration time_from_start

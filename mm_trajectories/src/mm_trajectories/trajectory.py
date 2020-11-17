@@ -20,11 +20,10 @@ def create_waypoints(traj, duration, dt):
 
     N = int(tf / dt) + 1
     for _ in xrange(N):
-        p, v = traj.sample_linear(t)
-        q, w = traj.sample_rotation(t)
+        p, v, a = traj.sample_linear(t)
+        q, w, alpha = traj.sample_rotation(t)
 
-        waypoint = conversions.waypoint_msg(t, p, v, q, w)
-
+        waypoint = conversions.waypoint_msg(t, p, v, a, q, w, alpha)
         waypoints.append(waypoint)
 
         t += dt
@@ -62,19 +61,74 @@ def launch(trajectory, duration, dt=0.1):
         traj.name, duration))
 
 
-def trapezoidal_velocity(v_max, t, t_acc, duration):
-    ''' Trapezoidal velocity profile '''
-    if t < t_acc:
-        acc = v_max / t_acc
-        vel = t * acc
-    elif t >= t_acc and t < duration - t_acc:
-        acc = 0
-        vel = v_max
-    else:
-        acc = -v_max / t_acc
-        vel = (duration - t) * v_max / t_acc
-    return vel, acc
+# == Time-scalings == #
 
+class LinearTimeScaling:
+    ''' Linear time-scaling: constant velocity. '''
+    def __init__(self, duration):
+        self.duration = duration
+
+    def eval(self, t):
+        s = t / self.duration
+        ds = np.ones_like(t) / self.duration
+        dds = np.zeros_like(t)
+        return s, ds, dds
+
+
+class CubicTimeScaling:
+    ''' Cubic time-scaling: zero velocity at end points. '''
+    def __init__(self, duration):
+        self.coeffs = np.array([0, 0, 3 / duration**2, -2 / duration**3])
+
+    def eval(self, t):
+        s = self.coeffs.dot([np.ones_like(t), t, t**2, t**3])
+        ds = self.coeffs[1:].dot([np.ones_like(t), 2*t, 3*t**2])
+        dds = self.coeffs[2:].dot([2*np.ones_like(t), 6*t])
+        return s, ds, dds
+
+
+class QuinticTimeScaling:
+    ''' Quintic time-scaling: zero velocity and acceleration at end points. '''
+    def __init__(self, T):
+        A = np.array([[1, 0, 0, 0, 0, 0],
+                      [1, T, T**2, T**3, T**4, T**5],
+                      [0, 1, 0, 0, 0, 0],
+                      [0, 1, 2*T, 3*T**2, 4*T**3, 5*T**4],
+                      [0, 0, 2, 0, 0, 0],
+                      [0, 0, 2, 6*T, 12*T**2, 20*T**3]])
+        b = np.array([0, 1, 0, 0, 0, 0])
+        self.coeffs = np.linalg.solve(A, b)
+
+    def eval(self, t):
+        s = self.coeffs.dot([np.ones_like(t), t, t**2, t**3, t**4, t**5])
+        ds = self.coeffs[1:].dot([np.ones_like(t), 2*t, 3*t**2, 4*t**3, 5*t**4])
+        dds = self.coeffs[2:].dot([2*np.ones_like(t), 6*t, 12*t**2, 20*t**3])
+        return s, ds, dds
+
+
+# == Paths == #
+
+class PointToPoint:
+    ''' Point-to-point trajectory. '''
+    def __init__(self, p0, p1, quat, timescaling, duration):
+        self.p0 = p0
+        self.p1 = p1
+        self.quat = quat
+        self.timescaling = timescaling
+        self.duration = duration
+
+    def sample_linear(self, t):
+        s, ds, dds = self.timescaling.eval(t)
+        p = self.p0 + s * (self.p1 - self.p0)
+        v = ds * (self.p1 - self.p0)
+        a = dds * (self.p1 - self.p0)
+        return p, v, a
+
+    def sample_rotation(self, t):
+        return self.quat, np.zeros(3), np.zeros(3)
+
+
+# == Old trajectories == #
 
 class LineTrajectory(object):
     ''' Straight line in x-direction. '''
@@ -112,8 +166,6 @@ class SineXYTrajectory(object):
         # w = 0.25  # sine frequency
         w = 2 * np.pi / self.duration
 
-        # v = trapezoidal_velocity(v_max, t, self.t_acc, self.duration)
-        # A = trapezoidal_velocity(A_max, t, self.t_acc, self.duration)
         v = v_max
         A = A_max
 
