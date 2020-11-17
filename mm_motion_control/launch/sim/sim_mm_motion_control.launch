@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-
-<!-- In simulation we don't need the UR driver, nor do we need the joint_state_mux node since the simulator publishes this information directly. -->
-
-<launch>
-  <!-- Start the controller. -->
-  <node pkg="mm_motion_control" type="mm_control_node" name="mm_control_node" output="screen" />
-</launch>
