@@ -55,24 +55,25 @@ class RobotPlotter(object):
                                    zs=[w_p_e[2], w_p_t[2]], c='r', marker='o',
                                    label='EE/Tool')
 
-        xp = 1.5
-        p0 = [xp, 0, 0]
-        n0 = [-1, -1, 0]
-        n0 = n0 / np.linalg.norm(n0)
-        V = null_space([n0])
-        v0 = V[:, 0]
-        v1 = V[:, 1]
-
-        p1 = p0 + v0
-        p2 = p0 + v0 + v1
-        p3 = p0 - v0 + v1
-        p4 = p0 - v0
-
-        xs = [p1[0], p2[0], p3[0], p4[0], p1[0]]
-        ys = [p1[1], p2[1], p3[1], p4[1], p1[1]]
-        zs = [p1[2], p2[2], p3[2], p4[2], p1[2]]
-
-        self.plane, = self.ax.plot(xs, ys, zs=zs, color='k')
+        # draws a plane that was used as an obstacle for force control
+        # xp = 1.5
+        # p0 = [xp, 0, 0]
+        # n0 = [-1, -1, 0]
+        # n0 = n0 / np.linalg.norm(n0)
+        # V = null_space([n0])
+        # v0 = V[:, 0]
+        # v1 = V[:, 1]
+        #
+        # p1 = p0 + v0
+        # p2 = p0 + v0 + v1
+        # p3 = p0 - v0 + v1
+        # p4 = p0 - v0
+        #
+        # xs = [p1[0], p2[0], p3[0], p4[0], p1[0]]
+        # ys = [p1[1], p2[1], p3[1], p4[1], p1[1]]
+        # zs = [p1[2], p2[2], p3[2], p4[2], p1[2]]
+        #
+        # self.plane, = self.ax.plot(xs, ys, zs=zs, color='k')
 
         self.obs_plot, = self.ax.plot(x_obs, y_obs, zs=z_obs, marker='o', c='k')
 
