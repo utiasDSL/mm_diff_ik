@@ -11,7 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   mm_math_util
 )
 find_package(cmake_modules REQUIRED)
-find_package(Eigen3 REQUIRED)
+#find_package(Eigen3 3.3.8 REQUIRED)
 
 # Install Python module
 # See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
@@ -41,6 +41,8 @@ catkin_package(
 # Your package locations should be listed before other locations
 include_directories(
   include
+  /usr/local/include/cppad
+  /usr/local/include/eigen3
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -49,6 +51,14 @@ add_library(${PROJECT_NAME}
   src/kinematics.cpp
 )
 target_link_libraries(${PROJECT_NAME}
+  ${catkin_LIBRARIES}
+)
+
+## joint_state_mux
+add_executable(ad_test
+  src/ad_test.cpp
+)
+target_link_libraries(ad_test
   ${catkin_LIBRARIES}
 )
 
