@@ -5,7 +5,7 @@
 
  <launch>
   <!-- Launch UR10. -->
-  <include file="$(find mm_motion_control)/launch/real/ur10.launch" />
+  <include file="$(find mm_motion_control)/launch/ur10.launch" />
 
   <!-- Combine base and arm joint_state messages into a single one. -->
   <node pkg="mm_motion_control" type="joint_state_mux" name="joint_state_mux_node" output="screen" />
