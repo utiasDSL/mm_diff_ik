@@ -116,9 +116,6 @@ class RobotSim(object):
             qa = self.qa + (t - self.ta) * self.dqa
             qb = self.qb + (t - self.tb) * self.dqb
 
-            print(t - self.ta)
-            print(t - self.tb)
-
             q = np.concatenate((qb, qa))
             dq = np.concatenate((self.dqb, self.dqa))
 

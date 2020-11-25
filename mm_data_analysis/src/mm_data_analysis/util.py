@@ -67,14 +67,14 @@ def align_lists(t1, l1, t2, l2):
     return aligned
 
 
-def align_msgs(msgs1, msgs2):
-    ''' Align messages based on time stamp. Messages must have a header.stamp
-        field. msgs2 are aligned with msgs1. '''
-    # TODO this is broken
-    t0 = parse_t0(msgs1)
-    t1 = parse_time(msgs1)
-    t2 = parse_time(msgs2, t0=t0)
-    return align_lists(t1, msgs1, t2, msgs2)
+# TODO this is broken: commenting out until fixed so not used
+# def align_msgs(msgs1, msgs2):
+#     ''' Align messages based on time stamp. Messages must have a header.stamp
+#         field. msgs2 are aligned with msgs1. '''
+#     t0 = parse_t0(msgs1)
+#     t1 = parse_time(msgs1)
+#     t2 = parse_time(msgs2, t0=t0)
+#     return align_lists(t1, msgs1, t2, msgs2)
 
 
 def most_recent_file(pattern):
