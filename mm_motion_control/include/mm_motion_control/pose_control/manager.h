@@ -73,6 +73,9 @@ class IKControllerManager {
         JointVector q;
         JointVector dq;
 
+        // Most recent input command (joint velocity)
+        JointVector u;
+
         // Trajectory interpolator.
         PoseTrajectory trajectory;
 
@@ -114,11 +117,11 @@ class IKControllerManager {
         void force_des_cb(const std_msgs::Float64 msg);
 
         // Publish joint speeds computed by the controller to the arm and base.
-        void publish_joint_speeds(const JointVector& dq_cmd);
+        void publish_joint_speeds(const ros::Time& now);
 
         // Publish the current control state of the robot: actual and desired
         // poses, and pose error.
-        void publish_robot_state(const JointVector& u);
+        void publish_robot_state(const ros::Time& now);
 }; // class IKControllerManager
 
 } // namespace mm

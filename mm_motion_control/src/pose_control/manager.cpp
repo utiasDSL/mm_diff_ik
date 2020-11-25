@@ -64,6 +64,7 @@ bool IKControllerManager::init(ros::NodeHandle& nh) {
 
     q = JointVector::Zero();
     dq = JointVector::Zero();
+    u = JointVector::Zero();
 
     fd = 0;
     force = Eigen::Vector3d::Zero();
@@ -84,11 +85,12 @@ void IKControllerManager::loop(const double hz) {
     while (ros::ok()) {
         ros::spinOnce();
 
-        double t = ros::Time::now().toSec();
+        ros::Time now = ros::Time::now();
+        double t = now.toSec();
 
         // Do nothing if there is no trajectory active.
         if (!traj_active) {
-            publish_joint_speeds(JointVector::Zero());
+            publish_joint_speeds(now);
             controller.set_time(t);
             rate.sleep();
             continue;
@@ -102,10 +104,11 @@ void IKControllerManager::loop(const double hz) {
         }
 
         // Integrate using the model to get the best estimate of the state.
+        // TODO: not sure if it would be better to use u instead of dq
         double dt = t - last_joint_state_time;
         q = q + dt * dq;
+        last_joint_state_time = t;
 
-        JointVector u = JointVector::Zero();
         int status = controller.update(t, trajectory, q, dq, fd, force, pc,
                                        obstacles, u);
 
@@ -114,27 +117,27 @@ void IKControllerManager::loop(const double hz) {
             // Send zero velocity command if optimization fails (the velocity
             // commands are garbage in this case).
             ROS_WARN_STREAM("Optimization failed with status = " << status);
-            publish_joint_speeds(JointVector::Zero());
-        } else {
-            publish_joint_speeds(u);
-            dq = u;
+            u = JointVector::Zero();
         }
 
-        publish_robot_state(u);
+        publish_joint_speeds(now);
+        publish_robot_state(now);
 
         rate.sleep();
     }
 }
 
 
-void IKControllerManager::publish_joint_speeds(const JointVector& dq_cmd) {
-    trajectory_msgs::JointTrajectory traj_arm;
-    geometry_msgs::Twist twist_base;
+void IKControllerManager::publish_joint_speeds(const ros::Time& now) {
+    trajectory_msgs::JointTrajectory traj_arm_msg;
+    geometry_msgs::Twist twist_base_msg;
 
-    joint_speed_msgs(dq_cmd, traj_arm, twist_base);
+    joint_speed_msgs(u, traj_arm_msg, twist_base_msg);
 
-    ur10_joint_vel_pub.publish(traj_arm);
-    rb_joint_vel_pub.publish(twist_base);
+    traj_arm_msg.header.stamp = now;
+
+    ur10_joint_vel_pub.publish(traj_arm_msg);
+    rb_joint_vel_pub.publish(twist_base_msg);
 }
 
 
@@ -159,9 +162,7 @@ void IKControllerManager::point_traj_cb(const geometry_msgs::PoseStamped& msg) {
 
 
 void IKControllerManager::mm_joint_states_cb(const sensor_msgs::JointState& msg) {
-    // double dt = msg.header.stamp.toSec() - last_joint_state_time;
     last_joint_state_time = msg.header.stamp.toSec();
-    // ROS_INFO_STREAM(dt);
     for (int i = 0; i < mm::NUM_JOINTS; ++i) {
         q(i) = msg.position[i];
         dq(i) = msg.velocity[i];
@@ -214,8 +215,8 @@ void IKControllerManager::obstacle_cb(const mm_msgs::Obstacles& msg) {
 }
 
 
-void IKControllerManager::publish_robot_state(const JointVector& u) {
-    ros::Time now = ros::Time::now();
+void IKControllerManager::publish_robot_state(const ros::Time& now) {
+    // ros::Time now = ros::Time::now();
     double t = now.toSec();
 
     // Actual pose.
