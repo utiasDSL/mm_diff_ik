@@ -59,7 +59,8 @@ bool IKControllerManager::init(ros::NodeHandle& nh) {
     rb_joint_vel_pub = nh.advertise<geometry_msgs::Twist>(
             "/ridgeback_velocity_controller/cmd_vel", 1);
 
-    controller.init(ros::Time::now().toSec());
+    double now = ros::Time::now().toSec();
+    controller.init(now);
 
     q = JointVector::Zero();
     dq = JointVector::Zero();
@@ -70,6 +71,8 @@ bool IKControllerManager::init(ros::NodeHandle& nh) {
     pc = Eigen::Vector3d::Zero();
 
     traj_active = false;
+
+    last_joint_state_time = now;
 }
 
 
@@ -91,11 +94,16 @@ void IKControllerManager::loop(const double hz) {
             continue;
         }
 
+        // Also nothing to do if the current trajectory is done.
         if (trajectory.done(t)) {
             ROS_INFO("Trajectory ended.");
             traj_active = false;
             continue;
         }
+
+        // Integrate using the model to get the best estimate of the state.
+        double dt = t - last_joint_state_time;
+        q = q + dt * dq;
 
         JointVector u = JointVector::Zero();
         int status = controller.update(t, trajectory, q, dq, fd, force, pc,
@@ -109,12 +117,10 @@ void IKControllerManager::loop(const double hz) {
             publish_joint_speeds(JointVector::Zero());
         } else {
             publish_joint_speeds(u);
+            dq = u;
         }
 
-        Eigen::Affine3d Td;
-        Vector6d Vd;
-        trajectory.sample(t, Td, Vd);
-        publish_robot_state(Td, Vd, u);
+        publish_robot_state(u);
 
         rate.sleep();
     }
@@ -153,6 +159,9 @@ void IKControllerManager::point_traj_cb(const geometry_msgs::PoseStamped& msg) {
 
 
 void IKControllerManager::mm_joint_states_cb(const sensor_msgs::JointState& msg) {
+    // double dt = msg.header.stamp.toSec() - last_joint_state_time;
+    last_joint_state_time = msg.header.stamp.toSec();
+    // ROS_INFO_STREAM(dt);
     for (int i = 0; i < mm::NUM_JOINTS; ++i) {
         q(i) = msg.position[i];
         dq(i) = msg.velocity[i];
@@ -205,13 +214,9 @@ void IKControllerManager::obstacle_cb(const mm_msgs::Obstacles& msg) {
 }
 
 
-void IKControllerManager::publish_robot_state(const Eigen::Affine3d& Td,
-                                              const Vector6d& Vd,
-                                              const JointVector& u) {
-    // Desired pose.
-    Eigen::Vector3d pos_des = Td.translation();
-    Eigen::Matrix3d Rd = Td.rotation();
-    Eigen::Quaterniond quat_des(Rd);
+void IKControllerManager::publish_robot_state(const JointVector& u) {
+    ros::Time now = ros::Time::now();
+    double t = now.toSec();
 
     // Actual pose.
     Eigen::Affine3d w_T_tool;
@@ -219,6 +224,16 @@ void IKControllerManager::publish_robot_state(const Eigen::Affine3d& Td,
     Eigen::Vector3d pos_act = w_T_tool.translation();
     Eigen::Matrix3d Re = w_T_tool.rotation();
     Eigen::Quaterniond quat_act(Re);
+
+    // Sample desired trajectory.
+    Eigen::Affine3d Td;
+    Vector6d Vd;
+    trajectory.sample(t, Td, Vd);
+
+    // Desired pose.
+    Eigen::Vector3d pos_des = Td.translation();
+    Eigen::Matrix3d Rd = Td.rotation();
+    Eigen::Quaterniond quat_des(Rd);
 
     // Error.
     Eigen::Vector3d pos_err = pos_des - pos_act;
@@ -256,7 +271,7 @@ void IKControllerManager::publish_robot_state(const Eigen::Affine3d& Td,
         state_pub->msg_.u = std::vector<double>(u.data(), u.data() + u.size());
 
         state_pub->msg_.header.frame_id = "world";
-        state_pub->msg_.header.stamp = ros::Time::now();
+        state_pub->msg_.header.stamp = now;
         state_pub->unlockAndPublish();
     }
 }

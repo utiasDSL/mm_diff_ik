@@ -286,15 +286,15 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
     // trajectory
     // Look one timestep into the future to see where we want to end up.
     Eigen::Affine3d Td;
-    Vector6d twistd;
+    Vector6d Vd;
     // trajectory.sample(t + CONTROL_TIMESTEP, Td, twistd);
-    trajectory.sample(t, Td, twistd);
+    trajectory.sample(t, Td, Vd);
 
     /*** OBJECTIVE ***/
 
     JointMatrix H;
     JointVector g;
-    build_objective(Td, twistd, q, dq, fd, f, pc, dt, H, g);
+    build_objective(Td, Vd, q, dq, fd, f, pc, dt, H, g);
 
 
     /*** BOUNDS ***/

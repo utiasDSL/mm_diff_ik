@@ -86,6 +86,8 @@ class IKControllerManager {
         // True if we currently have a trajectory to follow, false otherwise.
         bool traj_active;
 
+        double last_joint_state_time;
+
 
         /** FUNCTIONS **/
 
@@ -116,9 +118,7 @@ class IKControllerManager {
 
         // Publish the current control state of the robot: actual and desired
         // poses, and pose error.
-        void publish_robot_state(const Eigen::Affine3d& Td,
-                                 const Vector6d& Vd,
-                                 const JointVector& u);
+        void publish_robot_state(const JointVector& u);
 }; // class IKControllerManager
 
 } // namespace mm
