@@ -9,6 +9,7 @@ rosbag record -o "$1"    \
   /vicon/ThingBase2/ThingBase2 \
   /vicon/Board/Board \
   /vicon/Barrel/Barrel \
+  /vicon/TrayTest/TrayTest \
   /vicon/markers \
   /robotiq_force_torque_wrench \
   /force_control/state \
