@@ -8,12 +8,13 @@ from trajectory_msgs.msg import JointTrajectory
 from geometry_msgs.msg import Twist
 
 
-PUB_RATE = 125.0
 SIM_RATE = 125.0  # Hz
 DT = 1. / SIM_RATE
 
-VEL_LIM = np.array([1.0, 1.0, 2.0, 2.16, 2.16, 3.15, 3.2, 3.2, 3.2])
-ACC_LIM = np.array([1, 1, 1, 8, 8, 8, 8, 8, 8])
+BASE_VEL_LIM = np.array([1.0, 1.0, 2.0])
+ARM_VEL_LIM = np.array([2.16, 2.16, 3.15, 3.2, 3.2, 3.2])
+
+# ACC_LIM = np.array([1, 1, 1, 8, 8, 8, 8, 8, 8])
 
 
 def bound_array(a, lb, ub):
@@ -53,16 +54,8 @@ class RobotSim(object):
         self.ur10_joint_speed_sub = rospy.Subscriber('/ur_driver/joint_speed',
                 JointTrajectory, self.ur10_joint_speed_cb)
 
-        # self.pub_timer = rospy.Timer(rospy.Duration(1. / PUB_RATE), self.publish_joint_states)
-
     def rb_joint_speed_cb(self, msg):
         ''' Callback for velocity commands for the base. '''
-        # print('Received RB speeds = {}'.format(msg.linear))
-        # dq_base = np.array([msg.linear.x, msg.linear.y, msg.angular.z])
-        # with self.lock:
-        #     self.dq_last[:3] = self.dq[:3]
-        #     self.dq[:3] = dq_base
-
         with self.lock:
             # update time
             # RB controller doesn't give a timestamp with the message, so we
@@ -74,10 +67,13 @@ class RobotSim(object):
             # integrate from last time
             self.qb += dt * self.dqb
 
-            self.dqb = np.array([msg.linear.x, msg.linear.y, msg.angular.z])
+            dqb = np.array([msg.linear.x, msg.linear.y, msg.angular.z])
 
-        # self.ddq[:3] = (dq_base - self.dq[:3]) * 125.0
-        # self.q[:3] += 0.008 * dq_base
+            # apply velocity limits
+            self.dqb = bound_array(dqb, -BASE_VEL_LIM, BASE_VEL_LIM)
+
+            if not np.allclose(dqb, self.dqb):
+                rospy.logwarn('Base velocity constraints violated.')
 
     def ur10_joint_speed_cb(self, msg):
         ''' Callback for velocity commands to the arm joints. '''
@@ -94,19 +90,16 @@ class RobotSim(object):
             # was
             self.qa += dt * self.dqa
 
-            self.dqa = np.array(msg.points[0].velocities)
+            dqa = np.array(msg.points[0].velocities)
 
-        # dq_arm = np.array(msg.points[0].velocities)
-        # with self.lock:
-        #     self.dq_last[3:] = self.dq[3:]
-        #     self.dq[3:] = dq_arm
-        # self.ddq[3:] = (dq_arm - self.dq[3:]) * 125.0
-        # self.q[3:] += 0.008 * dq_arm
+            # apply velocity limits
+            self.dqa = bound_array(dqa, -ARM_VEL_LIM, ARM_VEL_LIM)
+
+            if not np.allclose(dqa, self.dqa):
+                rospy.logwarn('Arm velocity constraints violated.')
 
     def publish_joint_states(self):
         ''' Publish current joint states (position and velocity). '''
-
-        # locking not needed here since we're only reading values
 
         with self.lock:
             now = rospy.Time.now()
@@ -141,30 +134,6 @@ class RobotSim(object):
             # joint_state.effort = list(self.ddq)  # abuse of notation
             self.state_pub.publish(joint_state)
 
-    def step(self):
-        # now = rospy.get_time()
-        # dt = now - self.last_time
-        # self.last_time = now
-
-        # # velocity limits
-        # dq1 = bound_array(self.dq, -VEL_LIM, VEL_LIM)
-        #
-        # # TODO it would be better to enforce these when messages are received
-        # if (dq1 - self.dq).dot(dq1 - self.dq) > 1e-8:
-        #     rospy.loginfo('Joint velocity limits hit.')
-        #
-        # # acceleration limits
-        # dq2 = bound_array(dq1, -ACC_LIM * DT + self.dq_last, ACC_LIM * DT + self.dq_last)
-        #
-        # if not (dq2 == dq1).all():
-        #     rospy.loginfo('Joint acceleration limits hit.')
-
-        # Integrate to get current joint angles.
-        # with self.lock:
-        #     self.q = self.q + DT * self.dq
-
-        self.publish_joint_states()
-
 
 def main():
     rospy.init_node('mm_robot_sim')
@@ -178,7 +147,7 @@ def main():
     sim = RobotSim(q)
 
     while not rospy.is_shutdown():
-        sim.step()
+        sim.publish_joint_states()
         rate.sleep()
 
 
