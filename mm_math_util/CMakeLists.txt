@@ -7,8 +7,6 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
 )
-find_package(cmake_modules REQUIRED)
-find_package(Eigen3 REQUIRED)
 
 
 ###################################
@@ -32,6 +30,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
   include
+  /usr/local/include/eigen3
   ${catkin_INCLUDE_DIRS}
 )
 

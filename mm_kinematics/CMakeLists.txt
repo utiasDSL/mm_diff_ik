@@ -10,11 +10,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   mm_math_util
 )
-find_package(cmake_modules REQUIRED)
-find_package(Eigen3 REQUIRED)
 
 # Install Python module
-# See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
 catkin_python_setup()
 
 
@@ -41,8 +38,8 @@ catkin_package(
 # Your package locations should be listed before other locations
 include_directories(
   include
-  # /usr/local/include/cppad
-  # /usr/local/include/eigen3
+  /usr/local/include/cppad
+  /usr/local/include/eigen3
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -54,12 +51,12 @@ target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
 )
 
-# add_executable(ad_test
-#   src/ad_test.cpp
-# )
-# target_link_libraries(ad_test
-#   ${catkin_LIBRARIES}
-# )
+add_executable(ad_test
+  src/ad_test.cpp
+)
+target_link_libraries(ad_test
+  ${catkin_LIBRARIES}
+)
 
 # Tests
 catkin_add_executable_with_gtest(test_kinematics

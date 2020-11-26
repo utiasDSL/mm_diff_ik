@@ -11,8 +11,6 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   mm_math_util
 )
-find_package(cmake_modules REQUIRED)
-find_package(Eigen3 REQUIRED)
 
 
 ###################################
@@ -25,10 +23,9 @@ find_package(Eigen3 REQUIRED)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES mm_vicon
+  INCLUDE_DIRS include
+  LIBRARIES mm_vicon
   CATKIN_DEPENDS mm_math_util
-  # DEPENDS eigen
 )
 
 ###########
@@ -39,9 +36,9 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
   include
+  /usr/local/include/eigen3
   ${mm_math_util_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
-  ${Eigen3_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
