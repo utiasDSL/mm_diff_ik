@@ -19,7 +19,10 @@ find_package(catkin REQUIRED COMPONENTS
   mm_kinematics
   mm_math_util
   message_runtime
+  cmake_modules
 )
+
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 ###################################
 ## catkin specific configuration ##
@@ -45,8 +48,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${mm_kinematics_INCLUDE_DIRS}
   ${mm_math_util_INCLUDE_DIRS}
-  /usr/local/include/eigen3
-  /usr/local/include/eigen-quadprog
+  ${EIGEN3_INCLUDE_DIRS}
   /usr/local/include/qpOASES
 )
 

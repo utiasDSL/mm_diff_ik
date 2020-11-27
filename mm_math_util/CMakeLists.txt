@@ -6,8 +6,10 @@ add_compile_options(-std=c++11)
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  cmake_modules
 )
 
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 ###################################
 ## catkin specific configuration ##
@@ -30,18 +32,9 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
   include
-  /usr/local/include/eigen3
   ${catkin_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
 )
-
-# Create C++ library
-# add_library(${PROJECT_NAME}
-#   src/kinematics.cpp
-# )
-# target_link_libraries(${PROJECT_NAME}
-#   ${catkin_LIBRARIES}
-# )
-
 
 # Tests
 catkin_add_executable_with_gtest(test_differentiation

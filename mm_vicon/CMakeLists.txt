@@ -10,7 +10,10 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   sensor_msgs
   mm_math_util
+  cmake_modules
 )
+
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 
 ###################################
@@ -36,9 +39,9 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
   include
-  /usr/local/include/eigen3
   ${mm_math_util_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library

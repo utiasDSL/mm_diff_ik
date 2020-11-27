@@ -9,7 +9,10 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   mm_math_util
+  cmake_modules
 )
+
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 # Install Python module
 catkin_python_setup()
@@ -39,7 +42,7 @@ catkin_package(
 include_directories(
   include
   /usr/local/include/cppad
-  /usr/local/include/eigen3
+  ${EIGEN3_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
 )
 
