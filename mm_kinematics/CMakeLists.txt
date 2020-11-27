@@ -56,6 +56,7 @@ add_executable(ad_test
 )
 target_link_libraries(ad_test
   ${catkin_LIBRARIES}
+  dl
 )
 
 # Tests
