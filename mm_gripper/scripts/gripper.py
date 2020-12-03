@@ -30,12 +30,15 @@ if __name__ == '__main__':
     msg.rGTO = 1
     msg.rATR = 0
     msg.rICF = 0
+
+    # position [0, 255]
     if open_:
         msg.rPRA = 0
     else:
         msg.rPRA = 255
-    msg.rSPA = 255
-    msg.rFRA = 100
+
+    msg.rSPA = 255  # speed [0, 255]
+    msg.rFRA = 100  # force [0, 255]
 
     pub.publish(msg)
 

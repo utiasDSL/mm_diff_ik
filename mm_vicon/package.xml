@@ -8,6 +8,7 @@
 
   <depend>roscpp</depend>
   <depend>mm_math_util</depend>
+  <depend>vicon_bridge</depend>
 
   <buildtool_depend>catkin</buildtool_depend>
 </package>
