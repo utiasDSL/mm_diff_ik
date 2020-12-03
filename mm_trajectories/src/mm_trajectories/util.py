@@ -4,8 +4,61 @@ from __future__ import print_function
 
 import rospy
 import numpy as np
+import tf.transformations as tfs
 
 from sensor_msgs.msg import JointState
+
+import mm_msgs.conversions as conversions
+from mm_kinematics import kinematics
+from mm_msgs.msg import PoseTrajectory
+
+
+def create_waypoints(traj, duration, dt):
+    N = int(duration / dt) + 1
+    ts = np.linspace(0, duration, N)
+
+    # sample the trajectory
+    ps, vs, as_ = traj.sample_linear(ts)
+    qs, ws, alphas = traj.sample_rotation(ts)
+
+    # import IPython
+    # IPython.embed()
+
+    # convert to waypoint messages
+    waypoints = []
+    for i in xrange(N):
+        waypoint = conversions.waypoint_msg(ts[i], ps[i, :], vs[i, :], as_[i, :], qs[i, :], ws[i, :], alphas[i, :])
+        waypoints.append(waypoint)
+
+    return waypoints
+
+
+def publish(waypoints, dt):
+    traj_pub = rospy.Publisher('/trajectory/poses', PoseTrajectory,
+                               queue_size=10)
+
+    # Need to wait a second between setting up the publisher and actually using
+    # it to publish a message.
+    rospy.sleep(1.0)
+
+    msg = PoseTrajectory()
+    msg.header.stamp = rospy.Time.now()
+    msg.points = waypoints
+    msg.dt = rospy.Duration(dt)
+
+    traj_pub.publish(msg)
+
+
+def wait_for_initial_pose(dt):
+    # wait until current joint state is received
+    q0, dq0 = JointInitializer.wait_for_msg(dt)
+
+    # calculate initial tool position and velocity
+    T0 = kinematics.calc_w_T_tool(q0)
+    p0 = tfs.translation_from_matrix(T0)
+    quat0 = tfs.quaternion_from_matrix(T0)
+
+    return p0, quat0
 
 
 class JointInitializer(object):

@@ -9,9 +9,7 @@ from mm_trajectories import timescaling, path, util
 
 
 DT = 0.1
-LX = 3.0
-AMPLITUDE = 0.5
-FREQUENCY = 1.0
+RADIUS = 0.5
 
 
 def main():
@@ -23,12 +21,12 @@ def main():
     p0, quat0 = util.wait_for_initial_pose(DT)
 
     scaling = timescaling.QuinticTimeScaling(duration)
-    traj = path.SineXY(p0, quat0, LX, AMPLITUDE, FREQUENCY, scaling, duration)
+    traj = path.Circle(p0, RADIUS, quat0, scaling, duration)
     waypoints = util.create_waypoints(traj, duration, DT)
 
     util.publish(waypoints, DT)
 
-    print('Launched sine x-y trajectory with duration of {} seconds.'.format(duration))
+    print('Launched circle trajectory with duration of {} seconds.'.format(duration))
 
 
 if __name__ == '__main__':

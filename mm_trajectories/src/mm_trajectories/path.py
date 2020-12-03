@@ -2,111 +2,9 @@
 
 from __future__ import print_function, division
 
-import rospy
 import numpy as np
 import tf.transformations as tfs
 
-from mm_msgs.msg import PoseTrajectory
-
-import mm_kinematics.kinematics as kinematics
-import mm_msgs.conversions as conversions
-from mm_trajectories.util import JointInitializer
-
-
-def create_waypoints(traj, duration, dt):
-    waypoints = []
-    t = 0
-    tf = duration
-
-    N = int(tf / dt) + 1
-    for _ in xrange(N):
-        p, v, a = traj.sample_linear(t)
-        q, w, alpha = traj.sample_rotation(t)
-
-        waypoint = conversions.waypoint_msg(t, p, v, a, q, w, alpha)
-        waypoints.append(waypoint)
-
-        t += dt
-
-    return waypoints
-
-
-def launch(trajectory, duration, dt=0.1):
-    traj_pub = rospy.Publisher('/trajectory/poses', PoseTrajectory,
-                               queue_size=10)
-
-    # Need to wait a second between setting up the publisher and actually using
-    # it to publish a message.
-    rospy.sleep(1.0)
-
-    # wait until current joint state is received
-    q0, dq0 = JointInitializer.wait_for_msg(dt)
-
-    # calculate initial tool position and velocity
-    T0 = kinematics.calc_w_T_tool(q0)
-    p0 = tfs.translation_from_matrix(T0)
-    quat0 = tfs.quaternion_from_matrix(T0)
-
-    traj = trajectory(p0, quat0, duration)
-    waypoints = create_waypoints(traj, duration, dt)
-
-    msg = PoseTrajectory()
-    msg.header.stamp = rospy.Time.now()
-    msg.points = waypoints
-    msg.dt = rospy.Duration(dt)
-
-    traj_pub.publish(msg)
-
-    print('Launched {} with duration of {} seconds.'.format(
-        traj.name, duration))
-
-
-# == Time-scalings == #
-
-class LinearTimeScaling:
-    ''' Linear time-scaling: constant velocity. '''
-    def __init__(self, duration):
-        self.duration = duration
-
-    def eval(self, t):
-        s = t / self.duration
-        ds = np.ones_like(t) / self.duration
-        dds = np.zeros_like(t)
-        return s, ds, dds
-
-
-class CubicTimeScaling:
-    ''' Cubic time-scaling: zero velocity at end points. '''
-    def __init__(self, duration):
-        self.coeffs = np.array([0, 0, 3 / duration**2, -2 / duration**3])
-
-    def eval(self, t):
-        s = self.coeffs.dot([np.ones_like(t), t, t**2, t**3])
-        ds = self.coeffs[1:].dot([np.ones_like(t), 2*t, 3*t**2])
-        dds = self.coeffs[2:].dot([2*np.ones_like(t), 6*t])
-        return s, ds, dds
-
-
-class QuinticTimeScaling:
-    ''' Quintic time-scaling: zero velocity and acceleration at end points. '''
-    def __init__(self, T):
-        A = np.array([[1, 0, 0, 0, 0, 0],
-                      [1, T, T**2, T**3, T**4, T**5],
-                      [0, 1, 0, 0, 0, 0],
-                      [0, 1, 2*T, 3*T**2, 4*T**3, 5*T**4],
-                      [0, 0, 2, 0, 0, 0],
-                      [0, 0, 2, 6*T, 12*T**2, 20*T**3]])
-        b = np.array([0, 1, 0, 0, 0, 0])
-        self.coeffs = np.linalg.solve(A, b)
-
-    def eval(self, t):
-        s = self.coeffs.dot([np.ones_like(t), t, t**2, t**3, t**4, t**5])
-        ds = self.coeffs[1:].dot([np.ones_like(t), 2*t, 3*t**2, 4*t**3, 5*t**4])
-        dds = self.coeffs[2:].dot([2*np.ones_like(t), 6*t, 12*t**2, 20*t**3])
-        return s, ds, dds
-
-
-# == Paths == #
 
 class PointToPoint:
     ''' Point-to-point trajectory. '''
@@ -119,13 +17,89 @@ class PointToPoint:
 
     def sample_linear(self, t):
         s, ds, dds = self.timescaling.eval(t)
-        p = self.p0 + s * (self.p1 - self.p0)
-        v = ds * (self.p1 - self.p0)
-        a = dds * (self.p1 - self.p0)
+        p = self.p0 + (s * (self.p1 - self.p0)[:, None]).T
+        v = (ds * (self.p1 - self.p0)[:, None]).T
+        a = (dds * (self.p1 - self.p0)[:, None]).T
         return p, v, a
 
     def sample_rotation(self, t):
-        return self.quat, np.zeros(3), np.zeros(3)
+        n = t.shape[0]
+        return np.tile(self.quat, (n, 1)), np.zeros((n, 3)), np.zeros((n, 3))
+
+
+class Circle:
+    ''' Circular trajectory. '''
+    def __init__(self, p0, r, quat, timescaling, duration):
+        ''' p0 is the starting point; center is p0 + [r, 0] '''
+        self.r = r
+        self.quat = quat
+        self.pc = p0 + np.array([0, -r, 0])  # start midway up left side of circle
+        self.timescaling = timescaling
+        self.duration = duration
+
+    def sample_linear(self, t):
+        s, ds, dds = self.timescaling.eval(t)
+
+        cs = np.cos(2*np.pi*s)
+        ss = np.sin(2*np.pi*s)
+        p = self.pc + self.r * np.array([np.zeros_like(t), cs, ss]).T
+
+        dpds = 2*np.pi*self.r * np.array([np.zeros_like(t), -ss, cs])
+        v = dpds * ds
+
+        dpds2 = 4*np.pi**2*self.r * np.array([np.zeros_like(t), -cs, -ss])
+        a = dpds * dds + dpds2 * ds**2
+
+        # ugly transpose tricks to make dimensions work out
+        return p, v.T, a.T
+
+    def sample_rotation(self, t):
+        n = t.shape[0]
+        return np.tile(self.quat, (n, 1)), np.zeros((n, 3)), np.zeros((n, 3))
+
+
+class SineXY:
+    ''' Sinusoidal trajectory: linear in x, sinusoidal in y, constant in z. '''
+    def __init__(self, p0, quat0, lx, amp, freq, timescaling, duration):
+        self.p0 = p0
+        self.quat = quat0
+        self.lx = lx
+        self.A = amp
+
+        # multiply by 2*pi so that sin(s) = sin(2*pi) at s = 1
+        self.w = freq * 2 * np.pi
+
+        self.timescaling = timescaling
+        self.duration = duration
+
+    def sample_linear(self, t):
+        s, ds, dds = self.timescaling.eval(t)
+
+        # x is linear in s
+        x = self.p0[0] + self.lx * s
+        dx = self.lx * ds
+        ddx = self.lx * dds
+
+        # y = A*sin(w*s)
+        y = self.p0[1] + self.A*np.sin(self.w*s)
+        dyds = self.A*self.w*np.cos(self.w*s)
+        dyds2 = -self.w**2 * y
+        dy = dyds * ds
+        ddy = dyds * dds + dyds2 * ds**2
+
+        # z = const
+        z = self.p0[2] * np.ones_like(t)
+        dz = ddz = np.zeros_like(t)
+
+        p = np.vstack((x, y, z)).T
+        v = np.vstack((dx, dy, dz)).T
+        a = np.vstack((ddx, ddy, ddz)).T
+
+        return p, v, a
+
+    def sample_rotation(self, t):
+        n = t.shape[0]
+        return np.tile(self.quat, (n, 1)), np.zeros((n, 3)), np.zeros((n, 3))
 
 
 # == Old trajectories == #
