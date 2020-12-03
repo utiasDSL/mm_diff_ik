@@ -13,8 +13,8 @@ namespace mm {
 
 static const double LOOKAHEAD_TIMESTEP = 0.08;
 
-static const int NUM_HORIZON = 5; // steps to look ahead
-static const int NUM_ITER = 2; // number of relinearizations in SQP
+static const int NUM_HORIZON = 10; // steps to look ahead
+static const int NUM_ITER = 1; // number of relinearizations in SQP
 static const int NUM_WSR = 200; // max number of working set recalculations
 
 static const int NUM_OPT = NUM_JOINTS * NUM_HORIZON;
@@ -50,6 +50,11 @@ class MPCOptimizer {
         typedef Eigen::Matrix<double, 6 * NUM_HORIZON, 1> OptErrorVector;
         typedef Eigen::Matrix<double, 6 * NUM_HORIZON, 6 * NUM_HORIZON> OptErrorWeightMatrix;
         typedef Eigen::Matrix<double, 6 * NUM_HORIZON, NUM_JOINTS * NUM_HORIZON> OptLiftedJacobian;
+
+        // Constant matrices.
+        OptErrorWeightMatrix Qbar;
+        OptWeightMatrix Rbar;
+        OptWeightMatrix Ebar;
 
         // SQP to solve.
         qpOASES::SQProblem sqp;
