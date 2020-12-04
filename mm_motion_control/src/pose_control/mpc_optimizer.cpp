@@ -47,38 +47,64 @@ bool MPCOptimizer::init() {
         }
     }
 
+    // Velocity and acceleration limits.
+    dq_min = OptVector::Zero();
+    dq_max = OptVector::Zero();
+    ddq_min = OptVector::Zero();
+    ddq_max = OptVector::Zero();
+
+    for (int i = 0; i < NUM_HORIZON; ++i) {
+        dq_min.segment<NUM_JOINTS>(i * NUM_JOINTS) = VELOCITY_LIMITS_LOWER;
+        dq_max.segment<NUM_JOINTS>(i * NUM_JOINTS) = VELOCITY_LIMITS_UPPER;
+        ddq_min.segment<NUM_JOINTS>(i * NUM_JOINTS) = ACCEL_LIMITS_LOWER;
+        ddq_max.segment<NUM_JOINTS>(i * NUM_JOINTS) = ACCEL_LIMITS_UPPER;
+    }
+
+    // A has identity matrices on the main block diagonal, and negative
+    // identity matrices on the lower block diagonal
+    A = OptWeightMatrix::Identity();
+    Eigen::Matrix<double, NUM_OPT - NUM_JOINTS, NUM_OPT - NUM_JOINTS> A_1 = -Eigen::Matrix<double, NUM_OPT - NUM_JOINTS, NUM_OPT - NUM_JOINTS>::Identity();
+    A.block<NUM_OPT - NUM_JOINTS, NUM_OPT - NUM_JOINTS>(NUM_JOINTS, 0) += A_1;
+
     return true;
 }
 
 
 int MPCOptimizer::solve_sqp(OptWeightMatrix& H, OptVector& g, OptVector& lb,
-                            OptVector& ub, OptVector& step) {
+                            OptVector& ub, OptWeightMatrix& A, OptVector& lbA,
+                            OptVector& ubA, OptVector& du) {
+    using OptWeightMatrixRM = Eigen::Matrix<qpOASES::real_t, NUM_OPT, NUM_OPT,
+                                            Eigen::RowMajor>;
+
     // Convert to row-major order. Only meaningful for matrices, not
     // vectors.
-    Eigen::Matrix<qpOASES::real_t,
-                  NUM_OPT, NUM_OPT,
-                  Eigen::RowMajor> H_rowmajor = H;
+    OptWeightMatrixRM H_rowmajor = H;
+    OptWeightMatrixRM A_rowmajor = A;
 
     // Convert eigen data to raw arrays for qpOASES.
     qpOASES::real_t *H_data = H_rowmajor.data();
     qpOASES::real_t *g_data = g.data();
+    qpOASES::real_t *A_data = A_rowmajor.data();
 
     qpOASES::real_t *lb_data = lb.data();
     qpOASES::real_t *ub_data = ub.data();
+
+    qpOASES::real_t *lbA_data = lbA.data();
+    qpOASES::real_t *ubA_data = ubA.data();
 
     qpOASES::int_t nWSR = NUM_WSR;
 
     // Solve the QP.
     qpOASES::returnValue ret;
     if (sqp.isInitialised()) {
-        ret = sqp.hotstart(H_data, g_data, NULL, lb_data, ub_data, NULL, NULL, nWSR);
+        ret = sqp.hotstart(H_data, g_data, A_data, lb_data, ub_data, lbA_data, ubA_data, nWSR);
     } else {
-        ret = sqp.init(H_data, g_data, NULL, lb_data, ub_data, NULL, NULL, nWSR);
+        ret = sqp.init(H_data, g_data, A_data, lb_data, ub_data, lbA_data, ubA_data, nWSR);
     }
 
-    qpOASES::real_t step_raw[NUM_OPT];
-    sqp.getPrimalSolution(step_raw);
-    step = Eigen::Map<OptVector>(step_raw); // map back to eigen
+    qpOASES::real_t du_data[NUM_OPT];
+    sqp.getPrimalSolution(du_data);
+    du = Eigen::Map<OptVector>(du_data); // map back to eigen
 
     return qpOASES::getSimpleStatus(ret);
 }
@@ -87,7 +113,7 @@ int MPCOptimizer::solve_sqp(OptWeightMatrix& H, OptVector& g, OptVector& lb,
 int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
                         const JointVector& q0, const JointVector& dq0,
                         const std::vector<ObstacleModel>& obstacles,
-                        double dt, JointVector& dq_opt) {
+                        double dt, JointVector& u) {
     // Stacked vector of initial joint positions.
     OptVector q0bar = OptVector::Zero();
     for (int i = 0; i < NUM_HORIZON; ++i) {
@@ -96,25 +122,14 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
 
     // Current guess for optimal joint positions and velocities.
     OptVector qbar = q0bar;
-    OptVector dqbar = OptVector::Zero();
+    OptVector ubar = OptVector::Zero();
     OptErrorVector ebar = OptErrorVector::Zero();
     OptLiftedJacobian Jbar = OptLiftedJacobian::Zero();
-
-    // Velocity bounds.
-    OptVector dq_min = OptVector::Zero();
-    OptVector dq_max = OptVector::Zero();
-    for (int i = 0; i < NUM_HORIZON; ++i) {
-        dq_min.segment<NUM_JOINTS>(i * NUM_JOINTS) = VELOCITY_LIMITS_LOWER;
-        dq_max.segment<NUM_JOINTS>(i * NUM_JOINTS) = VELOCITY_LIMITS_UPPER;
-    }
 
     // Roll out desired trajectory. The first desired pose is one control
     // timestep into the future (this is the control input for which we wish to
     // solve). Each subsequent one is one lookahead time step into the future,
     // which are generally larger than the control timesteps.
-    //
-    // TODO handling overshooting the end of the trajectory isn't good
-    // because it spreads error for final position over time
     std::vector<Eigen::Affine3d> Tds;
     for (int k = 1; k <= NUM_HORIZON; ++k) {
         double t = t0 + k * LOOKAHEAD_TIMESTEP;
@@ -131,7 +146,7 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
     // Outer loop iterates over linearizations (i.e. QP solves).
     for (int i = 0; i < NUM_ITER; ++i) {
         // Integrate to get joint positions.
-        qbar = q0bar + LOOKAHEAD_TIMESTEP * Ebar * dqbar;
+        qbar = q0bar + LOOKAHEAD_TIMESTEP * Ebar * ubar;
 
         // Inner loop iterates over timesteps to build up the matrices.
         // We're abusing indexing notation slightly here: mathematically, we
@@ -158,23 +173,30 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
 
         // Construct overall objective matrices.
         OptWeightMatrix H = LOOKAHEAD_TIMESTEP * LOOKAHEAD_TIMESTEP * Ebar.transpose() * Jbar.transpose() * Qbar * Jbar * Ebar + Rbar;
-        OptVector g = LOOKAHEAD_TIMESTEP * ebar.transpose() * Qbar * Jbar * Ebar + dqbar.transpose() * Rbar;
+        OptVector g = LOOKAHEAD_TIMESTEP * ebar.transpose() * Qbar * Jbar * Ebar + ubar.transpose() * Rbar;
 
-        // Bounds
-        OptVector lb = dq_min - dqbar;
-        OptVector ub = dq_max - dqbar;
+        // Velocity bounds
+        OptVector lb = dq_min - ubar;
+        OptVector ub = dq_max - ubar;
 
-        OptVector step = OptVector::Zero();
-        status = solve_sqp(H, g, lb, ub, step);
+        // Acceleration constraints
+        OptVector ubar_1;
+        ubar_1 << dq0, ubar.head<NUM_OPT - NUM_JOINTS>();
+        OptVector nu = ubar - ubar_1;
+        OptVector lbA = LOOKAHEAD_TIMESTEP * ddq_min - nu;
+        OptVector ubA = LOOKAHEAD_TIMESTEP * ddq_max - nu;
+
+        OptVector du = OptVector::Zero();
+        status = solve_sqp(H, g, lb, ub, A, lbA, ubA, du);
         if (status) {
             return status;
         }
 
-        // dqbar updated by new step
-        dqbar = dqbar + step;
+        // ubar updated by new step
+        ubar = ubar + du;
     }
 
-    dq_opt = dqbar.head<NUM_JOINTS>();
+    u = ubar.head<NUM_JOINTS>();
     return status;
 }
 

@@ -14,7 +14,7 @@ namespace mm {
 static const double LOOKAHEAD_TIMESTEP = 0.08;
 
 static const int NUM_HORIZON = 10; // steps to look ahead
-static const int NUM_ITER = 1; // number of relinearizations in SQP
+static const int NUM_ITER = 2; // number of relinearizations in SQP
 static const int NUM_WSR = 200; // max number of working set recalculations
 
 static const int NUM_OPT = NUM_JOINTS * NUM_HORIZON;
@@ -22,7 +22,7 @@ static const int NUM_OPT = NUM_JOINTS * NUM_HORIZON;
 
 class MPCOptimizer {
     public:
-        MPCOptimizer() : sqp(NUM_OPT, 0) {};
+        MPCOptimizer() : sqp(NUM_OPT, NUM_OPT) {};
 
         bool init();
 
@@ -33,7 +33,7 @@ class MPCOptimizer {
         //   q0:         Current joint angles.
         //   dq0:        Current joint velocities.
         //   dt:         Control timestep.
-        //   dq_opt:     Optimal values of joint velocities.
+        //   u:          Optimal values of joint velocities.
         //
         // Returns:
         //   0 if the optimization problem was solved successfully. Otherwise,
@@ -41,7 +41,7 @@ class MPCOptimizer {
         int solve(double t0, PoseTrajectory& trajectory, const JointVector& q0,
                   const JointVector& dq0,
                   const std::vector<ObstacleModel>& obstacles, double dt,
-                  JointVector& dq_opt);
+                  JointVector& u);
 
     private:
         typedef Eigen::Matrix<double, NUM_OPT, 1> OptVector;
@@ -55,6 +55,13 @@ class MPCOptimizer {
         OptErrorWeightMatrix Qbar;
         OptWeightMatrix Rbar;
         OptWeightMatrix Ebar;
+        OptWeightMatrix A;
+
+        OptVector dq_min;
+        OptVector dq_max;
+
+        OptVector ddq_min;
+        OptVector ddq_max;
 
         // SQP to solve.
         qpOASES::SQProblem sqp;
@@ -62,7 +69,8 @@ class MPCOptimizer {
         // Construct and solve the QP given our problem-specific matrices.
         // Note that the underlying data for input arguments is not copied.
         int solve_sqp(OptWeightMatrix& H, OptVector& g, OptVector& lb,
-                      OptVector& ub, OptVector& step);
+                      OptVector& ub, OptWeightMatrix& A, OptVector& lbA,
+                      OptVector& ubA, OptVector& du);
 
 }; // class MPCOptimizer
 
