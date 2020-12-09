@@ -30,7 +30,7 @@ def calc_normal(markers):
     normal = normal / np.linalg.norm(normal)
 
     # always take the normal to be positive in z-direction
-    # NOTE fine for current experiments, but does handle flipping the tray
+    # NOTE fine for current experiments, but does not handle flipping the tray
     if normal[2] < 0:
         normal = -1 * normal
     return normal

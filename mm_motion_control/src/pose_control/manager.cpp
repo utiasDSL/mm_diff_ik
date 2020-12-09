@@ -96,10 +96,13 @@ void IKControllerManager::loop(const double hz) {
             continue;
         }
 
-        // Also nothing to do if the current trajectory is done.
+        // When the trajectory ends, make sure to publish a zero velocity in
+        // the case the trajectory itself doesn't end at zero.
         if (trajectory.done(t)) {
             ROS_INFO("Trajectory ended.");
             traj_active = false;
+            u = JointVector::Zero();
+            publish_joint_speeds(now);
             continue;
         }
 

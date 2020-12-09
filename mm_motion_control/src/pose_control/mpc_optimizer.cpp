@@ -24,7 +24,7 @@ bool MPCOptimizer::init() {
     // (so the optimization problem becomes larger).
     Matrix6d Q = Matrix6d::Identity();
     Q.topLeftCorner<3, 3>() = 10 * Eigen::Matrix3d::Identity();
-    Q.bottomRightCorner<3, 3>() = 0 * Eigen::Matrix3d::Identity();
+    Q.bottomRightCorner<3, 3>() = 10 * Eigen::Matrix3d::Identity();
 
     // Effort weight matrix.
     JointMatrix R = JointMatrix::Identity();
