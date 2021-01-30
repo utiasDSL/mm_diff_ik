@@ -52,8 +52,8 @@ class IKController {
 
         // Optimizer to solve for joint velocity commands to send to the
         // robot.
-        MPCOptimizer optimizer;
-        // IKOptimizer optimizer;
+        // MPCOptimizer optimizer;
+        IKOptimizer optimizer;
 
 }; // class IKController
 

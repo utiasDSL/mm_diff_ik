@@ -116,49 +116,49 @@ where `[trajectory]` is replaced the desired trajectory.
 2. Connect to the Thing via Ethernet.
 3. Ensure ROS is configured to use the Thing as master:
    ```bash
-   # on laptop
-   > export ROS_IP=192.168.131.100
-   > export ROS_MASTER_URI=http://cpr-tor11-01:11311
+   laptop > export ROS_IP=192.168.131.100
+   laptop > export ROS_MASTER_URI=http://cpr-tor11-01:11311
    ```
    If you run `rostopic list`, you should see various topics related to the Thing
    listed.
 4. Run:
    ```bash
    # on laptop
-   > roslaunch mm_vicon vicon.launch
+   laptop > roslaunch mm_vicon vicon.launch
 
    # alternatively, if Vicon is not available
-   > roslaunch mm_vicon spoof.launch
+   laptop > roslaunch mm_vicon spoof.launch
 
-   # Ideally onboard (for lowest latency), but generally also fine on the laptop
-   # itself. This starts the UR10 driver (the Ridgeback starts automatically
-   # onboard the robot) and the mux node that published the combined
-   # /mm_joint_states topic.
-   > roslaunch mm_motion_control bringup.launch
+   # start the UR10 driver (the Ridgeback starts automatically onboard the
+   # robot) and the mux node that publishes the combined /mm_joint_states
+   # topic.
+   laptop > roslaunch mm_motion_control bringup.launch
 
    # start the motion control node
-   > rosrun mm_motion_control mm_control_node
+   laptop > rosrun mm_motion_control mm_control_node
 
-   # on laptop, if using force control
-   > rosrun mm_force_control force.py
+   # if using force control
+   robot > roslaunch mm_force_control force.launch
+   laptop > rosrun mm_force_control force.py
 
-   # on laptop
-   > rosrun mm_trajectories line.py
+   # example of running a trajectory
+   # inspect the file first to ensure the trajectory does what you expect
+   laptop > rosrun mm_trajectories line.py
    ```
 
 ### Go Home
 Go to home position defined in the launch file. Requires bringup.launch to
-already be launched and running. Run on the laptop:
+already be launched and running.
 ```bash
-> roslaunch mm_motion_control home.launch
+laptop > roslaunch mm_motion_control home.launch
 ```
 
 ### Gripper
 Open or close the gripper (experiment only). Run on the laptop:
 ```bash
-> roslaunch mm_gripper gripper.launch
+laptop > roslaunch mm_gripper gripper.launch
 
 # <cmd> is either o (open) or c (close)
-> rosrun mm_gripper gripper.py <cmd>
+laptop > rosrun mm_gripper gripper.py <cmd>
 ```
 

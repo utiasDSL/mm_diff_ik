@@ -10,7 +10,7 @@ from mm_trajectories import timescaling, path, util
 
 
 DT = 0.1
-OFFSET = np.array([3, 0, 0])
+OFFSET = np.array([2, 0, 0])
 
 
 def main():

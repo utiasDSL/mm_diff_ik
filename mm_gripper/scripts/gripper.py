@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     # 0 for normal, 1 for pinched, 2 for wide mode, 3 for scissor mode
     # NOTE scissor mode may not be working
-    msg.rMOD = 2
+    msg.rMOD = 1
 
     msg.rGTO = 1
     msg.rATR = 0

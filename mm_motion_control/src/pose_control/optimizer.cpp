@@ -115,8 +115,9 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     Matrix6d W4 = Matrix6d::Identity();
 
     // We may choose to weight orientation error differently than position.
-    W4.topLeftCorner<3, 3>() = Eigen::Matrix3d::Identity();
-    W4.bottomRightCorner<3, 3>() = Eigen::Matrix3d::Identity();
+    W4.topLeftCorner<3, 3>() = 0*Eigen::Matrix3d::Identity();
+    W4(2, 2) = 1;  // z-only
+    W4.bottomRightCorner<3, 3>() = 0*Eigen::Matrix3d::Identity();
 
     // Use feedforward to improve tracking performance without requiring huge
     // gains.
@@ -144,6 +145,8 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
 
     // Limit the maximum force applied by compliance. Not a feature of the
     // controller, but reasonable for safety when interacting with people.
+    // TODO does this make sense? shouldn't this make it so that the robot
+    // eventually stops deviating from its position?
     double f_norm = f.norm();
     Eigen::Vector3d f_compliant = f;
     if (f_norm > MAX_COMPLIANCE_FORCE) {
@@ -188,6 +191,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     // unit vector nf.
     if (f_norm > FORCE_THRESHOLD) {
         nf = f / f_norm;
+        // ROS_INFO_STREAM("nf = " << nf);
     }
 
     // For now, only do regulation for > 0 desired forces. TODO generalize to 0
@@ -237,11 +241,8 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     /* 10. Push object */
 
     // Desired velocity vector.
-    // TODO we could actually make this 3D to punish velocity in the other
-    // directions. -- except the other directions should be used to return to
-    // the correct force orientation.
     Eigen::Vector3d vd;
-    vd << 0.1, 0, 0;
+    vd << 0.2, 0, 0;
     double vd_norm = vd.norm();
     Eigen::Vector3d vd_unit = vd / vd_norm;
 
@@ -249,27 +250,36 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     JointMatrix Q10 = Jp.transpose() * vd_unit * vd_unit.transpose() * Jp;
     JointVector C10 = -vd.transpose() * Jp;
 
-    Eigen::Matrix3d Kv = 0.1*Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d Kv = 0.15*Eigen::Matrix3d::Identity();
 
     // Make nf track direction of velocity.
+    // TODO various problems: magnitude, disappears at 0, etc.
     Eigen::Matrix3d W11 = Eigen::Matrix3d::Identity();
     JointMatrix Q11 = Jp.transpose() * W11 * Jp;
     JointVector C11 = (Kv * (vd_unit - nf)).transpose() * W11 * Jp;
 
+    /* for pushing (from paper):
+     * w1 = 1
+     * w4 = 10, but the matrix is diagonally weighted so only z is 1
+     * w7 = 10
+     * w10 = 10
+     * w11 = 25
+     */
+
 
     /* Objective weighting */
 
-    double w1 = 1.0; // velocity
+    double w1 = 1.0; // velocity -- this should typically be 1.0
     double w2 = 0.0; // manipulability
     double w3 = 0.0; // joint limits
     double w4 = 10.0; // pose error
     double w5 = 0.0; // acceleration
     double w6 = 0.0; // force compliance
-    double w7 = 0.0; // force regulation
+    double w7 = 10.0; // force regulation
     double w8 = 0.0; // orientation tracks nf
     double w9 = 0.0; // 2d position error
-    double w10 = 0.0; // track velocity line
-    double w11 = 0.0; // nf tracks velocity direction
+    double w10 = 10.0; // track velocity line
+    double w11 = 25.0; // nf tracks velocity direction
 
     H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w6*Q6 + w7*Q7 + w8*Q8 + w9*Q9 + w10*Q10 + w11*Q11;
     g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w6*C6 + w7*C7 + w8*C8 + w9*C9 + w10*C10 + w11*C11;
