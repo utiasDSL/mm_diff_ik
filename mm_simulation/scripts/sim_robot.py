@@ -17,13 +17,22 @@ BASE_ACC_LIM = np.ones(3)
 ARM_ACC_LIM = 8. * np.ones(6)
 
 
+def rotation_z(angle):
+    """Principal rotation matrix about the z axis."""
+    c = np.cos(angle)
+    s = np.sin(angle)
+    return np.array([[c, -s, 0],
+                     [s,  c, 0],
+                     [0,  0, 1]])
+
+
 def bound_array(a, lb, ub):
     return np.minimum(np.maximum(a, lb), ub)
 
 
 class RobotSim(object):
-    ''' Simulation of Thing platform: Ridgeback omnidirectional base + UR10
-        6-DOF arm. '''
+    """Simulation of Thing platform: Ridgeback omnidirectional base + UR10
+       6-DOF arm."""
     def __init__(self, q):
         self.last_time = rospy.get_time()
         self.ta = self.last_time
@@ -32,7 +41,7 @@ class RobotSim(object):
         self.qa = q[3:]
         self.qb = q[:3]
         self.dqa = np.zeros(6)
-        self.dqb = np.zeros(3)
+        self.ub = np.zeros(3)
         self.ddqa = np.zeros(6)
         self.ddqb = np.zeros(3)
 
@@ -59,23 +68,24 @@ class RobotSim(object):
         dt = tb - self.tb
         self.tb = tb
 
-        # integrate from last time
-        self.qb += dt * self.dqb
-
         # apply velocity limits
-        dqb = np.array([msg.linear.x, msg.linear.y, msg.angular.z])
-        dqb_bounded = bound_array(dqb, -BASE_VEL_LIM, BASE_VEL_LIM)
-        if not np.allclose(dqb, dqb_bounded):
+        ub = np.array([msg.linear.x, msg.linear.y, msg.angular.z])
+        ub_bounded = bound_array(ub, -BASE_VEL_LIM, BASE_VEL_LIM)
+        if not np.allclose(ub, ub_bounded):
             rospy.logwarn('Base velocity constraints violated.')
 
         # calculate acceleration
-        ddqb = (dqb_bounded - self.dqb) / dt
+        ddqb = (ub_bounded - self.ub) / dt
         ddqb_bounded = bound_array(ddqb, -BASE_ACC_LIM, BASE_ACC_LIM)
         if not np.allclose(ddqb, ddqb_bounded):
             rospy.logwarn('Base acceleration constraints violated.')
 
-        self.dqb = dqb_bounded
+        self.ub = ub_bounded
         self.ddqb = ddqb_bounded
+
+        # integrate from last time
+        R_wb = rotation_z(self.qb[2])
+        self.qb += dt * R_wb.dot(self.ub)
 
     def ur10_joint_speed_cb(self, msg):
         ''' Callback for velocity commands to the arm joints. '''
@@ -85,10 +95,6 @@ class RobotSim(object):
         ta = rospy.get_time()  #msg.header.stamp.to_sec()
         dt = ta - self.ta
         self.ta = ta
-
-        # integrate from last time message received to when this message
-        # was
-        self.qa += dt * self.dqa
 
         # apply velocity limits
         dqa = np.array(msg.points[0].velocities)
@@ -105,6 +111,10 @@ class RobotSim(object):
         self.dqa = dqa_bounded
         self.ddqa = ddqa_bounded
 
+        # integrate from last time message received to when this message
+        # was
+        self.qa += dt * self.dqa
+
     def publish_joint_states(self):
         ''' Publish current joint states (position and velocity). '''
         now = rospy.Time.now()
@@ -112,17 +122,24 @@ class RobotSim(object):
 
         # integrate to get best estimate at the current time
         qa = self.qa + (t - self.ta) * self.dqa
-        qb = self.qb + (t - self.tb) * self.dqb
+
+        # TODO this seems a bit questionable
+        R_wb = rotation_z(self.qb[2])
+        qb = self.qb + (t - self.tb) * R_wb.dot(self.ub)
+
+        # use integrated joint angle to calculate current base velocity
+        R_wb = rotation_z(qb[2])
+        dqb = R_wb.dot(self.ub)
 
         q = np.concatenate((qb, qa))
-        dq = np.concatenate((self.dqb, self.dqa))
+        dq = np.concatenate((dqb, self.dqa))
         ddq = np.concatenate((self.ddqb, self.ddqa))
 
         # Base
         rb_joint_state = JointState()
         rb_joint_state.header.stamp = now
         rb_joint_state.position = list(qb)
-        rb_joint_state.velocity = list(self.dqb)
+        rb_joint_state.velocity = list(dqb)
         rb_joint_state.effort = list(self.ddqb)
         self.rb_state_pub.publish(rb_joint_state)
 

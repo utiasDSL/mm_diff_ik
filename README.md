@@ -41,7 +41,7 @@ or `catkin_make_isolated`):
 # normal build
 catkin build
 
-# with compiler optimizations
+# with compiler optimizations (this makes it run much faster)
 catkin build -DCMAKE_BUILD_TYPE=Release
 ```
 

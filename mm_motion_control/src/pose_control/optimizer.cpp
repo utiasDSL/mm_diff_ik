@@ -85,6 +85,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     // To reduce base movement, increase the base joint weighting.
     // Q1.topLeftCorner<3, 3>() = 10 * Eigen::Matrix3d::Identity();
 
+    /*************************************************************************/
     /* 2. Manipulability objective. */
 
     JointVector dm = JointVector::Zero();
@@ -95,6 +96,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     JointMatrix Q2 = -dt * dt * Hm;
     JointVector C2 = -dt * dm;
 
+    /*************************************************************************/
     /* 3. Avoid joint limits objective. */
 
     // Base has no limits, so first three joints are unweighted.
@@ -104,6 +106,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     JointVector C3 = dt * (2*q - (POSITION_LIMITS_UPPER + POSITION_LIMITS_LOWER));
     C3.head<3>() = Eigen::Vector3d::Zero();
 
+    /*************************************************************************/
     /* 4. Error minimization objective */
 
     JacobianMatrix J4;
@@ -111,27 +114,31 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     pose_error(Td, q, e4);
     pose_error_jacobian(Td, q, J4);
 
+    Eigen::Matrix2d R_wb;
+    double c = cos(q(2));
+    double s = sin(q(2));
+    R_wb << c, -s, s, c;
+    JointMatrix R = JointMatrix::Identity();
+    R.topLeftCorner<2, 2>() = R_wb;
+
+    JacobianMatrix J4R = J4 * R;
+
     Matrix6d Kp = Matrix6d::Identity();
     Matrix6d W4 = Matrix6d::Identity();
 
     // We may choose to weight orientation error differently than position.
-    W4.topLeftCorner<3, 3>() = 0*Eigen::Matrix3d::Identity();
-    W4(2, 2) = 1;  // z-only
-    W4.bottomRightCorner<3, 3>() = 0*Eigen::Matrix3d::Identity();
+    W4.topLeftCorner<3, 3>() = Eigen::Matrix3d::Identity();
+    // W4(2, 2) = 1;  // z-only
+    W4.bottomRightCorner<3, 3>() = Eigen::Matrix3d::Identity();
 
     // Use feedforward to improve tracking performance without requiring huge
     // gains.
     // TODO here we're relying on the fact that J4 is negative, which is
     // actually quite confusing
-    JointMatrix Q4 = J4.transpose() * W4 * J4;
-    JointVector C4 = (Kp * e4 + twistd).transpose() * W4 * J4;
+    JointMatrix Q4 = J4R.transpose() * W4 * J4R;
+    JointVector C4 = (Kp * e4 + twistd).transpose() * W4 * J4R;
 
-    // TODO alternative, we can formulate as two seperate objectives
-    // double w41 = 125;
-    // double w42 = 1;
-    // JointMatrix Q4 = (w42) * J4.transpose() * W4 * J4;
-    // JointVector C4 = (w41 * dt * e4 + w42 * twistd).transpose() * W4 * J4;
-
+    /*************************************************************************/
     /* 5. Minimize joint acceleration */
 
     // Only do numerical differentiation with a non-zero timestep.
@@ -141,6 +148,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     }
     JointVector C5 = -dq.transpose() * Q5;
 
+    /*************************************************************************/
     /* 6. Force compliance */
 
     // Limit the maximum force applied by compliance. Not a feature of the
@@ -181,6 +189,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     JointMatrix Q6 = Af.transpose() * W6 * Af;
     JointVector C6 = df.transpose() * W6 * Af;
 
+    /*************************************************************************/
     /* 7. Force regulation */
 
     JointMatrix Q7 = JointMatrix::Zero();
@@ -203,6 +212,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
         ROS_INFO_STREAM(f_err);
     }
 
+    /*************************************************************************/
     /* 8. Orientation of EE tracks nf. */
 
     Eigen::Matrix3d Re = w_T_tool.rotation();
@@ -215,6 +225,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     JointMatrix Q8 = dt * dt * Ja.transpose() * W8 * Ja;
     JointVector C8 = dt * (ae - nf).transpose() * W8 * Ja;
 
+    /*************************************************************************/
     /* 9. Tangent trajectory tracking. */
 
     // Note: for Task 1, instead of enforcing a position trajectory,
@@ -238,6 +249,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     JointMatrix Q9 = J9.transpose() * W9 * J9;
     JointVector C9 = d9.transpose() * W9 * J9;
 
+    /*************************************************************************/
     /* 10. Push object */
 
     // Desired velocity vector.
@@ -272,14 +284,19 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twi
     double w1 = 1.0; // velocity -- this should typically be 1.0
     double w2 = 0.0; // manipulability
     double w3 = 0.0; // joint limits
-    double w4 = 10.0; // pose error
+    double w4 = 100.0; // pose error
     double w5 = 0.0; // acceleration
     double w6 = 0.0; // force compliance
-    double w7 = 10.0; // force regulation
+    // double w7 = 10.0; // force regulation
+    // double w8 = 0.0; // orientation tracks nf
+    // double w9 = 0.0; // 2d position error
+    // double w10 = 10.0; // track velocity line
+    // double w11 = 25.0; // nf tracks velocity direction
+    double w7 = 0.0; // force regulation
     double w8 = 0.0; // orientation tracks nf
     double w9 = 0.0; // 2d position error
-    double w10 = 10.0; // track velocity line
-    double w11 = 25.0; // nf tracks velocity direction
+    double w10 = 0.0; // track velocity line
+    double w11 = 0.0; // nf tracks velocity direction
 
     H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w6*Q6 + w7*Q7 + w8*Q8 + w9*Q9 + w10*Q10 + w11*Q11;
     g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w6*C6 + w7*C7 + w8*C8 + w9*C9 + w10*C10 + w11*C11;

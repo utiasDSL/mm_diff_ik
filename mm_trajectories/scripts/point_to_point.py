@@ -10,7 +10,7 @@ from mm_trajectories import timescaling, path, util
 
 
 DT = 0.1
-OFFSET = np.array([2, 0, 0])
+OFFSET = np.array([3, 0, 0])
 
 
 def main():
@@ -32,8 +32,8 @@ def main():
     util.publish(waypoints, DT)
 
     print('Launched point-to-point trajectory with duration of {} seconds.'.format(duration))
-    print('v = {}'.format(scaling.v))
-    print('a = {}'.format(scaling.a))
+    # print('v = {}'.format(scaling.v))
+    # print('a = {}'.format(scaling.a))
 
 
 if __name__ == '__main__':
