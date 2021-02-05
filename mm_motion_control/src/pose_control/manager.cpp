@@ -115,6 +115,10 @@ void IKControllerManager::loop(const double hz) {
         int status = controller.update(t, trajectory, q, dq, fd, force, pc,
                                        obstacles, u);
 
+        // print but then publish 0
+        // ROS_INFO_STREAM("u = " << u);
+        // u = JointVector::Zero();
+
         // Return value is 0 if successful, non-zero otherwise.
         if (status) {
             // Send zero velocity command if optimization fails (the velocity
@@ -243,7 +247,7 @@ void IKControllerManager::publish_robot_state(const ros::Time& now) {
     Eigen::Vector3d pos_err = pos_des - pos_act;
     Eigen::Quaterniond quat_err = quat_des * quat_act.inverse();
     Eigen::Vector3d rot_err;
-    rotation_error(Rd, Re, rot_err);
+    calc_rotation_error(Rd, Re, rot_err);
 
     if (state_pub->trylock()) {
         geometry_msgs::Pose pose_act_msg, pose_des_msg, pose_err_msg;

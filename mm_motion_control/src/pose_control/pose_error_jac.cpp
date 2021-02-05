@@ -13,7 +13,7 @@
 
 namespace mm {
 
-void rotation_error_jacobians(const JointVector& q,
+void calc_rotation_error_jacobians(const JointVector& q,
                               Matrix3x9& Jn, Matrix3x9& Js, Matrix3x9& Ja) {
     double stb = std::sin(q(2));
     double ctb = std::cos(q(2));

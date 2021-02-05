@@ -162,12 +162,12 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
             // calculate pose error
             Matrix6d Kp = Matrix6d::Identity();
             Vector6d ek;
-            pose_error(Td, qk, ek);
+            calc_pose_error(Td, qk, ek);
             ebar.segment<6>(6 * k) = ek;
 
             // calculate Jacobian of pose error
             JacobianMatrix Jk;
-            pose_error_jacobian(Td, qk, Jk);
+            calc_pose_error_jacobian(Td, qk, Jk);
             Jbar.block<6, NUM_JOINTS>(6 * k, NUM_JOINTS * k) = Jk;
         }
 

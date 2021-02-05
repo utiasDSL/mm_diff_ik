@@ -72,16 +72,11 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
 }
 
 
-void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
+void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& twistd,
                                   const JointVector& q, const JointVector& dq,
                                   double fd, const Eigen::Vector3d& f,
                                   const Eigen::Vector3d& pc,
                                   double dt, JointMatrix& H, JointVector& g) {
-    // Calculate mapping from base inputs to generalized coordinates. The
-    // former are in the base frame while the latter are in the world frame.
-    JointMatrix B = JointMatrix::Identity();
-    Kinematics::calc_base_input_mapping(q, B);
-
     /* 1. Minimize velocity objective. */
 
     JointMatrix Q1 = JointMatrix::Identity();
@@ -91,50 +86,70 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // Q1.topLeftCorner<3, 3>() = 10 * Eigen::Matrix3d::Identity();
 
     /*************************************************************************/
-    /* 2. Avoid joint limits objective. */
+    /* 2. Manipulability objective. */
 
-    // Base has no limits, so first three joints are unweighted.
-    JointMatrix Q2 = dt * dt * JointMatrix::Identity();
-    Q2.topLeftCorner<3, 3>() = Eigen::Matrix3d::Zero();
+    JointVector dm = JointVector::Zero();
+    JointMatrix Hm = JointMatrix::Zero();
+    // linearize_manipulability1(q, dm, STEP_SIZE);
+    // linearize_manipulability2(q, dm, Hm, STEP_SIZE);
 
-    JointVector C2 = dt * (2*q - (POSITION_LIMITS_UPPER + POSITION_LIMITS_LOWER));
-    C2.head<3>() = Eigen::Vector3d::Zero();
+    JointMatrix Q2 = -dt * dt * Hm;
+    JointVector C2 = -dt * dm;
 
     /*************************************************************************/
-    /* 3. Error minimization objective */
+    /* 3. Avoid joint limits objective. */
 
-    JacobianMatrix dPe_dq;
-    Vector6d Pe;
-    calc_pose_error(Td, q, Pe);
-    calc_pose_error_jacobian(Td, q, dPe_dq);
+    // Base has no limits, so first three joints are unweighted.
+    JointMatrix Q3 = dt * dt * JointMatrix::Identity();
+    Q3.topLeftCorner<3, 3>() = Eigen::Matrix3d::Zero();
 
-    JacobianMatrix dPe_dqB = dPe_dq * B;
+    JointVector C3 = dt * (2*q - (POSITION_LIMITS_UPPER + POSITION_LIMITS_LOWER));
+    C3.head<3>() = Eigen::Vector3d::Zero();
+
+    /*************************************************************************/
+    /* 4. Error minimization objective */
+
+    JacobianMatrix J4;
+    Vector6d e4;
+    pose_error(Td, q, e4);
+    pose_error_jacobian(Td, q, J4);
+
+    // Calculate mapping from base inputs to generalized coordinates. The
+    // former are in the base frame while the latter are in the world frame.
+    Eigen::Matrix2d R_wb;
+    double c = cos(q(2));
+    double s = sin(q(2));
+    R_wb << c, -s, s, c;
+    JointMatrix R = JointMatrix::Identity();
+    R.topLeftCorner<2, 2>() = R_wb;
+
+    JacobianMatrix J4R = J4 * R;
 
     Matrix6d Kp = Matrix6d::Identity();
+    Matrix6d W4 = Matrix6d::Identity();
 
-    Matrix6d W3 = Matrix6d::Identity();
     // We may choose to weight orientation error differently than position.
-    // W4.topLeftCorner<3, 3>() = Eigen::Matrix3d::Identity();
+    W4.topLeftCorner<3, 3>() = Eigen::Matrix3d::Identity();
     // W4(2, 2) = 1;  // z-only
-    // W4.bottomRightCorner<3, 3>() = Eigen::Matrix3d::Identity();
+    W4.bottomRightCorner<3, 3>() = Eigen::Matrix3d::Identity();
 
     // NOTE: here we're relying on the fact that J4 is negative, which is
     // actually quite confusing
-    JointMatrix Q3 = dPe_dqB.transpose() * W3 * dPe_dqB;
-    JointVector C3 = (Kp * Pe + Vd).transpose() * W3 * dPe_dqB;
+    JointMatrix Q4 = J4R.transpose() * W4 * J4R;
+    JointVector C4 = (Kp * e4 + twistd).transpose() * W4 * J4R;
 
     /*************************************************************************/
-    /* 4. Minimize joint acceleration */
+    /* 5. Minimize joint acceleration */
 
     // Only do numerical differentiation with a non-zero timestep.
-    JointMatrix Q4 = JointMatrix::Zero();
+    JointMatrix Q5 = JointMatrix::Zero();
     if (dt * dt > 0) {
-        Q4 = JointMatrix::Identity() / (dt * dt);
+        Q5 = JointMatrix::Identity() / (dt * dt);
     }
-    JointVector C4 = -dq.transpose() * Q4;
+    JointVector C5 = -dq.transpose() * Q5;
 
     /*************************************************************************/
-    /* 5. Force compliance */
+    /* 6. Force compliance */
 
     // Limit the maximum force applied by compliance. Not a feature of the
     // controller, but reasonable for safety when interacting with people.
@@ -149,6 +164,8 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // Only start to comply with forces above a certain magnitude, to reject
     // noise.
     if (f_norm > FORCE_THRESHOLD) {
+        // f_compliant = f * (1 - FORCE_THRESHOLD / f_norm);
+        // new version
         double alpha_compliant = 1;
         double b_compliant = 1 - f_norm / FORCE_THRESHOLD;  // TODO: bad name
         f_compliant = f * (1 - exp(alpha_compliant * b_compliant));
@@ -157,10 +174,11 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     }
     // ROS_INFO_STREAM("fc = " << f_compliant);
 
+    // Eigen::Matrix3d Kf_og = 0.5 * Eigen::Matrix3d::Identity();
+    // Eigen::Matrix3d Bf = 0.0 * Eigen::Matrix3d::Identity();
     Eigen::Matrix3d Kf = 1 * Eigen::Matrix3d::Identity();
     Eigen::Matrix3d Cf = 100 * Eigen::Matrix3d::Identity();
 
-    // TODO duplication of effort between here and pose objective
     Eigen::Affine3d w_T_tool;
     Kinematics::calc_w_T_tool(q, w_T_tool);
     Eigen::Vector3d pe = w_T_tool.translation();
@@ -178,45 +196,128 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // Matrix3x9 Af = -(Bf + dt * Kf) * Jp;
     // Eigen::Vector3d df = Kf * (pd - pe) - f_compliant;
     // Eigen::Vector3d df_og = (Kf_og * (pd - pe) - f_compliant) / dt;
-    Matrix3x9 Af = Cf * Jp * B;
-    Eigen::Vector3d df = Cf * Vd.head<3>() + Kf * (pd - pe) + (f_compliant_d - f_compliant);
+    Matrix3x9 Af = Cf * Jp * R;
+    Eigen::Vector3d df = Cf * twistd.head<3>() + Kf * (pd - pe) + (f_compliant_d - f_compliant);
 
     // ROS_INFO_STREAM("vc = " << df / Cf(0, 0));
 
-    Eigen::Matrix3d W5 = Eigen::Matrix3d::Identity();
-    JointMatrix Q5 = Af.transpose() * W5 * Af;
-    JointVector C5 = -df.transpose() * W5 * Af;
+    Eigen::Matrix3d W6 = Eigen::Matrix3d::Identity();
+    // JointMatrix Q6 = Af.transpose() * W6 * Af;
+    // JointVector C6 = df.transpose() * W6 * Af;
+    JointMatrix Q6 = Af.transpose() * W6 * Af;
+    JointVector C6 = -df.transpose() * W6 * Af;
 
     /*************************************************************************/
-    /* 6. Orientation of EE tracks nf. */
+    /* 7. Force regulation */
+
+    JointMatrix Q7 = JointMatrix::Zero();
+    JointVector C7 = JointVector::Zero();
+    double kp = 0.001;
+
+    // If applied force is suitably large, then we update the contact direction
+    // unit vector nf.
+    if (f_norm > FORCE_THRESHOLD) {
+        nf = f / f_norm;
+        // ROS_INFO_STREAM("nf = " << nf);
+    }
+
+    // For now, only do regulation for > 0 desired forces. TODO generalize to 0
+    // and negative values.
+    if (fd > 0) {
+        double f_err = fd - f_norm;
+        Q7 = Jp.transpose() * nf * nf.transpose() * Jp;
+        C7 = -kp * f_err * nf.transpose() * Jp;
+        ROS_INFO_STREAM(f_err);
+    }
+
+    /*************************************************************************/
+    /* 8. Orientation of EE tracks nf. */
 
     Eigen::Matrix3d Re = w_T_tool.rotation();
     Eigen::Vector3d ae = Re.col(2);
 
     Matrix3x9 Jn, Js, Ja;
-    calc_rotation_error_jacobians(q, Jn, Js, Ja);
+    rotation_error_jacobians(q, Jn, Js, Ja);
 
-    Eigen::Matrix3d W6 = Eigen::Matrix3d::Identity();
-    JointMatrix Q6 = dt * dt * Ja.transpose() * W6 * Ja;
-    JointVector C6 = dt * (ae - nf).transpose() * W6 * Ja;
+    Eigen::Matrix3d W8 = Eigen::Matrix3d::Identity();
+    JointMatrix Q8 = dt * dt * Ja.transpose() * W8 * Ja;
+    JointVector C8 = dt * (ae - nf).transpose() * W8 * Ja;
 
     /*************************************************************************/
-    /* 7. TODO: Pushing */
+    /* 9. Tangent trajectory tracking. */
+
+    // Note: for Task 1, instead of enforcing a position trajectory,
+    // we could actually enforce velocity in the tangent directions should be
+    // zero. This may work better.
+
+    // We use pd(1:2) as our 2D trajectory, and project pe into the tangent
+    // (null) space.
+    Eigen::Vector2d pd2 = (pd - pc).tail<2>();
+    Eigen::Vector2d vd2 = twistd.segment<2>(1);
+    Eigen::FullPivLU<Eigen::Matrix<double, 1, 3>> lu(nf.transpose());
+    Eigen::MatrixXd V = lu.kernel();
+
+    // Note: if we put d9 = 0, this enforces a zero velocity constraint in the
+    // tangent plane. This is useful for Task 1.
+    Eigen::Vector3d dp = pe - pc;
+    Eigen::Vector2d d9 = -(pd2 - V.transpose()*dp) - vd2;
+    Eigen::Matrix<double, 2, 9> J9 = V.transpose()*Jp;
+
+    Eigen::Matrix2d W9 = Eigen::Matrix2d::Identity();
+    JointMatrix Q9 = J9.transpose() * W9 * J9;
+    JointVector C9 = d9.transpose() * W9 * J9;
+
+    /*************************************************************************/
+    /* 10. Push object */
+
+    // Desired velocity vector.
+    Eigen::Vector3d vd;
+    vd << 0.2, 0, 0;
+    double vd_norm = vd.norm();
+    Eigen::Vector3d vd_unit = vd / vd_norm;
+
+    // Track desired EE velocity along a single direction.
+    JointMatrix Q10 = Jp.transpose() * vd_unit * vd_unit.transpose() * Jp;
+    JointVector C10 = -vd.transpose() * Jp;
+
+    Eigen::Matrix3d Kv = 0.15*Eigen::Matrix3d::Identity();
+
+    // Make nf track direction of velocity.
+    // TODO various problems: magnitude, disappears at 0, etc.
+    Eigen::Matrix3d W11 = Eigen::Matrix3d::Identity();
+    JointMatrix Q11 = Jp.transpose() * W11 * Jp;
+    JointVector C11 = (Kv * (vd_unit - nf)).transpose() * W11 * Jp;
+
+    /* for pushing (from paper):
+     * w1 = 1
+     * w4 = 10, but the matrix is diagonally weighted so only z is 1
+     * w7 = 10
+     * w10 = 10
+     * w11 = 25
+     */
+
 
     /* Objective weighting */
-    JointMatrix Q7 = JointMatrix::Zero();
-    JointVector C7 = JointVector::Zero();
 
-    double w1 = 1.0; // minimize velocity -- this should typically be 1.0
-    double w2 = 0.0; // avoid joint limits
-    double w3 = 100.0; // minimize pose error
-    double w4 = 0.0; // minimize acceleration
-    double w5 = 0.0; // force compliance
-    double w6 = 0.0; // force-based orientation
-    double w7 = 0.0; // pushing
+    double w1 = 1.0; // velocity -- this should typically be 1.0
+    double w2 = 0.0; // manipulability
+    double w3 = 0.0; // joint limits
+    double w4 = 100.0; // pose error
+    double w5 = 0.0; // acceleration
+    double w6 = 0.0; // force compliance
+    // double w7 = 10.0; // force regulation
+    // double w8 = 0.0; // orientation tracks nf
+    // double w9 = 0.0; // 2d position error
+    // double w10 = 10.0; // track velocity line
+    // double w11 = 25.0; // nf tracks velocity direction
+    double w7 = 0.0; // force regulation
+    double w8 = 0.0; // orientation tracks nf
+    double w9 = 0.0; // 2d position error
+    double w10 = 0.0; // track velocity line
+    double w11 = 0.0; // nf tracks velocity direction
 
-    H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w6*Q6 + w7*Q7;
-    g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w6*C6 + w7*C7;
+    H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w6*Q6 + w7*Q7 + w8*Q8 + w9*Q9 + w10*Q10 + w11*Q11;
+    g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w6*C6 + w7*C7 + w8*C8 + w9*C9 + w10*C10 + w11*C11;
 }
 
 
@@ -231,7 +332,7 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
     // Look one timestep into the future to see where we want to end up.
     Eigen::Affine3d Td;
     Vector6d Vd;
-    // trajectory.sample(t + CONTROL_TIMESTEP, Td, Vd);
+    // trajectory.sample(t + CONTROL_TIMESTEP, Td, twistd);
     trajectory.sample(t, Td, Vd);
 
     /*** OBJECTIVE ***/
