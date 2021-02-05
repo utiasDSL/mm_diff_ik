@@ -4,9 +4,13 @@ from __future__ import print_function
 import rospy
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.spatial import distance, KDTree
 
 from sensor_msgs.msg import JointState
 from sensor_msgs.msg import LaserScan
+
+import mm_lidar
+from mm_lidar import util
 
 import IPython
 
@@ -14,26 +18,8 @@ import IPython
 R_bl = np.eye(2)
 p_lb_b = np.array([0.393, 0])
 
-
-def rotation_matrix(angle):
-    c = np.cos(angle)
-    s = np.sin(angle)
-    return np.array([[c, -s], [s, c]])
-
-
-def extract_positions(scan):
-    """Extract positions relative to the LIDAR from the LaserScan message
-       scan.
-    """
-    n = len(scan.ranges)
-    ranges = np.array(scan.ranges)
-    angles = np.array([scan.angle_min + i*scan.angle_increment for i in range(n)])
-
-    valid_idx, = np.nonzero(np.logical_and(ranges >= scan.range_min, ranges <= scan.range_max))
-
-    positions = np.vstack((np.cos(angles), np.sin(angles))) * ranges
-
-    return positions[:, valid_idx]
+# don't detect anything beyond this distance from base
+INFLUENCE_DIST = 2.0
 
 
 class LidarDetector(object):
@@ -50,13 +36,14 @@ class LidarDetector(object):
         plt.ion()
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111)
-        self.ax.set_xlim(-1, 3)
-        self.ax.set_ylim(-2, 2)
+        self.ax.set_xlim(-2, 3)
+        self.ax.set_ylim(-3, 1)
         self.ax.grid()
 
         self.detection_plot, = self.ax.plot([], [], 'o', color='k')
         self.base_origin_plot, = self.ax.plot([], [], 'o', color='r')
         self.lidar_plot, = self.ax.plot([], [], 'o', color='r')
+        self.filtered_plot, = self.ax.plot([], [], 'o', color='g')
 
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
@@ -65,13 +52,33 @@ class LidarDetector(object):
         if not self.scan:
             return
 
-        p_ol_ls = extract_positions(self.scan)
+        # p_ol_ls = mm_lidar.extract_positions(self.scan)
+        p_ol_ls, valid_mask = mm_lidar.extract_positions(self.scan)
 
-        # get everything in the world frame
+        # ignore last one
+        p_ol_ls = p_ol_ls[:, :-1]
+        valid_mask = valid_mask[:-1]
+
+        # convert frames
         p_bw_w = self.q[:2]
-        R_wb = rotation_matrix(self.q[2])
+        R_wb = util.rotation_matrix(self.q[2])
         p_lw_w = p_bw_w + R_wb.dot(p_lb_b)
-        p_ow_ws = p_lw_w[:, None] + R_wb.dot(R_bl).dot(p_ol_ls)
+        p_ob_bs = p_lb_b[:, None] + R_bl.dot(p_ol_ls)
+        p_ow_ws = p_bw_w[:, None] + R_wb.dot(p_ob_bs)
+        p_ow_ws_valid = p_ow_ws[:, valid_mask]
+
+        p_ow_ws_closest = mm_lidar.filter_points_by_distance(p_ob_bs, p_ow_ws, valid_mask)
+
+        # we can try additional filtering if desired
+        # closest_filtered = []
+        # tree = KDTree(p_ow_ws_valid.T)
+        # clusters = tree.query_ball_point(p_ow_ws_closest.T, 0.1)
+        # for cluster in clusters:
+        #     if len(cluster) < 4:
+        #         continue
+        #     p = np.mean(p_ow_ws_valid[:, cluster], axis=1)
+        #     closest_filtered.append(p)
+        # closest_filtered = np.array(closest_filtered).T
 
         self.base_origin_plot.set_xdata([p_bw_w[0]])
         self.base_origin_plot.set_ydata([p_bw_w[1]])
@@ -82,11 +89,16 @@ class LidarDetector(object):
         self.detection_plot.set_xdata(p_ow_ws[0, :])
         self.detection_plot.set_ydata(p_ow_ws[1, :])
 
+        self.filtered_plot.set_xdata(p_ow_ws_closest[0, :])
+        self.filtered_plot.set_ydata(p_ow_ws_closest[1, :])
+        # self.filtered_plot.set_xdata(closest_filtered[0, :])
+        # self.filtered_plot.set_ydata(closest_filtered[1, :])
+
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
     def joint_state_cb(self, msg):
-        self.q = msg.position
+        self.q = np.array(msg.position)
 
     def scan_cb(self, msg):
         self.scan = msg
