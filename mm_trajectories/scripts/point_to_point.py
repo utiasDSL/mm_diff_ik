@@ -17,7 +17,6 @@ def main():
     rospy.init_node('trajectory_generator')
 
     duration = float(sys.argv[1]) if len(sys.argv) > 1 else 30
-    # duration = 20
 
     # wait until current pose is received
     p0, quat0 = util.wait_for_initial_pose(DT)
@@ -25,6 +24,7 @@ def main():
     p1 = p0 + OFFSET
 
     scaling = timescaling.QuinticTimeScaling(duration)
+    # scaling = timescaling.CubicTimeScaling(duration)
     # scaling = timescaling.TrapezoidalTimeScalingV(0.1, duration)
     traj = path.PointToPoint(p0, p1, quat0, scaling, duration)
     waypoints = util.create_waypoints(traj, duration, DT)

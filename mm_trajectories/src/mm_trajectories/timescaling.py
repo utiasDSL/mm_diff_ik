@@ -1,8 +1,9 @@
+from __future__ import division
 import numpy as np
 
 
 class LinearTimeScaling:
-    ''' Linear time-scaling: constant velocity. '''
+    """Linear time-scaling: constant velocity."""
     def __init__(self, duration):
         self.duration = duration
 
@@ -14,9 +15,9 @@ class LinearTimeScaling:
 
 
 class CubicTimeScaling:
-    ''' Cubic time-scaling: zero velocity at end points. '''
+    """Cubic time-scaling: zero velocity at end points."""
     def __init__(self, duration):
-        self.coeffs = np.array([0, 0, 3 / duration**2, -2 / duration**3])
+        self.coeffs = np.array([0, 0, 3.0 / duration**2, -2.0 / duration**3])
 
     def eval(self, t):
         s = self.coeffs.dot([np.ones_like(t), t, t**2, t**3])
@@ -26,8 +27,9 @@ class CubicTimeScaling:
 
 
 class QuinticTimeScaling:
-    ''' Quintic time-scaling: zero velocity and acceleration at end points. '''
-    def __init__(self, T):
+    """Quintic time-scaling: zero velocity and acceleration at end points."""
+    def __init__(self, duration):
+        T = duration
         A = np.array([[1, 0, 0, 0, 0, 0],
                       [1, T, T**2, T**3, T**4, T**5],
                       [0, 1, 0, 0, 0, 0],
@@ -45,12 +47,13 @@ class QuinticTimeScaling:
 
 
 def eval_trapezoidal(t, v, a, ta, T):
-    ''' Evaluate trapezoidal time-scaling given:
+    """Evaluate trapezoidal time-scaling given:
         t:  evaluation times
         v:  cruise velocity
         a:  acceleration
         ta: time of acceleration
-        T:  total duration '''
+        T:  total duration
+    """
     t1 = t < ta
     t2 = (t >= ta) & (t < T - ta)
     t3 = t >= T - ta
@@ -78,9 +81,9 @@ def eval_trapezoidal(t, v, a, ta, T):
 
 
 class TrapezoidalTimeScalingV:
-    ''' Trapezoidal time scaling specifying cruising velocity and duration.
-        v should be such that 2 >= v*T > 1 for a 3-stage profile. '''
+    """Trapezoidal time scaling specifying cruising velocity and duration."""
     def __init__(self, v, duration):
+        assert (v * duration > 1 and v*duration <= 2), "Need 2 >= v*T > 1 for a 3-stage profile."
         self.v = v
         self.duration = duration
         self.a = v**2 / (v*duration - 1)
@@ -91,10 +94,9 @@ class TrapezoidalTimeScalingV:
 
 
 class TrapezoidalTimeScalingA:
-    ''' Trapezoidal time scaling specifying acceleration and duration.
-        a should be such that a*T**2 >= 4 to ensure the motion is completed in
-        time. '''
+    """Trapezoidal time scaling specifying acceleration and duration."""
     def __init__(self, a, duration):
+        assert a * duration**2 >= 4, "Need a*T**2 >= 4 to ensure motion is completed in time."
         self.v = 0.5*(a*duration - np.sqrt(a*(a*duration**2 - 4)))
         self.duration = duration
         self.a = a

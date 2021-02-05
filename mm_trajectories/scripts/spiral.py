@@ -10,8 +10,8 @@ from mm_trajectories import timescaling, path, util
 
 DT = 0.1
 LX = 3.0
-AMPLITUDE = 1.0
-FREQUENCY = 1.0
+FREQUENCY = 2.0
+R = 0.5
 
 
 def main():
@@ -27,7 +27,7 @@ def main():
     # scaling = timescaling.CubicTimeScaling(duration)
     # scaling = timescaling.LinearTimeScaling(duration)
     # scaling = timescaling.TrapezoidalTimeScalingV(0.1, duration)
-    traj = path.SineXY(p0, quat0, LX, AMPLITUDE, FREQUENCY, scaling, duration)
+    traj = path.Spiral(p0, quat0, R, FREQUENCY, LX, scaling, duration)
     waypoints = util.create_waypoints(traj, duration, DT)
 
     util.publish(waypoints, DT)

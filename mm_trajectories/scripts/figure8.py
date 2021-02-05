@@ -9,30 +9,25 @@ from mm_trajectories import timescaling, path, util
 
 
 DT = 0.1
-LX = 3.0
-AMPLITUDE = 1.0
-FREQUENCY = 1.0
+RADIUS = 0.2
 
 
 def main():
     rospy.init_node('trajectory_generator')
 
     duration = float(sys.argv[1]) if len(sys.argv) > 1 else 30
-    # duration = 20
 
     # wait until current pose is received
     p0, quat0 = util.wait_for_initial_pose(DT)
 
     scaling = timescaling.QuinticTimeScaling(duration)
-    # scaling = timescaling.CubicTimeScaling(duration)
-    # scaling = timescaling.LinearTimeScaling(duration)
     # scaling = timescaling.TrapezoidalTimeScalingV(0.1, duration)
-    traj = path.SineXY(p0, quat0, LX, AMPLITUDE, FREQUENCY, scaling, duration)
+    traj = path.Figure8(p0, quat0, RADIUS, scaling, duration)
     waypoints = util.create_waypoints(traj, duration, DT)
 
     util.publish(waypoints, DT)
 
-    print('Launched sine x-y trajectory with duration of {} seconds.'.format(duration))
+    print('Launched Figure 8 trajectory with duration of {} seconds.'.format(duration))
 
 
 if __name__ == '__main__':
