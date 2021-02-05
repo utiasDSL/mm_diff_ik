@@ -166,5 +166,17 @@ void Kinematics::dh_transform(double q, double a, double d, double alpha,
                   0,   0,          0,         1;
 }
 
+void Kinematics::calc_base_input_mapping(const JointVector& q, JointMatrix& B) {
+    // Rotation matrix from base to world frame.
+    Eigen::Matrix2d R_wb;
+    double c = cos(q(2));
+    double s = sin(q(2));
+    R_wb << c, -s, s, c;
+
+    // TODO this needs to be tested to see if it improves things.
+    B = JointMatrix::Identity();
+    B.topLeftCorner<2, 3>() << R_wb, Eigen::Vector2d(-q(1), q(0));
+}
+
 } // namespace mm
 

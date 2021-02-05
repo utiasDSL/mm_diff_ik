@@ -85,6 +85,9 @@ class Kinematics {
         // Manipulability index.
         static double manipulability(const JointVector& q);
 
+        static void calc_base_input_mapping(const JointVector& q,
+                                            JointMatrix& B);
+
     private:
         // Kinematic parameters
         // Offset from base to arm

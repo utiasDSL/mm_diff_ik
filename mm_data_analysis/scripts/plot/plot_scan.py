@@ -70,9 +70,9 @@ def main():
     scan_msgs = [msg for _, msg, _ in bag.read_messages('/front/scan')]
     t = util.parse_time(scan_msgs)
 
-    marker_msgs = [msg for _, msg, _ in bag.read_messages('/vicon/markers')]
-    t2 = util.parse_time(marker_msgs)
-    marker_msgs_aligned = util.align_lists(t, scan_msgs, t2, marker_msgs)
+    # marker_msgs = [msg for _, msg, _ in bag.read_messages('/vicon/markers')]
+    # t2 = util.parse_time(marker_msgs)
+    # marker_msgs_aligned = util.align_lists(t, scan_msgs, t2, marker_msgs)
 
     # IPython.embed()
 
@@ -91,8 +91,8 @@ def main():
     lines, = ax.plot(x, y, 'o', color='b')
     # barrel, = ax.plot([], [], 'o', color='k')
 
-    barrel = plt.Circle((0, 0), 0, color='k', fill=False)
-    ax.add_patch(barrel)
+    # barrel = plt.Circle((0, 0), 0, color='k', fill=False)
+    # ax.add_patch(barrel)
 
     fig.canvas.draw()
     fig.canvas.flush_events()
@@ -106,10 +106,10 @@ def main():
         # TODO this needs to be relative to the base pose
         x += 0.393
 
-        bx, by = extract_barrel_pts(marker_msgs_aligned[i])
-        xc, yc, r = fit_circle(bx, by, 5)
-        barrel.center = (xc, yc)
-        barrel.radius = r
+        # bx, by = extract_barrel_pts(marker_msgs_aligned[i])
+        # xc, yc, r = fit_circle(bx, by, 5)
+        # barrel.center = (xc, yc)
+        # barrel.radius = r
         # print(bx)
         # print(by)
         # barrel.set_xdata(bx)
