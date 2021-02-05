@@ -17,13 +17,12 @@ BASE_ACC_LIM = np.ones(3)
 ARM_ACC_LIM = 8. * np.ones(6)
 
 
-def rotation_z(angle):
+def rotation2d(angle):
     """Principal rotation matrix about the z axis."""
     c = np.cos(angle)
     s = np.sin(angle)
-    return np.array([[c, -s, 0],
-                     [s,  c, 0],
-                     [0,  0, 1]])
+    return np.array([[c, -s],
+                     [s,  c]])
 
 
 def bound_array(a, lb, ub):
@@ -57,6 +56,18 @@ class RobotSim(object):
         self.ur10_joint_speed_sub = rospy.Subscriber('/ur_driver/joint_speed',
                 JointTrajectory, self.ur10_joint_speed_cb)
 
+    def _calc_dqb(self, qb, ub):
+        R_wb = rotation2d(qb[2])
+        skew = np.array([[0, -ub[2]], [ub[2], 0]])
+        dqb = np.zeros(3)
+        dqb[:2] = R_wb.dot(self.ub[:2]) + skew.dot(qb[:2])
+        dqb[2] = ub[2]
+        return dqb
+
+    def _integrate_qb(self, qb, ub, dt):
+        dqb = self._calc_dqb(qb, ub)
+        return qb + dt * dqb
+
     def rb_joint_speed_cb(self, msg):
         ''' Callback for velocity commands for the base. '''
         # msg is of type geometry_msgs/Twist
@@ -84,8 +95,7 @@ class RobotSim(object):
         self.ddqb = ddqb_bounded
 
         # integrate from last time
-        R_wb = rotation_z(self.qb[2])
-        self.qb += dt * R_wb.dot(self.ub)
+        self.qb = self._integrate_qb(self.qb, self.ub, dt)
 
     def ur10_joint_speed_cb(self, msg):
         ''' Callback for velocity commands to the arm joints. '''
@@ -122,14 +132,10 @@ class RobotSim(object):
 
         # integrate to get best estimate at the current time
         qa = self.qa + (t - self.ta) * self.dqa
-
-        # TODO this seems a bit questionable
-        R_wb = rotation_z(self.qb[2])
-        qb = self.qb + (t - self.tb) * R_wb.dot(self.ub)
+        qb = self._integrate_qb(self.qb, self.ub, t - self.tb)
 
         # use integrated joint angle to calculate current base velocity
-        R_wb = rotation_z(qb[2])
-        dqb = R_wb.dot(self.ub)
+        dqb = self._calc_dqb(qb, self.ub)
 
         q = np.concatenate((qb, qa))
         dq = np.concatenate((dqb, self.dqa))
