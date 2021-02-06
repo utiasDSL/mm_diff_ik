@@ -56,8 +56,8 @@ class LidarDetector(object):
         p_ol_ls, valid_mask = mm_lidar.extract_positions(self.scan)
 
         # ignore last one
-        p_ol_ls = p_ol_ls[:, :-1]
-        valid_mask = valid_mask[:-1]
+        # p_ol_ls = p_ol_ls[:, :-1]
+        # valid_mask = valid_mask[:-1]
 
         # convert frames
         p_bw_w = self.q[:2]

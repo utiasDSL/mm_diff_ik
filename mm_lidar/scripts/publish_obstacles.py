@@ -81,7 +81,7 @@ class ObstacleDetector(object):
 
 
 def main():
-    rospy.init_node('mm_lidar_viewer')
+    rospy.init_node('mm_lidar_publisher')
 
     rate = rospy.Rate(HZ)
     detector = ObstacleDetector()
