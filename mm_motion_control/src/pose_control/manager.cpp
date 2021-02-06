@@ -191,20 +191,20 @@ void IKControllerManager::force_info_cb(const mm_msgs::ForceInfo& msg) {
 
     // If this is the first time contact is made, switch to maintaining the
     // current pose.
-    if (first_contact != msg.first_contact) {
-        Eigen::Affine3d w_T_tool;
-        Kinematics::calc_w_T_tool(q, w_T_tool);
-        Eigen::Vector3d p = w_T_tool.translation();
-        Eigen::Quaterniond q(w_T_tool.rotation());
-        trajectory.stay_at(p, q);
-        // traj_active = true;
-
-        // Set the initial contact point.
-        pc = p;
-
-        first_contact = msg.first_contact;
-        ROS_INFO("Maintaining current pose.");
-    }
+    // if (first_contact != msg.first_contact) {
+    //     Eigen::Affine3d w_T_tool;
+    //     Kinematics::calc_w_T_tool(q, w_T_tool);
+    //     Eigen::Vector3d p = w_T_tool.translation();
+    //     Eigen::Quaterniond q(w_T_tool.rotation());
+    //     trajectory.stay_at(p, q);
+    //     // traj_active = true;
+    //
+    //     // Set the initial contact point.
+    //     pc = p;
+    //
+    //     first_contact = msg.first_contact;
+    //     ROS_INFO("Maintaining current pose.");
+    // }
 }
 
 

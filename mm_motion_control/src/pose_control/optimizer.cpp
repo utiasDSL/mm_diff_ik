@@ -19,6 +19,7 @@ static const int NUM_WSR = 50;
 
 bool IKOptimizer::init() {
     nf << 1, 0, 0;
+    nf_xy << 1, 0;
     return true;
 }
 
@@ -52,6 +53,8 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
     int num_obstacles = A.rows();
 
     // Solve the QP.
+    // NOTE: cannot warm start if we're using a variable number of constraints
+    // (obstacles) at each time step.
     qpOASES::QProblem qp(NUM_JOINTS, num_obstacles);
     qp.setPrintLevel(qpOASES::PL_NONE);
     qpOASES::returnValue ret = qp.init(H_data, g_data, A_data, lb_data, ub_data,
@@ -72,7 +75,7 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
 }
 
 
-void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
+void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
                                   const JointVector& q, const JointVector& dq,
                                   double fd, const Eigen::Vector3d& f,
                                   const Eigen::Vector3d& pc,
@@ -81,6 +84,13 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // former are in the base frame while the latter are in the world frame.
     JointMatrix B = JointMatrix::Identity();
     Kinematics::calc_base_input_mapping(q, B);
+
+    // If applied force is suitably large, then we update the contact direction
+    // unit vector nf.
+    double f_norm = f.norm();
+    // if (f_norm > FORCE_THRESHOLD) {
+    //     nf = f / f_norm;
+    // }
 
     /* 1. Minimize velocity objective. */
 
@@ -112,11 +122,8 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
 
     Matrix6d Kp = Matrix6d::Identity();
 
-    Matrix6d W3 = Matrix6d::Identity();
-    // We may choose to weight orientation error differently than position.
-    // W4.topLeftCorner<3, 3>() = Eigen::Matrix3d::Identity();
-    // W4(2, 2) = 1;  // z-only
-    // W4.bottomRightCorner<3, 3>() = Eigen::Matrix3d::Identity();
+    Matrix6d W3 = Matrix6d::Zero();
+    W3.diagonal() << 0, 0, 0, 1.0, 1.0, 1.0;
 
     // NOTE: here we're relying on the fact that J4 is negative, which is
     // actually quite confusing
@@ -133,6 +140,7 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     }
     JointVector C4 = -dq.transpose() * Q4;
 
+
     /*************************************************************************/
     /* 5. Force compliance */
 
@@ -140,7 +148,6 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // controller, but reasonable for safety when interacting with people.
     // TODO does this make sense? shouldn't this make it so that the robot
     // eventually stops deviating from its position?
-    double f_norm = f.norm();
     Eigen::Vector3d f_compliant = f;
     if (f_norm > MAX_COMPLIANCE_FORCE) {
         f_compliant = MAX_COMPLIANCE_FORCE * f / f_norm;
@@ -148,22 +155,28 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
 
     // Only start to comply with forces above a certain magnitude, to reject
     // noise.
-    if (f_norm > FORCE_THRESHOLD) {
-        double alpha_compliant = 1;
-        double b_compliant = 1 - f_norm / FORCE_THRESHOLD;  // TODO: bad name
-        f_compliant = f * (1 - exp(alpha_compliant * b_compliant));
-    } else {
-        f_compliant = Eigen::Vector3d::Zero();
-    }
+    // if (f_norm > FORCE_THRESHOLD) {
+    //     double alpha_compliant = 2;
+    //     double b_compliant = 1 - f_norm / FORCE_THRESHOLD;  // TODO: bad name
+    //     f_compliant = f * (1 - exp(alpha_compliant * b_compliant));
+    // } else {
+    //     f_compliant = Eigen::Vector3d::Zero();
+    // }
+    f_compliant = f;
     // ROS_INFO_STREAM("fc = " << f_compliant);
 
-    Eigen::Matrix3d Kf = 1 * Eigen::Matrix3d::Identity();
-    Eigen::Matrix3d Cf = 100 * Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d Kp_com = Eigen::Matrix3d::Zero();
+    Kp_com.diagonal() << 0, 1.0, 1.0;
+    // Eigen::Matrix3d Kf_com = 0.005 * Eigen::Matrix3d::Identity();
+
+    // only comply in certain directions
+    Eigen::Matrix3d Kf_com = Eigen::Matrix3d::Zero();
+    Kf_com.diagonal() << 0.005, 0, 0;
 
     // TODO duplication of effort between here and pose objective
     Eigen::Affine3d w_T_tool;
     Kinematics::calc_w_T_tool(q, w_T_tool);
-    Eigen::Vector3d pe = w_T_tool.translation();
+    Eigen::Vector3d pe = w_T_tool.translation();  // TODO bad name
     Eigen::Vector3d pd = Td.translation();
 
     JacobianMatrix J;
@@ -173,15 +186,15 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // TODO kludge for now
     Eigen::Vector3d f_compliant_d;
     // f_compliant_d << fd, 0, 0;
-    f_compliant_d << 0, 0, 0;
+    f_compliant_d << 5, 0, 0;
 
     // Matrix3x9 Af = -(Bf + dt * Kf) * Jp;
     // Eigen::Vector3d df = Kf * (pd - pe) - f_compliant;
     // Eigen::Vector3d df_og = (Kf_og * (pd - pe) - f_compliant) / dt;
-    Matrix3x9 Af = Cf * Jp * B;
-    Eigen::Vector3d df = Cf * Vd.head<3>() + Kf * (pd - pe) + (f_compliant_d - f_compliant);
+    Matrix3x9 Af = Jp * B;
+    Eigen::Vector3d df = Vd.head<3>() + Kp_com * (pd - pe) + Kf_com * (f_compliant_d - f_compliant);
 
-    // ROS_INFO_STREAM("vc = " << df / Cf(0, 0));
+    // ROS_INFO_STREAM("vc = " << df);
 
     Eigen::Matrix3d W5 = Eigen::Matrix3d::Identity();
     JointMatrix Q5 = Af.transpose() * W5 * Af;
@@ -190,30 +203,75 @@ void IKOptimizer::build_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     /*************************************************************************/
     /* 6. Orientation of EE tracks nf. */
 
-    Eigen::Matrix3d Re = w_T_tool.rotation();
-    Eigen::Vector3d ae = Re.col(2);
-
-    Matrix3x9 Jn, Js, Ja;
-    calc_rotation_error_jacobians(q, Jn, Js, Ja);
-
-    Eigen::Matrix3d W6 = Eigen::Matrix3d::Identity();
-    JointMatrix Q6 = dt * dt * Ja.transpose() * W6 * Ja;
-    JointVector C6 = dt * (ae - nf).transpose() * W6 * Ja;
+    // Eigen::Matrix3d Re = w_T_tool.rotation();
+    // Eigen::Vector3d ae = Re.col(2);
+    //
+    // Matrix3x9 Jn, Js, Ja;
+    // calc_rotation_error_jacobians(q, Jn, Js, Ja);
+    //
+    // Eigen::Matrix3d W6 = Eigen::Matrix3d::Identity();
+    // JointMatrix Q6 = dt * dt * Ja.transpose() * W6 * Ja;
+    // JointVector C6 = dt * (ae - nf).transpose() * W6 * Ja;
+    JointMatrix Q6 = JointMatrix::Zero();
+    JointVector C6 = JointVector::Zero();
 
     /*************************************************************************/
     /* 7. TODO: Pushing */
+    Eigen::Vector3d p_err = pd - pe;
 
+    // position normal
+    double p_err_norm = p_err.head<2>().norm();
+    Eigen::Vector2d np_xy = Eigen::Vector2d::Zero();
+    if (p_err_norm > 1e-2) {
+        np_xy = p_err.head<2>() / p_err_norm;
+    }
+
+    // nf_xy decays back to the push direction in the absence of sufficiently
+    // large force measurements (i.e. ones that aren't noise)
+    Eigen::Vector2d f_xy = f.head<2>();
+    double f_xy_norm = f_xy.norm();
+    if (f_xy_norm > FORCE_THRESHOLD) {
+        nf_xy = f_xy / f_xy_norm;
+    } else {
+        double alpha_nf = 0.9;
+        // TODO this is no longer a unit vector, necessarily---does that matter?
+        nf_xy = alpha_nf * nf_xy + (1 - alpha_nf) * np_xy;
+        if (nf_xy.norm() > 1e-3) {
+            nf_xy = nf_xy / nf_xy.norm();
+        }
+    }
+
+    // force normal
+    // Eigen::Vector2d nf_xy = nf.head<2>();
+
+    // push direction balances between the two
+    double alpha_push = 0.5;
+    Eigen::Vector2d push_dir = ((1+alpha_push)*nf_xy*nf_xy.transpose() - alpha_push*Eigen::Matrix2d::Identity()) * np_xy;
+
+    // TODO fixed gains for now
+    double push_dir_norm = push_dir.norm();
+    Eigen::Vector3d vp = Eigen::Vector3d::Zero();
+    vp(2) = 1 * p_err(2); // z
+    if (push_dir_norm > 1e-2) {
+        vp.head<2>() << 0.2 * push_dir.head<2>() / push_dir_norm;
+    }
+
+    // ROS_INFO_STREAM("vp = " << vp);
+
+    Eigen::Matrix3d W7 = Eigen::Matrix3d::Identity();
+    JointMatrix Q7 = B.transpose() * Jp.transpose() * W7 * Jp * B;
+    JointVector C7 = -vp.transpose() * W7 * Jp * B;
+
+    /*************************************************************************/
     /* Objective weighting */
-    JointMatrix Q7 = JointMatrix::Zero();
-    JointVector C7 = JointVector::Zero();
 
     double w1 = 1.0; // minimize velocity -- this should typically be 1.0
     double w2 = 0.0; // avoid joint limits
-    double w3 = 100.0; // minimize pose error
+    double w3 = 0.0; // minimize pose error
     double w4 = 0.0; // minimize acceleration
     double w5 = 0.0; // force compliance
     double w6 = 0.0; // force-based orientation
-    double w7 = 0.0; // pushing
+    double w7 = 1.0; // pushing
 
     H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w6*Q6 + w7*Q7;
     g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w6*C6 + w7*C7;
@@ -238,7 +296,7 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
 
     JointMatrix H;
     JointVector g;
-    build_objective(Td, Vd, q, dq, fd, f, pc, dt, H, g);
+    calc_objective(Td, Vd, q, dq, fd, f, pc, dt, H, g);
 
 
     /*** BOUNDS ***/
@@ -252,6 +310,10 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
     JointVector dq_lb, dq_ub;
     velocity_damper_limits(q, dq_lb, dq_ub);
 
+    // Base FoV constraint -- in the simplest case, it just constrains the
+    // base not to move backward.
+    //dq_lb(0) = std::max(dq_lb(0), 0.0);
+
 
     /*** CONSTRAINTS ***/
 
@@ -259,7 +321,7 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
     Eigen::MatrixXd A_obs;
     Eigen::VectorXd b_obs;
     Eigen::Vector2d pb(q[0], q[1]);
-    obstacle_limits(pb, obstacles, A_obs, b_obs);
+    calc_obstacle_limits(pb, obstacles, A_obs, b_obs);
 
 
     /*** SOLVE QP ***/
@@ -338,7 +400,7 @@ void IKOptimizer::velocity_damper_limits(const JointVector& q, JointVector& dq_l
 }
 
 
-int IKOptimizer::obstacle_limits(const Eigen::Vector2d& pb,
+int IKOptimizer::calc_obstacle_limits(const Eigen::Vector2d& pb,
                                  const std::vector<ObstacleModel>& obstacles,
                                  Eigen::MatrixXd& A, Eigen::VectorXd& b) {
     // Only consider obstacles within the influence distance.

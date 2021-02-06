@@ -96,9 +96,9 @@ class IKOptimizer {
                                     JointVector& dq_ub);
 
         // Calculate obstacle avoidance objective.
-        int obstacle_limits(const Eigen::Vector2d& pb,
-                            const std::vector<ObstacleModel>& obstacles,
-                            Eigen::MatrixXd& A, Eigen::VectorXd& b);
+        int calc_obstacle_limits(const Eigen::Vector2d& pb,
+                                 const std::vector<ObstacleModel>& obstacles,
+                                 Eigen::MatrixXd& A, Eigen::VectorXd& b);
 
         // Filter out obstacles that are not close enough to influence the
         // optimization problem.
@@ -114,6 +114,7 @@ class IKOptimizer {
 
         // Normal direction of applied force.
         Eigen::Vector3d nf;
+        Eigen::Vector2d nf_xy; // planar force
 
         // Construct and solve the QP given our problem-specific matrices.
         // Note that the underlying data for input arguments is not copied.
@@ -123,11 +124,11 @@ class IKOptimizer {
 
         // Build objective matrices H and g, where the quadratic to minimize is
         // x'Hx + g'x.
-        void build_objective(const Eigen::Affine3d& Td, const Vector6d& twistd,
-                             const JointVector& q, const JointVector& dq,
-                             double fd, const Eigen::Vector3d& f,
-                             const Eigen::Vector3d& pc, double dt,
-                             JointMatrix& H, JointVector& g);
+        void calc_objective(const Eigen::Affine3d& Td, const Vector6d& twistd,
+                            const JointVector& q, const JointVector& dq,
+                            double fd, const Eigen::Vector3d& f,
+                            const Eigen::Vector3d& pc, double dt,
+                            JointMatrix& H, JointVector& g);
 }; // class IKOptimizer
 
 } // namespace mm

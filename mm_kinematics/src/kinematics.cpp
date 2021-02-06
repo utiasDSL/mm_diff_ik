@@ -175,7 +175,8 @@ void Kinematics::calc_base_input_mapping(const JointVector& q, JointMatrix& B) {
 
     // TODO this needs to be tested to see if it improves things.
     B = JointMatrix::Identity();
-    B.topLeftCorner<2, 3>() << R_wb, Eigen::Vector2d(-q(1), q(0));
+    // B.topLeftCorner<2, 3>() << R_wb, Eigen::Vector2d(-q(1), q(0));
+    B.topLeftCorner<2, 2>() = R_wb;
 }
 
 } // namespace mm

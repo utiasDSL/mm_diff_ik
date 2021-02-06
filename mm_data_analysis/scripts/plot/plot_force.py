@@ -27,15 +27,15 @@ def main():
     force_world = np.array([[msg.force_world.x, msg.force_world.y, msg.force_world.z]
                             for msg in force_info_msgs])
 
-    f_norms = np.linalg.norm(force_world, axis=1)
-    nf = force_world / f_norms[:, None]
+    # f_norms = np.linalg.norm(force_world, axis=1)
+    # nf = force_world / f_norms[:, None]
 
     # Manual filtering to tune.
-    smoother = ExponentialSmoother(tau=0.5, x0=np.zeros(3))
-    force_filtered2 = np.zeros(force_filtered.shape)
-    for i in xrange(1, force_filtered2.shape[0]):
-        dt = t[i] - t[i-1]
-        force_filtered2[i, :] = smoother.next(force_raw[i, :], dt)
+    # smoother = ExponentialSmoother(tau=0.5, x0=np.zeros(3))
+    # force_filtered2 = np.zeros(force_filtered.shape)
+    # for i in xrange(1, force_filtered2.shape[0]):
+    #     dt = t[i] - t[i-1]
+    #     force_filtered2[i, :] = smoother.next(force_raw[i, :], dt)
 
     plt.figure(1)
     plt.grid()
@@ -59,20 +59,20 @@ def main():
 
     plt.figure(3)
     plt.grid()
-    plt.plot(t, nf[:, 0], label='fx')
-    plt.plot(t, nf[:, 1], label='fy')
-    plt.plot(t, nf[:, 2], label='fz')
+    plt.plot(t, force_world[:, 0], label='fx')
+    plt.plot(t, force_world[:, 1], label='fy')
+    plt.plot(t, force_world[:, 2], label='fz')
     plt.legend()
     plt.xlabel('Time (s)')
     plt.ylabel('Force (N)')
-    plt.title('World Force')
+    plt.title('World Force (filtered)')
 
-    plt.figure(4)
-    plt.grid()
-    plt.plot(t, f_norms)
-    plt.xlabel('Time (s)')
-    plt.ylabel('Force (N)')
-    plt.title('World Force Magnitude')
+    # plt.figure(4)
+    # plt.grid()
+    # plt.plot(t, f_norms)
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Force (N)')
+    # plt.title('World Force Magnitude')
 
     # plt.figure(5)
     # plt.grid()

@@ -13,7 +13,7 @@ from mm_trajectories import util
 
 
 DT = 0.1
-OFFSET = np.array([0, 0, 0])  # offset from current position
+OFFSET = np.array([3, 0, 0])  # offset from current position
 
 
 def main():
@@ -31,7 +31,7 @@ def main():
 
     pub.publish(msg)
 
-    print('Launched stationary trajectory.')
+    print('Launched trajectory to push point.')
 
 
 if __name__ == '__main__':
