@@ -122,8 +122,9 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
 
     Matrix6d Kp = Matrix6d::Identity();
 
-    Matrix6d W3 = Matrix6d::Zero();
-    W3.diagonal() << 0, 0, 0, 1.0, 1.0, 1.0;
+    Matrix6d W3 = Matrix6d::Identity();
+    // Matrix6d W3 = Matrix6d::Zero();
+    // W3.diagonal() << 5.0, 5.0, 5.0, 1.0, 1.0, 1.0;
 
     // NOTE: here we're relying on the fact that J4 is negative, which is
     // actually quite confusing
@@ -267,11 +268,11 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
 
     double w1 = 1.0; // minimize velocity -- this should typically be 1.0
     double w2 = 0.0; // avoid joint limits
-    double w3 = 0.0; // minimize pose error
+    double w3 = 100.0; // minimize pose error
     double w4 = 0.0; // minimize acceleration
     double w5 = 0.0; // force compliance
     double w6 = 0.0; // force-based orientation
-    double w7 = 1.0; // pushing
+    double w7 = 0.0; // pushing
 
     H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w6*Q6 + w7*Q7;
     g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w6*C6 + w7*C7;
@@ -406,6 +407,11 @@ int IKOptimizer::calc_obstacle_limits(const Eigen::Vector2d& pb,
     // Only consider obstacles within the influence distance.
     std::vector<ObstacleModel> close_obstacles;
     filter_obstacles(pb, obstacles, close_obstacles);
+
+    // for (int i = 0; i < close_obstacles.size(); ++i) {
+    //     ROS_INFO_STREAM("obs[" << i << "] = " << close_obstacles[i].centre());
+    // }
+    // return 0;
 
     int num_obs = close_obstacles.size();
     A.resize(num_obs, NUM_JOINTS);

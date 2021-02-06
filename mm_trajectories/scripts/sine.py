@@ -23,11 +23,11 @@ def main():
     # wait until current pose is received
     p0, quat0 = util.wait_for_initial_pose(DT)
 
-    scaling = timescaling.QuinticTimeScaling(duration)
-    # scaling = timescaling.CubicTimeScaling(duration)
+    # scaling = timescaling.QuinticTimeScaling(duration)
+    scaling = timescaling.CubicTimeScaling(duration)
     # scaling = timescaling.LinearTimeScaling(duration)
     # scaling = timescaling.TrapezoidalTimeScalingV(0.1, duration)
-    traj = path.SineXY(p0, quat0, LX, AMPLITUDE, FREQUENCY, scaling, duration)
+    traj = path.SineXY(p0, quat0, LX, AMPLITUDE, FREQUENCY, scaling)
     waypoints = util.create_waypoints(traj, duration, DT)
 
     util.publish(waypoints, DT)

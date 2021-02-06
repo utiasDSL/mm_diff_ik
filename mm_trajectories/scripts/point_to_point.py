@@ -10,7 +10,8 @@ from mm_trajectories import timescaling, path, util
 
 
 DT = 0.1
-OFFSET = np.array([0, 0.5, 0])
+OFFSET = np.array([3, 0, 0])
+# OFFSET = np.array([0, 0.5, 0])
 # OFFSET = np.array([-1, -1, 0])
 
 
@@ -24,9 +25,10 @@ def main():
 
     p1 = p0 + OFFSET
 
-    # scaling = timescaling.QuinticTimeScaling(duration)
-    scaling = timescaling.CubicTimeScaling(duration)
+    scaling = timescaling.QuinticTimeScaling(duration)
+    # scaling = timescaling.CubicTimeScaling(duration)
     # scaling = timescaling.TrapezoidalTimeScalingV(0.1, duration)
+    # scaling = timescaling.LinearTimeScaling(duration)
     traj = path.PointToPoint(p0, p1, quat0, scaling)
     waypoints = util.create_waypoints(traj, duration, DT)
 
