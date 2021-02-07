@@ -222,24 +222,28 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
 
     // position normal
     double p_err_norm = p_err.head<2>().norm();
-    Eigen::Vector2d np_xy = Eigen::Vector2d::Zero();
-    if (p_err_norm > 1e-2) {
-        np_xy = p_err.head<2>() / p_err_norm;
-    }
+    // Eigen::Vector2d np_xy = Eigen::Vector2d::Zero();
+    // if (p_err_norm > 1e-2) {
+    //     np_xy = p_err.head<2>() / p_err_norm;
+    // }
+    Eigen::Vector2d np_xy = p_err.head<2>().normalized();
 
     // nf_xy decays back to the push direction in the absence of sufficiently
     // large force measurements (i.e. ones that aren't noise)
     Eigen::Vector2d f_xy = f.head<2>();
-    double f_xy_norm = f_xy.norm();
-    if (f_xy_norm > FORCE_THRESHOLD) {
-        nf_xy = f_xy / f_xy_norm;
+    // double f_xy_norm = f_xy.norm();
+    if (f_xy.norm() > FORCE_THRESHOLD) {
+        // nf_xy = f_xy / f_xy_norm;
+        nf_xy = f_xy.normalized();
     } else {
         double alpha_nf = 0.9;
-        // TODO this is no longer a unit vector, necessarily---does that matter?
+        // TODO should do this equation so that it preserves
+        // normality---circular interpolation?
         nf_xy = alpha_nf * nf_xy + (1 - alpha_nf) * np_xy;
-        if (nf_xy.norm() > 1e-3) {
-            nf_xy = nf_xy / nf_xy.norm();
-        }
+        nf_xy.normalize();
+        // if (nf_xy.norm() > 1e-3) {
+        //     nf_xy = nf_xy / nf_xy.norm();
+        // }
     }
 
     // force normal
@@ -252,10 +256,11 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // TODO fixed gains for now
     double push_dir_norm = push_dir.norm();
     Eigen::Vector3d vp = Eigen::Vector3d::Zero();
+    vp.head<2>() = 0.2 * push_dir.head<2>().normalized();
     vp(2) = 1 * p_err(2); // z
-    if (push_dir_norm > 1e-2) {
-        vp.head<2>() << 0.2 * push_dir.head<2>() / push_dir_norm;
-    }
+    // if (push_dir_norm > 1e-2) {
+    //     vp.head<2>() << 0.2 * push_dir.head<2>() / push_dir_norm;
+    // }
 
     // ROS_INFO_STREAM("vp = " << vp);
 
