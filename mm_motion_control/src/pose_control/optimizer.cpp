@@ -17,6 +17,15 @@ namespace mm {
 static const int NUM_WSR = 50;
 
 
+Eigen::Vector2d slerp(const Eigen::Vector2d a, const Eigen::Vector2d b, double t) {
+    double angle = std::acos(a.dot(b));
+    if (angle < 1e-5) {
+        return a;
+    }
+    return (std::sin((1 - t) * angle) * a + std::sin(t * angle) * b) / std::sin(angle);
+}
+
+
 bool IKOptimizer::init() {
     nf << 1, 0, 0;
     nf_xy << 1, 0;
@@ -217,7 +226,7 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     JointVector C6 = JointVector::Zero();
 
     /*************************************************************************/
-    /* 7. TODO: Pushing */
+    /* 7. Pushing */
     Eigen::Vector3d p_err = pd - pe;
 
     // position normal
@@ -236,14 +245,13 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
         // nf_xy = f_xy / f_xy_norm;
         nf_xy = f_xy.normalized();
     } else {
-        double alpha_nf = 0.9;
-        // TODO should do this equation so that it preserves
-        // normality---circular interpolation?
-        nf_xy = alpha_nf * nf_xy + (1 - alpha_nf) * np_xy;
-        nf_xy.normalize();
+        double alpha_nf = 0.1;
+        // nf_xy = alpha_nf * nf_xy + (1 - alpha_nf) * np_xy;
+        // nf_xy.normalize();
         // if (nf_xy.norm() > 1e-3) {
         //     nf_xy = nf_xy / nf_xy.norm();
         // }
+        nf_xy = slerp(nf_xy, np_xy, alpha_nf);
     }
 
     // force normal
@@ -251,13 +259,15 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
 
     // push direction balances between the two
     double alpha_push = 0.5;
-    Eigen::Vector2d push_dir = ((1+alpha_push)*nf_xy*nf_xy.transpose() - alpha_push*Eigen::Matrix2d::Identity()) * np_xy;
+    // Eigen::Vector2d push_dir = ((1+alpha_push)*nf_xy*nf_xy.transpose() - alpha_push*Eigen::Matrix2d::Identity()) * np_xy;
+    Eigen::Vector2d push_dir = slerp(nf_xy, np_xy, -alpha_push);
 
     // TODO fixed gains for now
-    double push_dir_norm = push_dir.norm();
+    // double push_dir_norm = push_dir.norm();
     Eigen::Vector3d vp = Eigen::Vector3d::Zero();
-    vp.head<2>() = 0.2 * push_dir.head<2>().normalized();
-    vp(2) = 1 * p_err(2); // z
+    vp << 0.2 * push_dir.head<2>(), 1 * p_err(2);
+    // vp.head<2>() = 0.2 * push_dir.head<2>();  //.normalized();
+    // vp(2) = 1 * p_err(2); // z
     // if (push_dir_norm > 1e-2) {
     //     vp.head<2>() << 0.2 * push_dir.head<2>() / push_dir_norm;
     // }
