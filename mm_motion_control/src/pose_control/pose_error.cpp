@@ -36,6 +36,19 @@ void calc_rotation_error(const Eigen::Matrix3d& Rd, const Eigen::Matrix3d& Re,
     e = 0.5 * (ne.cross(nd) + se.cross(sd) + ae.cross(ad));
 }
 
+void calc_rotation_error_quat(const Eigen::Matrix3d& Rd,
+                              const Eigen::Matrix3d& Re,
+                              Eigen::Vector3d& e) {
+    Eigen::Matrix3d R_err = Rd * Re.transpose();
+    Eigen::Quaterniond quat(R_err);
+    e << quat.x(), quat.y(), quat.z();
+
+    // TODO attempt to deal with double covering...
+    // if (quat.w() < 0) {
+    //     e = -e;
+    // }
+}
+
 
 void calc_rotation_error_jacobian(const Eigen::Matrix3d& Rd, const JointVector& q,
                              Matrix3x9& Je) {
@@ -64,7 +77,8 @@ void calc_pose_error(const Eigen::Affine3d& Td, const JointVector& q, Vector6d& 
     // Calculate errors.
     Eigen::Vector3d pos_err, rot_err;
     pos_err = pd - pe;
-    calc_rotation_error(Rd, Re, rot_err);
+    // calc_rotation_error(Rd, Re, rot_err);
+    calc_rotation_error_quat(Rd, Re, rot_err);
 
     e << pos_err, rot_err;
 }

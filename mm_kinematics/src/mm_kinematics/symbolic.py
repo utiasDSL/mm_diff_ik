@@ -115,8 +115,14 @@ class SymbolicKinematics(object):
         z_q6 = R0_12 * k
 
         # joints xb and yb are prismatic, and so cause no angular velocity.
-        Jw = sym.Matrix.hstack(0*z_xb, 0*z_yb, z_tb, z_q1, z_q2, z_q3, z_q4,
-                               z_q5, z_q6)
+        # Jw = sym.Matrix.hstack(0*z_xb, 0*z_yb, z_tb, z_q1, z_q2, z_q3, z_q4,
+        #                        z_q5, z_q6)
+
+        # NOTE this did not do the trick
+        # Jw = sym.Matrix.hstack(k, 0*z_xb, 0*z_yb, z_tb, z_q1, z_q2, z_q3, z_q4,
+        #                        z_q5)
+        Jw = sym.Matrix.hstack(0*z_xb, 0*z_yb, z_yb, z_tb, z_q1, z_q2, z_q3, z_q4,
+                               z_q5)
 
         # Linear derivatives
         dt_dxb = sym.diff(t0_13, self.xb)

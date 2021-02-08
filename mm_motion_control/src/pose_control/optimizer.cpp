@@ -94,6 +94,15 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     JointMatrix B = JointMatrix::Identity();
     Kinematics::calc_base_input_mapping(q, B);
 
+    // Calculate pose error.
+    Vector6d P_err;
+    calc_pose_error(Td, q, P_err);
+
+    // Calculate Jacobian.
+    JacobianMatrix J;
+    Kinematics::jacobian(q, J);
+    JacobianMatrix JB = J * B;
+
     // If applied force is suitably large, then we update the contact direction
     // unit vector nf.
     double f_norm = f.norm();
@@ -101,6 +110,7 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     //     nf = f / f_norm;
     // }
 
+    /*************************************************************************/
     /* 1. Minimize velocity objective. */
 
     JointMatrix Q1 = JointMatrix::Identity();
@@ -122,23 +132,15 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     /*************************************************************************/
     /* 3. Error minimization objective */
 
-    JacobianMatrix dPe_dq;
-    Vector6d Pe;
-    calc_pose_error(Td, q, Pe);
-    calc_pose_error_jacobian(Td, q, dPe_dq);
-
-    JacobianMatrix dPe_dqB = dPe_dq * B;
-
     Matrix6d Kp = Matrix6d::Identity();
+    // Kp.diagonal() << 1, 1, 1, 0, 0, 0;
 
     Matrix6d W3 = Matrix6d::Identity();
     // Matrix6d W3 = Matrix6d::Zero();
     // W3.diagonal() << 5.0, 5.0, 5.0, 1.0, 1.0, 1.0;
 
-    // NOTE: here we're relying on the fact that J4 is negative, which is
-    // actually quite confusing
-    JointMatrix Q3 = dPe_dqB.transpose() * W3 * dPe_dqB;
-    JointVector C3 = (Kp * Pe + Vd).transpose() * W3 * dPe_dqB;
+    JointMatrix Q3 = JB.transpose() * W3 * JB;
+    JointVector C3 = -(Kp * P_err + Vd).transpose() * W3 * JB;
 
     /*************************************************************************/
     /* 4. Minimize joint acceleration */
@@ -183,26 +185,16 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     Eigen::Matrix3d Kf_com = Eigen::Matrix3d::Zero();
     Kf_com.diagonal() << 0.005, 0, 0;
 
-    // TODO duplication of effort between here and pose objective
-    Eigen::Affine3d w_T_tool;
-    Kinematics::calc_w_T_tool(q, w_T_tool);
-    Eigen::Vector3d pe = w_T_tool.translation();  // TODO bad name
-    Eigen::Vector3d pd = Td.translation();
-
-    JacobianMatrix J;
-    Kinematics::jacobian(q, J);
     Matrix3x9 Jp = J.topRows<3>();
+    Eigen::Vector3d p_err = P_err.head<3>();
 
     // TODO kludge for now
     Eigen::Vector3d f_compliant_d;
     // f_compliant_d << fd, 0, 0;
     f_compliant_d << 5, 0, 0;
 
-    // Matrix3x9 Af = -(Bf + dt * Kf) * Jp;
-    // Eigen::Vector3d df = Kf * (pd - pe) - f_compliant;
-    // Eigen::Vector3d df_og = (Kf_og * (pd - pe) - f_compliant) / dt;
     Matrix3x9 Af = Jp * B;
-    Eigen::Vector3d df = Vd.head<3>() + Kp_com * (pd - pe) + Kf_com * (f_compliant_d - f_compliant);
+    Eigen::Vector3d df = Vd.head<3>() + Kp_com * p_err + Kf_com * (f_compliant_d - f_compliant);
 
     // ROS_INFO_STREAM("vc = " << df);
 
@@ -227,7 +219,7 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
 
     /*************************************************************************/
     /* 7. Pushing */
-    Eigen::Vector3d p_err = pd - pe;
+    // Eigen::Vector3d p_err = pd - pe;
 
     // position normal
     double p_err_norm = p_err.head<2>().norm();

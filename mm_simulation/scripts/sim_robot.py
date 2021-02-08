@@ -60,7 +60,7 @@ class RobotSim(object):
         R_wb = rotation2d(qb[2])
         skew = np.array([[0, -ub[2]], [ub[2], 0]])
         dqb = np.zeros(3)
-        dqb[:2] = R_wb.dot(self.ub[:2]) + skew.dot(qb[:2])
+        dqb[:2] = R_wb.dot(self.ub[:2])  #+ skew.dot(qb[:2])
         dqb[2] = ub[2]
         return dqb
 

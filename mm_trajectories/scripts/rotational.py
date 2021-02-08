@@ -24,6 +24,7 @@ def main():
     p0, quat0 = util.wait_for_initial_pose(DT)
 
     scaling = timescaling.QuinticTimeScaling(duration / 2.0)
+    # scaling = timescaling.QuinticTimeScaling(duration)
     # scaling = timescaling.CubicTimeScaling(duration)
     # scaling = timescaling.LinearTimeScaling(duration)
     # scaling = timescaling.TrapezoidalTimeScalingV(0.1, duration)
@@ -33,6 +34,7 @@ def main():
     traj2 = path.Rotational(p0, quat1, [-1, 0, 0], 0.5*np.pi, scaling)
 
     waypoints = util.create_waypoints(traj1, duration / 2.0, DT)
+    # waypoints = util.create_waypoints(traj1, duration, DT)
     waypoints += util.create_waypoints(traj2, duration / 2.0, DT)
 
     util.publish(waypoints, DT)

@@ -35,6 +35,11 @@ void calc_rotation_error(const Eigen::Matrix3d& Rd, const Eigen::Matrix3d& Re,
                     Eigen::Vector3d& e);
 
 
+void calc_rotation_error_quat(const Eigen::Matrix3d& Rd,
+                              const Eigen::Matrix3d& Re,
+                              Eigen::Vector3d& e);
+
+
 // Calculate Jacobians w.r.t. each column of the forward kinematics rotation
 // matrix, R(q) = [n, s, a].
 // Parameters:
