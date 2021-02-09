@@ -26,9 +26,6 @@ def main():
     p1 = p0 + OFFSET
 
     scaling = timescaling.QuinticTimeScaling(duration)
-    # scaling = timescaling.CubicTimeScaling(duration)
-    # scaling = timescaling.TrapezoidalTimeScalingV(0.1, duration)
-    # scaling = timescaling.LinearTimeScaling(duration)
     traj = path.PointToPoint(p0, p1, quat0, scaling)
     waypoints = util.create_waypoints(traj, duration, DT)
 

@@ -24,15 +24,12 @@ def main():
     p0, quat0 = util.wait_for_initial_pose(DT)
 
     scaling = timescaling.QuinticTimeScaling(duration)
-    # scaling = timescaling.CubicTimeScaling(duration)
-    # scaling = timescaling.LinearTimeScaling(duration)
-    # scaling = timescaling.TrapezoidalTimeScalingV(0.1, duration)
-    traj = path.Spiral(p0, quat0, R, FREQUENCY, LX, scaling, duration)
+    traj = path.Spiral(p0, quat0, R, FREQUENCY, LX, scaling)
     waypoints = util.create_waypoints(traj, duration, DT)
 
     util.publish(waypoints, DT)
 
-    print('Launched sine x-y trajectory with duration of {} seconds.'.format(duration))
+    print('Launched spiral trajectory with duration of {} seconds.'.format(duration))
 
 
 if __name__ == '__main__':

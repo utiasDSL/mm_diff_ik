@@ -159,6 +159,7 @@ class Spiral(object):
         s, dsdt, dsdt2 = self.timescaling.eval(t)
 
         R = self.r * s
+        dRds = self.r
 
         # x is linear in s
         x = self.p0[0] + self.lx * s
@@ -166,14 +167,14 @@ class Spiral(object):
         dxdt2 = self.lx * dsdt2
 
         y = self.p0[1] + R * np.cos(self.w * s) - R
-        dyds = -R * self.w * np.sin(self.w * s)
-        dyds2 = -R * self.w**2 * np.cos(self.w * s)
+        dyds = dRds * np.cos(self.w * s) - R * self.w * np.sin(self.w * s) - dRds
+        dyds2 = -2 * dRds * self.w * np.sin(self.w * s) - R * self.w**2 * np.cos(self.w * s)
         dydt = dyds * dsdt
         dydt2 = dyds * dsdt2 + dyds2 * dsdt**2
 
         z = self.p0[2] + R * np.sin(self.w * s)
-        dzds = R * self.w * np.cos(self.w * s)
-        dzds2 = -R * self.w**2 * np.sin(self.w * s)
+        dzds = dRds * np.sin(self.w * s) + R * self.w * np.cos(self.w * s)
+        dzds2 = -dRds * self.w * np.sin(self.w * s) + dRds * self.w * np.cos(self.w * s) - R * self.w**2 * np.sin(self.w * s)
         dzdt = dzds * dsdt
         dzdt2 = dzds * dsdt2 + dzds2 * dsdt**2
 

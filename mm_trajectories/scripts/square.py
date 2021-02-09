@@ -33,15 +33,12 @@ def main():
     waypoints = []
     for i in xrange(5):
         scaling = timescaling.QuinticTimeScaling(durations[i])
-        # scaling = timescaling.LinearTimeScaling(durations[i])
         traj = path.PointToPoint(points[i, :], points[i+1, :], quat0, scaling)
         waypoints.extend(util.create_waypoints(traj, durations[i], DT))
 
     util.publish(waypoints, DT)
 
     print('Launched square trajectory with duration of {} seconds.'.format(duration))
-    # print('v = {}'.format(scaling.v))
-    # print('a = {}'.format(scaling.a))
 
 
 if __name__ == '__main__':
