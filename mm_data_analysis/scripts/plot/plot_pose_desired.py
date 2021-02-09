@@ -9,8 +9,6 @@ import mm_data_analysis.plot as mmplt
 import mm_data_analysis.util as util
 import numpy as np
 
-import IPython
-
 
 def main():
     bag = rosbag.Bag(sys.argv[1])
@@ -41,12 +39,10 @@ def main():
     wdy = [msg.twist_desired.angular.y for msg in pose_msgs]
     wdz = [msg.twist_desired.angular.z for msg in pose_msgs]
 
-    x0 = pdx[0]
-    v = 0.1
-    pdx2 = np.array([v*tau for tau in t]) + x0
-    err = pdx2 - pdx
-
-    IPython.embed()
+    # x0 = pdx[0]
+    # v = 0.1
+    # pdx2 = np.array([v*tau for tau in t]) + x0
+    # err = pdx2 - pdx
 
     plt.figure()
     plt.plot(t, pdx, 'r', label='$p_x$')
@@ -58,13 +54,13 @@ def main():
     plt.xlabel('Time (s)')
     plt.ylabel('Position (m)')
 
-    plt.figure()
-    plt.plot(t, err)
-    plt.grid()
-    plt.legend()
-    plt.title('Error x')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Position (m)')
+    # plt.figure()
+    # plt.plot(t, err)
+    # plt.grid()
+    # plt.legend()
+    # plt.title('Error x')
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Position (m)')
 
     plt.figure()
     plt.plot(t, qdx, 'r', label='$q_x$')

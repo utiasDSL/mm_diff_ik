@@ -5,6 +5,7 @@ rosbag record -o "$1"    \
   /optimization_state    \
   /mm_joint_states       \
   /ur_driver/joint_speed \
+  /ur10_joint_states \
   /ridgeback_velocity_controller/cmd_vel \
   /vicon/ThingBase2/ThingBase2 \
   /vicon/Board/Board \
