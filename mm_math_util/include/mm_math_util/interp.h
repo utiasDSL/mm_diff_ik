@@ -2,6 +2,8 @@
 
 #include <Eigen/Eigen>
 
+#include "mm_math_util/rotation.h"
+
 
 namespace mm {
 
@@ -217,6 +219,32 @@ class QuaternionInterp {
         double t1, t2;
 
 }; // class QuaternionInterp
+
+
+// Spherical linear interpolation between 2D unit vectors a and b.
+inline Eigen::Vector2d slerp2d(const Eigen::Vector2d& a, const Eigen::Vector2d& b,
+                        const double t) {
+    Eigen::Vector2d an = a.normalized();
+    Eigen::Vector2d bn = b.normalized();
+
+    const double eps = 1e-8;
+    const double eps1 = 1 - eps;
+    double dot = an.dot(bn);
+    double angle = std::acos(dot);
+
+    if (dot >= eps1) {
+        // Unit vectors are the same: just return one of them.
+        return an;
+    } else if (dot <= -eps1) {
+        // Unit vectors are opposite: slerp formula has numeric issues, so use
+        // rotation matrix.
+        Eigen::Matrix2d R = rotation2d(t * angle);
+        return R * an;
+    }
+
+    Eigen::Vector2d c = (std::sin((1-t)*angle) * an + std::sin(t*angle) * bn) / std::sin(angle);
+    return c;
+}
 
 
 } // namespace mm

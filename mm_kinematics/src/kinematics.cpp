@@ -1,6 +1,8 @@
 #include <ros/ros.h>
 #include <Eigen/Eigen>
 
+#include <mm_math_util/rotation.h>
+
 #include "mm_kinematics/kinematics.h"
 
 
@@ -224,14 +226,8 @@ void Kinematics::dh_transform(double q, double a, double d, double alpha,
 
 void Kinematics::calc_base_input_mapping(const JointVector& q, JointMatrix& B) {
     // Rotation matrix from base to world frame.
-    Eigen::Matrix2d R_wb;
-    double c = cos(q(2));
-    double s = sin(q(2));
-    R_wb << c, -s, s, c;
-
-    // TODO this needs to be tested to see if it improves things.
+    Eigen::Matrix2d R_wb = rotation2d(q(2));
     B = JointMatrix::Identity();
-    // B.topLeftCorner<2, 3>() << R_wb, Eigen::Vector2d(-q(1), q(0));
     B.topLeftCorner<2, 2>() = R_wb;
 }
 

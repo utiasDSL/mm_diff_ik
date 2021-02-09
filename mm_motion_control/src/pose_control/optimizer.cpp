@@ -5,6 +5,7 @@
 
 #include <mm_kinematics/kinematics.h>
 #include <mm_math_util/differentiation.h>
+#include <mm_math_util/interp.h>
 
 #include "mm_motion_control/pose_control/obstacle.h"
 #include "mm_motion_control/pose_control/pose_error.h"
@@ -15,19 +16,6 @@ namespace mm {
 
 
 static const int NUM_WSR = 50;
-
-
-// TODO this should really be unit tested
-// even better, use an external library...
-// TODO test *a lot* more
-Eigen::Vector2d slerp(const Eigen::Vector2d a, const Eigen::Vector2d b, double t) {
-    double dot = a.dot(b);
-    double angle = std::acos(dot);
-    if (std::abs(angle) < 1e-5) {
-        return a;
-    }
-    return (std::sin((1 - t) * angle) * a + std::sin(t * angle) * b) / std::sin(angle);
-}
 
 
 bool IKOptimizer::init() {
@@ -270,7 +258,7 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
         // if (nf_xy.norm() > 1e-3) {
         //     nf_xy = nf_xy / nf_xy.norm();
         // }
-        nf_xy = slerp(nf_xy, np_xy, alpha_nf);
+        nf_xy = slerp2d(nf_xy, np_xy, alpha_nf);
     }
 
     // force normal
@@ -279,7 +267,7 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // push direction balances between the two
     double alpha_push = 0.5;
     // Eigen::Vector2d push_dir = ((1+alpha_push)*nf_xy*nf_xy.transpose() - alpha_push*Eigen::Matrix2d::Identity()) * np_xy;
-    Eigen::Vector2d push_dir = slerp(nf_xy, np_xy, -alpha_push);
+    Eigen::Vector2d push_dir = slerp2d(nf_xy, np_xy, -alpha_push);
 
     // TODO fixed gains for now
     // double push_dir_norm = push_dir.norm();

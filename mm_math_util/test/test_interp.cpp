@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "mm_math_util/interp.h"
+#include "mm_math_util/rotation.h"
 
 
 using namespace mm;
@@ -114,6 +115,67 @@ TEST(InterpolationTestSuite, testInterpBigTime) {
     // Midpoint
     EXPECT_TRUE((x_sample - x_expected).norm() < EPS);
     EXPECT_TRUE((v_sample - v_expected).norm() < EPS);
+}
+
+
+TEST(InterpolationTestSuite, testSlerp2D) {
+    Eigen::Vector2d a, b, c, c_ex;
+    a << 1, 0;
+
+    // vectors with same direction
+    c = slerp2d(a, a, 0);
+    EXPECT_TRUE((c - a).norm() < EPS);
+
+    c = slerp2d(a, a, 0.5);
+    EXPECT_TRUE((c - a).norm() < EPS);
+
+    c = slerp2d(a, a, 1);
+    EXPECT_TRUE((c - a).norm() < EPS);
+
+    // vectors with opposite direction
+    b << -1, 0;
+    c = slerp2d(a, b, 0);
+    EXPECT_TRUE((c - a).norm() < EPS);
+
+    c = slerp2d(a, b, 1);
+    EXPECT_TRUE((c - b).norm() < EPS);
+
+    c = slerp2d(a, b, 0.5);
+    c_ex << 0, 1;
+    EXPECT_TRUE((c - c_ex).norm() < EPS);
+
+    c = slerp2d(a, b, -0.5);
+    c_ex << 0, -1;
+    EXPECT_TRUE((c - c_ex).norm() < EPS);
+
+    // positive dot product
+    b << 1, 1;
+    b.normalize();
+    c = slerp2d(a, b, 0.5);
+    c_ex = rotation2d(0.5*M_PI_4) * a;
+    EXPECT_NEAR((c - c_ex).norm(), 0, EPS);
+
+    // should be symmetric
+    c = slerp2d(b, a, 0.5);
+    EXPECT_NEAR((c - c_ex).norm(), 0, EPS);
+
+    // t can also be > 1
+    c = slerp2d(a, b, 2);
+    c_ex << 0, 1;
+    EXPECT_NEAR((c - c_ex).norm(), 0, EPS);
+
+    // negative dot product
+    b << -1, 1;
+    c = slerp2d(a, b, 2.0/3.0);
+    c_ex << 0, 1;
+    EXPECT_NEAR((c - c_ex).norm(), 0, EPS);
+
+    // check it works in other quadrants
+    a << 0, -1;
+    b << -1, 0;
+    c = slerp2d(a, b, 0.25);
+    c_ex << rotation2d(-0.5*M_PI_4) * a;
+    EXPECT_NEAR((c - c_ex).norm(), 0, EPS);
 }
 
 
