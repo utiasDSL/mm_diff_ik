@@ -245,9 +245,15 @@ void IKControllerManager::publish_robot_state(const ros::Time& now) {
 
     // Error.
     Eigen::Vector3d pos_err = pos_des - pos_act;
+
+    // TODO use a single function for this (also required for orientation tracking)
     Eigen::Quaterniond quat_err = quat_des * quat_act.inverse();
     Eigen::Vector3d rot_err;
     calc_rotation_error(Rd, Re, rot_err);
+
+    // Optimizer info
+    IKOptimizerState opt_state;
+    controller.get_optimizer_state(opt_state);
 
     if (state_pub->trylock()) {
         geometry_msgs::Pose pose_act_msg, pose_des_msg, pose_err_msg;
@@ -277,6 +283,12 @@ void IKControllerManager::publish_robot_state(const ros::Time& now) {
         state_pub->msg_.q = std::vector<double>(q.data(), q.data() + q.size());
         state_pub->msg_.dq = std::vector<double>(dq.data(), dq.data() + dq.size());
         state_pub->msg_.u = std::vector<double>(u.data(), u.data() + u.size());
+
+        state_pub->msg_.x = std::vector<double>(opt_state.dq_opt.data(),
+                opt_state.dq_opt.data() + opt_state.dq_opt.size());
+        state_pub->msg_.objective = opt_state.obj_val;
+        state_pub->msg_.ret = opt_state.code;
+        state_pub->msg_.status = opt_state.status;
 
         state_pub->msg_.header.frame_id = "world";
         state_pub->msg_.header.stamp = now;

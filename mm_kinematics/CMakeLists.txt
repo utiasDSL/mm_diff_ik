@@ -54,13 +54,13 @@ target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
 )
 
-add_executable(ad_test
-  src/ad_test.cpp
-)
-target_link_libraries(ad_test
-  ${catkin_LIBRARIES}
-  dl
-)
+# add_executable(ad_test
+#   src/ad_test.cpp
+# )
+# target_link_libraries(ad_test
+#   ${catkin_LIBRARIES}
+#   dl
+# )
 
 # Tests
 catkin_add_executable_with_gtest(test_kinematics

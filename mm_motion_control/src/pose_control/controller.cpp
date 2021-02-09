@@ -51,4 +51,9 @@ int IKController::update(double t, PoseTrajectory& trajectory,
     return status;
 }
 
+
+void IKController::get_optimizer_state(IKOptimizerState& state) {
+    optimizer.get_state(state);
+}
+
 } // namespace mm

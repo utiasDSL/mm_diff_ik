@@ -47,8 +47,12 @@ const JointVector POSITION_LIMITS_UPPER(
                           0.75*M_PI, -0.25*M_PI, M_PI, TWO_PI, TWO_PI, TWO_PI).finished());
 
 // Joint velocity limits
+// const JointVector VELOCITY_LIMITS_UPPER(
+//         (JointVector() << 1.0, 1.0, 2.0, 2.16, 2.16, 3.15, 3.2, 3.2, 3.2).finished());
+// NOTE: conservative velocity limits until mysterious controller instability
+// bug is resolved.
 const JointVector VELOCITY_LIMITS_UPPER(
-        (JointVector() << 1.0, 1.0, 2.0, 2.16, 2.16, 3.15, 3.2, 3.2, 3.2).finished());
+        (JointVector() << 0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25).finished());
 const JointVector VELOCITY_LIMITS_LOWER = -VELOCITY_LIMITS_UPPER;
 
 const JointVector ACCEL_LIMITS_UPPER(

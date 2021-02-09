@@ -124,6 +124,7 @@ class QuinticInterp {
             double dt4 = dt3*dt;
             double dt5 = dt4*dt;
 
+            // x(t) = c5*t^5 + c4*t^4 + c3*t^3 + c2*t^2 + c1*t + c0
             Matrix6d A;
             A << 0, 0, 0, 0, 0, 1,
                  dt5, dt4, dt3, dt2, dt, 1,

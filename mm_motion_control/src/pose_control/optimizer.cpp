@@ -17,9 +17,13 @@ namespace mm {
 static const int NUM_WSR = 50;
 
 
+// TODO this should really be unit tested
+// even better, use an external library...
+// TODO test *a lot* more
 Eigen::Vector2d slerp(const Eigen::Vector2d a, const Eigen::Vector2d b, double t) {
-    double angle = std::acos(a.dot(b));
-    if (angle < 1e-5) {
+    double dot = a.dot(b);
+    double angle = std::acos(dot);
+    if (std::abs(angle) < 1e-5) {
         return a;
     }
     return (std::sin((1 - t) * angle) * a + std::sin(t * angle) * b) / std::sin(angle);
@@ -29,6 +33,8 @@ Eigen::Vector2d slerp(const Eigen::Vector2d a, const Eigen::Vector2d b, double t
 bool IKOptimizer::init() {
     nf << 1, 0, 0;
     nf_xy << 1, 0;
+    freaked_out = false;
+    did_print_gs = false;
     return true;
 }
 
@@ -65,7 +71,7 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
     // NOTE: cannot warm start if we're using a variable number of constraints
     // (obstacles) at each time step.
     qpOASES::QProblem qp(NUM_JOINTS, num_obstacles);
-    qp.setPrintLevel(qpOASES::PL_NONE);
+    qp.setPrintLevel(qpOASES::PL_LOW);  // only error messages
     qpOASES::returnValue ret = qp.init(H_data, g_data, A_data, lb_data, ub_data,
                                        lbA_data, ubA_data, nWSR);
     int status = qpOASES::getSimpleStatus(ret);
@@ -79,6 +85,26 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
     state.obj_val = qp.getObjVal();
     state.code = ret;
     state.status = status;
+
+    if (isnan(state.obj_val) || isinf(state.obj_val)) {
+        if (!freaked_out) {
+            ROS_WARN_STREAM("Objective value = " << state.obj_val);
+            ROS_WARN_STREAM("u = " << dq_opt);
+            ROS_WARN_STREAM("ret = " << ret);
+            ROS_WARN_STREAM("status = " << status);
+            ROS_WARN_STREAM("num_obs = " << num_obstacles);
+            ROS_WARN_STREAM("H = " << H);
+            ROS_WARN_STREAM("g = " << g);
+            ROS_WARN_STREAM("lb = " << lb);
+            ROS_WARN_STREAM("ub = " << ub);
+
+            qp.printProperties();
+            qp.printOptions();
+            freaked_out = true;
+        }
+
+        dq_opt = JointVector::Zero();
+    }
 
     return status;
 }
@@ -136,8 +162,7 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // Kp.diagonal() << 1, 1, 1, 0, 0, 0;
 
     Matrix6d W3 = Matrix6d::Identity();
-    // Matrix6d W3 = Matrix6d::Zero();
-    // W3.diagonal() << 5.0, 5.0, 5.0, 1.0, 1.0, 1.0;
+    // W3.diagonal() << 1, 1, 1, 0, 0, 0;
 
     JointMatrix Q3 = JB.transpose() * W3 * JB;
     JointVector C3 = -(Kp * P_err + Vd).transpose() * W3 * JB;
@@ -146,11 +171,13 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     /* 4. Minimize joint acceleration */
 
     // Only do numerical differentiation with a non-zero timestep.
+    // JointMatrix Q4 = JointMatrix::Zero();
+    // if (dt * dt > 0) {
+    //     Q4 = JointMatrix::Identity() / (dt * dt);
+    // }
+    // JointVector C4 = -dq.transpose() * Q4;
     JointMatrix Q4 = JointMatrix::Zero();
-    if (dt * dt > 0) {
-        Q4 = JointMatrix::Identity() / (dt * dt);
-    }
-    JointVector C4 = -dq.transpose() * Q4;
+    JointVector C4 = JointVector::Zero();
 
 
     /*************************************************************************/
@@ -267,8 +294,12 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // ROS_INFO_STREAM("vp = " << vp);
 
     Eigen::Matrix3d W7 = Eigen::Matrix3d::Identity();
-    JointMatrix Q7 = B.transpose() * Jp.transpose() * W7 * Jp * B;
-    JointVector C7 = -vp.transpose() * W7 * Jp * B;
+    // JointMatrix Q7 = B.transpose() * Jp.transpose() * W7 * Jp * B;
+    // JointVector C7 = -vp.transpose() * W7 * Jp * B;
+
+    // get rid of these for now to avoid accidental mess ups
+    JointMatrix Q7 = JointMatrix::Zero();
+    JointVector C7 = JointVector::Zero();
 
     /*************************************************************************/
     /* Objective weighting */
@@ -280,6 +311,17 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     double w5 = 0.0; // force compliance
     double w6 = 0.0; // force-based orientation
     double w7 = 0.0; // pushing
+
+    if (freaked_out && !did_print_gs) {
+        ROS_WARN_STREAM("C1 = " << C1);
+        ROS_WARN_STREAM("C2 = " << C2);
+        ROS_WARN_STREAM("C3 = " << C3);
+        ROS_WARN_STREAM("C4 = " << C4);
+        ROS_WARN_STREAM("C5 = " << C5);
+        ROS_WARN_STREAM("C6 = " << C6);
+        ROS_WARN_STREAM("C7 = " << C7);
+        did_print_gs = true;
+    }
 
     H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w6*Q6 + w7*Q7;
     g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w6*C6 + w7*C7;
@@ -335,22 +377,6 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
     /*** SOLVE QP ***/
 
     int status = solve_qp(H, g, A_obs, dq_lb, dq_ub, b_obs, dq_opt);
-
-
-    /*** CALCULATE OBJECTIVE FUNCTION VALUES ***/
-
-    // // Examine objective function values
-    // double vel_obj = dq_opt.transpose() * Q1 * dq_opt; // want to minimize
-    //
-    // double mi = Kinematics::manipulability(q);
-    // double mi_obj_quad = dt * dt * dq_opt.transpose() * Hm * dq_opt;
-    // double mi_obj_lin = dt * dm.dot(dq_opt);
-    //
-    // // This is what actually gets considering in the optimization
-    // // problem.
-    // double mi_obj = w1 * (mi_obj_quad + mi_obj_lin); // want to maximize
-    //
-    // publish_state(dq_opt, vel_obj, mi_obj);
 
     return status;
 }

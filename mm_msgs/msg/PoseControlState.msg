@@ -18,3 +18,9 @@ geometry_msgs/Vector3 rotation_error
 float64[] q
 float64[] dq
 float64[] u
+
+# Optimization info: TODO this would be better as its own message
+float64[] x
+float64 objective
+int64 ret
+int64 status

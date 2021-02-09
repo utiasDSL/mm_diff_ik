@@ -88,12 +88,16 @@ bool PoseTrajectory::done(double t) {
 bool PoseTrajectory::interpolate(const double t, Eigen::Vector3d& p,
                                  Eigen::Vector3d& v, Eigen::Quaterniond& q,
                                  Eigen::Vector3d& w) {
+    // acceleration is not actually used for controller, so isn't returned
+    Eigen::Vector3d a = Eigen::Vector3d::Zero();
+    Eigen::Vector3d alpha = Eigen::Vector3d::Zero();
+
     // Check if we're past the end of the trajectory.
     if (done(t)) {
         // Return the last waypoint, but also signal that the
         // trajectory is done.
         mm_msgs::PoseTrajectoryPoint wp = waypoints.back();
-        pose_traj_point_to_eigen(wp, p, q, v, w);
+        pose_traj_point_to_eigen(wp, p, q, v, w, a, alpha);
         return false;
     }
 
@@ -108,25 +112,19 @@ bool PoseTrajectory::interpolate(const double t, Eigen::Vector3d& p,
         double t1 = t0 + dt * idx;
         double t2 = t0 + dt * (idx + 1);
 
-        Eigen::Vector3d p1, v1, w1;
+        Eigen::Vector3d p1, v1, w1, a1, alpha1;
         Eigen::Quaterniond q1;
-        pose_traj_point_to_eigen(wp1, p1, q1, v1, w1);
+        pose_traj_point_to_eigen(wp1, p1, q1, v1, w1, a1, alpha1);
 
-        Eigen::Vector3d p2, v2, w2;
+        Eigen::Vector3d p2, v2, w2, a2, alpha2;
         Eigen::Quaterniond q2;
-        pose_traj_point_to_eigen(wp2, p2, q2, v2, w2);
-
-        // TODO accelerations are zero for now
-        Eigen::Vector3d a1 = Eigen::Vector3d::Zero();
-        Eigen::Vector3d a2 = Eigen::Vector3d::Zero();
+        pose_traj_point_to_eigen(wp2, p2, q2, v2, w2, a2, alpha2);
 
         lerp.interpolate(t1, t2, p1, p2, v1, v2, a1, a2);
         slerp.interpolate(t1, t2, q1, q2);
 
         w_prev = w1;
     }
-
-    Eigen::Vector3d a = Eigen::Vector3d::Zero();
 
     lerp.sample(t, p, v, a);
     slerp.sample(t, q);

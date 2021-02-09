@@ -53,6 +53,10 @@ class JointStateMux {
             mm_joint_states.header.stamp = ros::Time::now();
 
             for (int i = 0; i < NUM_JOINTS; ++i) {
+                if (std::abs(position[i]) > 2 * M_PI) {
+                    ROS_WARN_STREAM(JOINT_NAMES[i] << " = " << position[i]);
+                    return;
+                }
                 mm_joint_states.name.push_back(JOINT_NAMES[i]);
                 mm_joint_states.position.push_back(position[i]);
                 mm_joint_states.velocity.push_back(velocity[i]);

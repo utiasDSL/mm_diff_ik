@@ -46,6 +46,9 @@ class IKController {
         // Reset the stored previous time to time t.
         void set_time(double t);
 
+        // Get detailed state of the optimizer.
+        void get_optimizer_state(IKOptimizerState& state);
+
     private:
         // Time from previous control loop iteration.
         double time_prev;

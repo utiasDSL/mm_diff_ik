@@ -17,6 +17,7 @@ namespace mm {
 //   w: populated angular velocity
 void pose_traj_point_to_eigen(const mm_msgs::PoseTrajectoryPoint& msg,
                               Eigen::Vector3d& p, Eigen::Quaterniond& q,
-                              Eigen::Vector3d& v, Eigen::Vector3d& w);
+                              Eigen::Vector3d& v, Eigen::Vector3d& w,
+                              Eigen::Vector3d& a, Eigen::Vector3d& alpha);
 
 } // namespace mm

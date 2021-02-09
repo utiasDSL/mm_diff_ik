@@ -84,6 +84,18 @@ target_link_libraries(home
   ${catkin_LIBRARIES}
 )
 
+## analyse_optimizer
+add_executable(analyse_optimizer
+  src/nodes/analyse_optimizer.cpp
+  src/pose_control/pose_error.cpp src/pose_control/pose_error_jac.cpp
+  src/pose_control/optimizer.cpp
+  src/pose_control/trajectory.cpp
+)
+target_link_libraries(analyse_optimizer
+  ${catkin_LIBRARIES}
+  /usr/local/lib/libqpOASES.so
+)
+
 # add_executable(pose_publisher
 #   src/pose_publisher.cpp
 # )
