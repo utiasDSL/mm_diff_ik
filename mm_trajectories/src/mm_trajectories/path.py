@@ -87,8 +87,8 @@ class Figure8(object):
 
         # these are all of shape (n, 3)
         p = self.pc + self.r * np.stack((np.zeros_like(t), y, z), axis=1)
-        dpds = 2*np.pi*self.r * np.stack((np.zeros_like(t), dy_ds, dz_ds), axis=1)
-        dpds2 = 4*np.pi**2*self.r * np.stack((np.zeros_like(t), dy_ds2, dz_ds2), axis=1)
+        dpds = 4*np.pi*self.r * np.stack((np.zeros_like(t), dy_ds, dz_ds), axis=1)
+        dpds2 = 4**2*np.pi**2*self.r * np.stack((np.zeros_like(t), dy_ds2, dz_ds2), axis=1)
 
         v = dpds * ds[:, None]
         a = dpds * dds[:, None] + dpds2 * ds[:, None]**2
