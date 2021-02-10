@@ -1,24 +1,7 @@
-import re
 import numpy as np
 import sympy as sym
 
-from util import dh_tf, R_t_from_T, _as_np
-
-import IPython
-
-
-def _sin_repl(m):
-    return 's' + m.group(1)
-
-
-def _cos_repl(m):
-    return 'c' + m.group(1)
-
-
-def _replace_sin_cos(s):
-    s = re.sub('sin\(([a-z0-9]+)\)', _sin_repl, s)
-    s = re.sub('cos\(([a-z0-9]+)\)', _cos_repl, s)
-    return s
+from util import dh_tf, R_t_from_T
 
 
 PARAM_SUB_DICT = {
@@ -114,23 +97,21 @@ class KinematicModel(object):
 
         # Angular derivatives - this is the unit vector pointing along the
         # z-axis for the corresponding joint.
-        k = sym.Matrix([0, 0, 1])  # Unit vector along z-axis
+        z0 = sym.Matrix([0, 0, 1])  # Unit vector along z-axis
 
-        z_xb = R0_2 * k
-        z_yb = R0_3 * k
-        z_tb = R0_4 * k
-
-        z_q1 = R0_7  * k
-        z_q2 = R0_8  * k
-        z_q3 = R0_9  * k
-        z_q4 = R0_10 * k
-        z_q5 = R0_11 * k
-        z_q6 = R0_12 * k
+        # axis for each joint's angular velocity is the z-axis of the previous
+        # transform
+        z_tb = R0_3 * z0
+        z_q1 = R0_6 * z0
+        z_q2 = R0_7 * z0
+        z_q3 = R0_8 * z0
+        z_q4 = R0_9 * z0
+        z_q5 = R0_10 * z0
+        z_q6 = R0_11 * z0
 
         # joints xb and yb are prismatic, and so cause no angular velocity.
-        # TODO clean this up
-        Jw = sym.Matrix.hstack(0*z_xb, 0*z_yb, z_yb, z_tb, z_q1, z_q2, z_q3, z_q4,
-                               z_q5)
+        Jw = sym.Matrix.hstack(sym.zeros(3, 2), z_tb, z_q1, z_q2, z_q3, z_q4,
+                               z_q5, z_q6)
 
         # Linear derivatives
         Jvs = [sym.diff(t0_13, qi) for qi in self.q]
@@ -161,62 +142,3 @@ class KinematicModel(object):
             m2 = 0
         m = np.sqrt(m2)
         return m
-
-    def write_sym_jac(self, fname, fmt='c++'):
-        ''' Write symbolic Jacobian out to a file. '''
-        # fmt can be c++ or py
-
-        # Generate the string version of the Jacobian
-        J = np.empty((6, 9), dtype=object)
-        for i in range(6):
-            for j in range(9):
-                s = str(self.J_sym[i,j])
-                J[i, j] = _replace_sin_cos(s)
-
-        if fmt == 'c++':
-            msg = '{}({},{}) = {};\n'
-        else:
-            msg = '{}[{},{}] = {}\n'
-
-        with open(fname, 'w+') as f:
-            f.write('Base\n')
-            for i in range(6):
-                for j in range(3):
-                    f.write(msg.format('Jb', i, j, J[i,j]))
-
-            f.write('\nArm\n')
-            for i in range(6):
-                for j in range(6):
-                    f.write(msg.format('Ja', i, j, J[i,j+3]))
-
-    # def write_sym_orientation_jacobian(self, fname, fmt='c++'):
-    #     Jn, Js, Ja = self._calc_sym_analytic_jacobian()
-    #
-    #     if fmt == 'c++':
-    #         msg = '{}({},{}) = {};\n'
-    #     else:
-    #         msg = '{}[{},{}] = {}\n'
-    #
-    #     r, c = Jn.shape
-    #     with open(fname, 'w+') as f:
-    #         # Jn_str = np.empty(Jn.shape, dtype=object)
-    #         f.write('Jn\n')
-    #         for i in range(r):
-    #             for j in range(c):
-    #                 s = str(Jn[i, j])
-    #                 s = _replace_sin_cos(s)
-    #                 f.write(msg.format('Jn', i, j, s))
-    #
-    #         f.write('\nJs\n')
-    #         for i in range(r):
-    #             for j in range(c):
-    #                 s = str(Js[i, j])
-    #                 s = _replace_sin_cos(s)
-    #                 f.write(msg.format('Js', i, j, s))
-    #
-    #         f.write('\nJa\n')
-    #         for i in range(r):
-    #             for j in range(c):
-    #                 s = str(Ja[i, j])
-    #                 s = _replace_sin_cos(s)
-    #                 f.write(msg.format('Ja', i, j, s))

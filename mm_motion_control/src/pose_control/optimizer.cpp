@@ -375,9 +375,8 @@ void IKOptimizer::linearize_manipulability1(const JointVector& q,
     dm = JointVector::Zero();
     JointMatrix I = JointMatrix::Identity();
 
-    // MI does not change as w.r.t. the base joint variables, so we leave the
-    // first three joints as zero.
-    for (int i = 3; i < NUM_JOINTS; ++i) {
+    // first two and last joint do not affect the MI
+    for (int i = 2; i < NUM_JOINTS - 1; ++i) {
         JointVector Ii = I.col(i);
         double m1 = Kinematics::manipulability(q + h*Ii);
         double m2 = Kinematics::manipulability(q - h*Ii);

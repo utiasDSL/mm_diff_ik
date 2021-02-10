@@ -92,6 +92,10 @@ class Kinematics {
         static void calc_base_input_mapping(const JointVector& q,
                                             JointMatrix& B);
 
+        // Calculate gradient of manipulability w.r.t. joint variables.
+        static void manipulability_gradient(const JointVector& q,
+                                            JointVector& m_grad);
+
     private:
         // Kinematic parameters
         // Offset from base to arm
@@ -114,6 +118,20 @@ class Kinematics {
 
         static void jacobians(const JointVector& q, ArmJacobianMatrix& Ja,
                               BaseJacobianMatrix& Jb);
+
+        // Derivatives of arm Jacobian w.r.t. all joint variables. Used for
+        // computing the derivative of manipulability.
+        static void calc_dJa_dxb(const JointVector& q, ArmJacobianMatrix& dJa);
+        static void calc_dJa_dyb(const JointVector& q, ArmJacobianMatrix& dJa);
+        static void calc_dJa_dtb(const JointVector& q, ArmJacobianMatrix& dJa);
+
+        static void calc_dJa_dq1(const JointVector& q, ArmJacobianMatrix& dJa);
+        static void calc_dJa_dq2(const JointVector& q, ArmJacobianMatrix& dJa);
+        static void calc_dJa_dq3(const JointVector& q, ArmJacobianMatrix& dJa);
+
+        static void calc_dJa_dq4(const JointVector& q, ArmJacobianMatrix& dJa);
+        static void calc_dJa_dq5(const JointVector& q, ArmJacobianMatrix& dJa);
+        static void calc_dJa_dq6(const JointVector& q, ArmJacobianMatrix& dJa);
 }; // class Kinematics
 
 } // namespace mm

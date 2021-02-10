@@ -211,6 +211,59 @@ double Kinematics::manipulability(const JointVector& q) {
     return m;
 }
 
+
+// double solve_dJJT_dqi(const ArmJacobianMatrix& Ja, 
+
+
+void Kinematics::manipulability_gradient(const JointVector& q,
+                                         JointVector& m_grad) {
+    ArmJacobianMatrix Ja;
+    BaseJacobianMatrix Jb;
+    jacobians(q, Ja, Jb);
+
+    Matrix6d JJT = Ja * Ja.transpose();
+    // Eigen::ColPivHouseholderQR<Matrix6d> JJT_dec(JJT);
+    Eigen::LDLT<Matrix6d> JJT_dec(JJT);
+
+    // xb, yb, and q6 are zero
+    ArmJacobianMatrix dJa_dtb, dJa_dq1, dJa_dq2, dJa_dq3, dJa_dq4, dJa_dq5;
+    calc_dJa_dtb(q, dJa_dtb);
+    calc_dJa_dq1(q, dJa_dq1);
+    calc_dJa_dq2(q, dJa_dq2);
+    calc_dJa_dq3(q, dJa_dq3);
+    calc_dJa_dq4(q, dJa_dq4);
+    calc_dJa_dq5(q, dJa_dq5);
+
+    // ArmJacobianMatrix B1, B2, B3, B4, B5, B6;
+    // B1 = dJa_dtb * Ja.transpose();
+    // B2 = dJa_dq1 * Ja.transpose();
+    // B3 = dJa_dq2 * Ja.transpose();
+    // B4 = dJa_dq3 * Ja.transpose();
+    // B5 = dJa_dq4 * Ja.transpose();
+    // B6 = dJa_dq5 * Ja.transpose();
+
+    JointVector traces;
+    traces << 0, 0,
+           JJT_dec.solve(dJa_dtb * Ja.transpose() + Ja * dJa_dtb.transpose()).trace(),
+           JJT_dec.solve(dJa_dq1 * Ja.transpose() + Ja * dJa_dq1.transpose()).trace(),
+           JJT_dec.solve(dJa_dq2 * Ja.transpose() + Ja * dJa_dq2.transpose()).trace(),
+           JJT_dec.solve(dJa_dq3 * Ja.transpose() + Ja * dJa_dq3.transpose()).trace(),
+           JJT_dec.solve(dJa_dq4 * Ja.transpose() + Ja * dJa_dq4.transpose()).trace(),
+           JJT_dec.solve(dJa_dq5 * Ja.transpose() + Ja * dJa_dq5.transpose()).trace(),
+           0;
+    // traces << 0, 0,
+    //        JJT_dec.solve(B1 + B1.transpose()).trace(),
+    //        JJT_dec.solve(B2 + B2.transpose()).trace(),
+    //        JJT_dec.solve(B3 + B3.transpose()).trace(),
+    //        JJT_dec.solve(B4 + B4.transpose()).trace(),
+    //        JJT_dec.solve(B5 + B5.transpose()).trace(),
+    //        JJT_dec.solve(B6 + B6.transpose()).trace(),
+    //        0;
+
+    double m = manipulability(q);
+    m_grad = 0.5 * m * traces;
+}
+
 void Kinematics::dh_transform(double q, double a, double d, double alpha,
                               Eigen::Affine3d& T) {
     double sq = std::sin(q);

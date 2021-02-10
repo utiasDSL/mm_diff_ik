@@ -49,6 +49,7 @@ include_directories(
 # Create C++ library
 add_library(${PROJECT_NAME}
   src/kinematics.cpp
+  src/dJdq.cpp
 )
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
