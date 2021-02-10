@@ -16,7 +16,7 @@
 #include <mm_msgs/PoseTrajectory.h>
 #include <mm_msgs/PoseControlState.h>
 #include <mm_msgs/Obstacles.h>
-#include <mm_msgs/ForceInfo.h>
+#include <mm_msgs/WrenchInfo.h>
 #include <mm_kinematics/kinematics.h>
 
 #include "mm_motion_control/util/messages.h"
@@ -42,12 +42,14 @@ bool IKControllerManager::init(ros::NodeHandle& nh) {
     mm_joint_states_sub = nh.subscribe("/mm_joint_states", 1,
             &IKControllerManager::mm_joint_states_cb, this);
 
+    // TODO: no longer used
     force_position_offset_sub = nh.subscribe("/force_control/position_offset",
             1, &IKControllerManager::pos_offset_cb, this);
 
-    force_info_sub = nh.subscribe("/force/info",
-            1, &IKControllerManager::force_info_cb, this);
+    wrench_info_sub = nh.subscribe("/mm_wrench/info",
+            1, &IKControllerManager::wrench_info_cb, this);
 
+    // TODO redundant: also contained in force info
     force_des_sub = nh.subscribe("/force/desired",
             1, &IKControllerManager::force_des_cb, this);
 
@@ -68,6 +70,7 @@ bool IKControllerManager::init(ros::NodeHandle& nh) {
 
     fd = 0;
     force = Eigen::Vector3d::Zero();
+    torque = Eigen::Vector3d::Zero();
     first_contact = false;
     pc = Eigen::Vector3d::Zero();
 
@@ -112,8 +115,8 @@ void IKControllerManager::loop(const double hz) {
         q = q + dt * dq;
         last_joint_state_time = t;
 
-        int status = controller.update(t, trajectory, q, dq, fd, force, pc,
-                                       obstacles, u);
+        int status = controller.update(t, trajectory, q, dq, fd, force, torque,
+                                       pc, obstacles, u);
 
         // print but then publish 0
         // ROS_INFO_STREAM("u = " << u);
@@ -184,10 +187,9 @@ void IKControllerManager::pos_offset_cb(const geometry_msgs::Vector3Stamped& msg
 }
 
 
-void IKControllerManager::force_info_cb(const mm_msgs::ForceInfo& msg) {
-    force(0) = msg.force_world.x;
-    force(1) = msg.force_world.y;
-    force(2) = msg.force_world.z;
+void IKControllerManager::wrench_info_cb(const mm_msgs::WrenchInfo& msg) {
+    force << msg.world.force.x, msg.world.force.y, msg.world.force.z;
+    torque << msg.world.torque.x, msg.world.torque.y, msg.world.torque.z;
 
     // If this is the first time contact is made, switch to maintaining the
     // current pose.

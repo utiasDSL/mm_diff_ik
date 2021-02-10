@@ -9,7 +9,7 @@
 namespace mm {
 
 
-const double OBS_SAFETY_DIST = 0.2;
+const double OBS_SAFETY_DIST = 0.1;
 const double OBS_INFLUENCE_DIST = 1.0;
 const double OBS_COEFF = 1.0;
 

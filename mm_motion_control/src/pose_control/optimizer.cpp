@@ -94,13 +94,19 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
         dq_opt = JointVector::Zero();
     }
 
+    // TODO redundant for now, but want to be safe
+    if (freaked_out) {
+        dq_opt = JointVector::Zero();
+    }
+
     return status;
 }
 
 
 void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
                                   const JointVector& q, const JointVector& dq,
-                                  double fd, const Eigen::Vector3d& f,
+                                  double fd, const Eigen::Vector3d& force,
+                                  const Eigen::Vector3d& torque,
                                   const Eigen::Vector3d& pc,
                                   double dt, JointMatrix& H, JointVector& g) {
     // Calculate mapping from base inputs to generalized coordinates. The
@@ -119,7 +125,7 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
 
     // If applied force is suitably large, then we update the contact direction
     // unit vector nf.
-    double f_norm = f.norm();
+    double f_norm = force.norm();
     // if (f_norm > FORCE_THRESHOLD) {
     //     nf = f / f_norm;
     // }
@@ -150,7 +156,7 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // Kp.diagonal() << 1, 1, 1, 0, 0, 0;
 
     Matrix6d W3 = Matrix6d::Identity();
-    // W3.diagonal() << 1, 1, 1, 0, 0, 0;
+    W3.diagonal() << 1, 1, 1, 0, 0, 0;
 
     JointMatrix Q3 = JB.transpose() * W3 * JB;
     JointVector C3 = -(Kp * P_err + Vd).transpose() * W3 * JB;
@@ -158,14 +164,14 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     /*************************************************************************/
     /* 4. Minimize joint acceleration */
 
-    // Only do numerical differentiation with a non-zero timestep.
-    // JointMatrix Q4 = JointMatrix::Zero();
-    // if (dt * dt > 0) {
-    //     Q4 = JointMatrix::Identity() / (dt * dt);
-    // }
-    // JointVector C4 = -dq.transpose() * Q4;
     JointMatrix Q4 = JointMatrix::Zero();
     JointVector C4 = JointVector::Zero();
+
+    // Only do numerical differentiation with a non-zero timestep.
+    // if (dt * dt > 0) {
+    //     Q4 = JointMatrix::Identity() / (dt * dt);
+    //     C4 = -dq.transpose() * Q4;
+    // }
 
 
     /*************************************************************************/
@@ -175,9 +181,10 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // controller, but reasonable for safety when interacting with people.
     // TODO does this make sense? shouldn't this make it so that the robot
     // eventually stops deviating from its position?
-    Eigen::Vector3d f_compliant = f;
+    Eigen::Vector3d f_compliant = force;
+    Eigen::Vector3d torque_compliant = torque;
     if (f_norm > MAX_COMPLIANCE_FORCE) {
-        f_compliant = MAX_COMPLIANCE_FORCE * f / f_norm;
+        f_compliant = MAX_COMPLIANCE_FORCE * force / f_norm;
     }
 
     // Only start to comply with forces above a certain magnitude, to reject
@@ -189,33 +196,31 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // } else {
     //     f_compliant = Eigen::Vector3d::Zero();
     // }
-    f_compliant = f;
-    // ROS_INFO_STREAM("fc = " << f_compliant);
+    Vector6d wrench_compliant;
+    wrench_compliant << f_compliant, torque_compliant;
 
-    Eigen::Matrix3d Kp_com = Eigen::Matrix3d::Zero();
-    Kp_com.diagonal() << 0, 1.0, 1.0;
-    // Eigen::Matrix3d Kf_com = 0.005 * Eigen::Matrix3d::Identity();
+    // ROS_INFO_STREAM("force = " << force);
+    // ROS_INFO_STREAM("torque = " << torque);
 
-    // only comply in certain directions
-    Eigen::Matrix3d Kf_com = Eigen::Matrix3d::Zero();
-    Kf_com.diagonal() << 0.005, 0, 0;
+    Matrix6d Kp_com = Matrix6d::Zero();
+    // Kp_com.diagonal() << 0, 0, 0, 1, 1, 1;
 
-    Matrix3x9 Jp = J.topRows<3>();
-    Eigen::Vector3d p_err = P_err.head<3>();
+    // only comply in directions where gain is non-zero
+    Matrix6d Kf_com = Matrix6d::Zero();
+    // Matrix6d Kf_com = 0.005 * Matrix6d::Identity();
+    Kf_com.diagonal() << 0.01, 0.01, 0.01, 0, 0, 0;
+    // Kf_com.diagonal() << 0, 0, 0, 0.01, 0.01, 0.01;
 
-    // TODO kludge for now
-    Eigen::Vector3d f_compliant_d;
-    // f_compliant_d << fd, 0, 0;
-    f_compliant_d << 5, 0, 0;
+    // TODO should take in fd as a vector
+    Vector6d wrench_compliant_d = Vector6d::Zero();
+    // wrench_compliant_d << fd, 0, 0, 0, 0, 0;
+    Vector6d W_err = wrench_compliant_d - wrench_compliant;
 
-    Matrix3x9 Af = Jp * B;
-    Eigen::Vector3d df = Vd.head<3>() + Kp_com * p_err + Kf_com * (f_compliant_d - f_compliant);
+    Vector6d Vc = Vd + Kp_com * P_err + Kf_com * W_err;
 
-    // ROS_INFO_STREAM("vc = " << df);
-
-    Eigen::Matrix3d W5 = Eigen::Matrix3d::Identity();
-    JointMatrix Q5 = Af.transpose() * W5 * Af;
-    JointVector C5 = -df.transpose() * W5 * Af;
+    Matrix6d W5 = Matrix6d::Identity();
+    JointMatrix Q5 = JB.transpose() * W5 * JB;
+    JointVector C5 = -Vc.transpose() * W5 * JB;
 
     /*************************************************************************/
     /* 6. Orientation of EE tracks nf. */
@@ -237,16 +242,16 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // Eigen::Vector3d p_err = pd - pe;
 
     // position normal
-    double p_err_norm = p_err.head<2>().norm();
+    // double p_err_norm = P_err.head<2>().norm();
     // Eigen::Vector2d np_xy = Eigen::Vector2d::Zero();
     // if (p_err_norm > 1e-2) {
     //     np_xy = p_err.head<2>() / p_err_norm;
     // }
-    Eigen::Vector2d np_xy = p_err.head<2>().normalized();
+    Eigen::Vector2d np_xy = P_err.head<2>().normalized();
 
     // nf_xy decays back to the push direction in the absence of sufficiently
     // large force measurements (i.e. ones that aren't noise)
-    Eigen::Vector2d f_xy = f.head<2>();
+    Eigen::Vector2d f_xy = force.head<2>();
     // double f_xy_norm = f_xy.norm();
     if (f_xy.norm() > FORCE_THRESHOLD) {
         // nf_xy = f_xy / f_xy_norm;
@@ -272,7 +277,7 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // TODO fixed gains for now
     // double push_dir_norm = push_dir.norm();
     Eigen::Vector3d vp = Eigen::Vector3d::Zero();
-    vp << 0.2 * push_dir.head<2>(), 1 * p_err(2);
+    vp << 0.2 * push_dir, 1 * P_err(2);
     // vp.head<2>() = 0.2 * push_dir.head<2>();  //.normalized();
     // vp(2) = 1 * p_err(2); // z
     // if (push_dir_norm > 1e-2) {
@@ -294,9 +299,9 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
 
     double w1 = 1.0; // minimize velocity -- this should typically be 1.0
     double w2 = 0.0; // avoid joint limits
-    double w3 = 100.0; // minimize pose error
+    double w3 = 0.0; // minimize pose error
     double w4 = 0.0; // minimize acceleration
-    double w5 = 0.0; // force compliance
+    double w5 = 1.0; // force compliance
     double w6 = 0.0; // force-based orientation
     double w7 = 0.0; // pushing
 
@@ -318,7 +323,8 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
 
 int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
                        const JointVector& q, const JointVector& dq,
-                       double fd, const Eigen::Vector3d& f,
+                       double fd, const Eigen::Vector3d& force,
+                       const Eigen::Vector3d& torque,
                        const Eigen::Vector3d& pc,
                        const std::vector<ObstacleModel>& obstacles, double dt,
                        JointVector& dq_opt) {
@@ -334,7 +340,7 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
 
     JointMatrix H;
     JointVector g;
-    calc_objective(Td, Vd, q, dq, fd, f, pc, dt, H, g);
+    calc_objective(Td, Vd, q, dq, fd, force, torque, pc, dt, H, g);
 
 
     /*** BOUNDS ***/

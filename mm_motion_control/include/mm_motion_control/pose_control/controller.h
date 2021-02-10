@@ -15,6 +15,8 @@ namespace mm {
 
 // The IKController wraps the IKOptimizer to perform additional preprocessing
 // and publishing.
+// TODO I think we can get rid of separation between the two now: the
+// controller basically does nothing
 class IKController {
     public:
         IKController() : optimizer() {}
@@ -38,7 +40,8 @@ class IKController {
         //   non-zero status code.
         int update(double t, PoseTrajectory& trajectory,
                    const JointVector& q, const JointVector& dq,
-                   double fd, const Eigen::Vector3d& f,
+                   double fd, const Eigen::Vector3d& force,
+                   const Eigen::Vector3d& torque,
                    const Eigen::Vector3d& pc,
                    const std::vector<ObstacleModel> obstacles,
                    JointVector& u);

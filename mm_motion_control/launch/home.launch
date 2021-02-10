@@ -5,7 +5,7 @@
 <launch>
   <node pkg="mm_motion_control" type="home" name="home_trajectory_node" output="screen">
     <rosparam param="/joint_home_positions">
-      [-1.0, -1.0, 0.0, 0.0, -2.3562, -1.5708, -2.3562, -1.5708, 1.5708]
+      [-2.0, -1.0, 0.0, 0.0, -2.3562, -1.5708, -2.3562, -1.5708, 1.5708]
     </rosparam>
   </node>
 </launch>
@@ -16,6 +16,10 @@
 
 <!-- Extended
       [0.0, 0.0, 0.0, 0.0, -2.8798, -0.5236, -2.8798, -1.5708, 1.5708]
+-->
+
+<!-- High-up end effector
+      [0.0, 0.0, 0.0, 0.0, -2.3562, -0.7854, -3.1416, -1.5708, 1.5708]
 -->
 
 <!-- Home position for pushing

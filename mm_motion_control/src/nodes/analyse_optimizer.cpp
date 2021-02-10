@@ -28,7 +28,8 @@ int main(int argc, char **argv) {
         0.00127832, -0.01494353, 0.0198267, -0.0037199, 0.0036432, 0;
 
   double fd = 0;
-  Eigen::Vector3d f = Eigen::Vector3d::Zero();
+  Eigen::Vector3d force = Eigen::Vector3d::Zero();
+  Eigen::Vector3d torque = Eigen::Vector3d::Zero();
   Eigen::Vector3d pc = Eigen::Vector3d::Zero();
   std::vector<ObstacleModel> obstacles;
 
@@ -46,7 +47,7 @@ int main(int argc, char **argv) {
 
   IKOptimizer optimizer;
   optimizer.init();
-  optimizer.solve(t, trajectory, q, dq, fd, f, pc, obstacles, dt, u);
+  optimizer.solve(t, trajectory, q, dq, fd, force, torque, pc, obstacles, dt, u);
   ROS_INFO_STREAM("u = " << u);
 
   return 0;
