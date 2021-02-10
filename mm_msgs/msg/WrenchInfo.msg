@@ -1,0 +1,19 @@
+Header header
+
+# Raw force measurement, with bias removed. (To see biased raw force, just log
+# directly from the sensor's topic.)
+geometry_msgs/Wrench raw
+
+# Wrench after exponential smoothing has been applied.
+geometry_msgs/Wrench filtered
+
+# (Filtered) force after having been transformed to the world frame.
+geometry_msgs/Wrench world
+
+float64 force_desired
+
+# True if contact has been made at any point in the past.
+bool first_contact
+
+# True if the EE is currently in contact.
+bool contact

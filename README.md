@@ -162,3 +162,8 @@ laptop > roslaunch mm_gripper gripper.launch
 laptop > rosrun mm_gripper gripper.py <cmd>
 ```
 
+### Set desired force
+To set the desired force at runtime, use:
+```
+laptop > rostopic pub /force/desired std_msgs/Float64 <value>
+```
