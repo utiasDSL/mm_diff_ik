@@ -227,12 +227,14 @@ void Kinematics::manipulability_gradient(const JointVector& q,
 
     // xb, yb, and q6 are zero
     ArmJacobianMatrix dJa_dtb, dJa_dq1, dJa_dq2, dJa_dq3, dJa_dq4, dJa_dq5;
-    calc_dJa_dtb(q, dJa_dtb);
-    calc_dJa_dq1(q, dJa_dq1);
-    calc_dJa_dq2(q, dJa_dq2);
-    calc_dJa_dq3(q, dJa_dq3);
-    calc_dJa_dq4(q, dJa_dq4);
-    calc_dJa_dq5(q, dJa_dq5);
+    // calc_dJa_dtb(q, dJa_dtb);
+    // calc_dJa_dq1(q, dJa_dq1);
+    // calc_dJa_dq2(q, dJa_dq2);
+    // calc_dJa_dq3(q, dJa_dq3);
+    // calc_dJa_dq4(q, dJa_dq4);
+    // calc_dJa_dq5(q, dJa_dq5);
+
+    calc_dJa_dq(q, dJa_dtb, dJa_dq1, dJa_dq2, dJa_dq3, dJa_dq4, dJa_dq5);
 
     // ArmJacobianMatrix B1, B2, B3, B4, B5, B6;
     // B1 = dJa_dtb * Ja.transpose();

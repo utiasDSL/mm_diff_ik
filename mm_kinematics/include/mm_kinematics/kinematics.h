@@ -121,17 +121,24 @@ class Kinematics {
 
         // Derivatives of arm Jacobian w.r.t. all joint variables. Used for
         // computing the derivative of manipulability.
-        static void calc_dJa_dxb(const JointVector& q, ArmJacobianMatrix& dJa);
-        static void calc_dJa_dyb(const JointVector& q, ArmJacobianMatrix& dJa);
-        static void calc_dJa_dtb(const JointVector& q, ArmJacobianMatrix& dJa);
-
-        static void calc_dJa_dq1(const JointVector& q, ArmJacobianMatrix& dJa);
-        static void calc_dJa_dq2(const JointVector& q, ArmJacobianMatrix& dJa);
-        static void calc_dJa_dq3(const JointVector& q, ArmJacobianMatrix& dJa);
-
-        static void calc_dJa_dq4(const JointVector& q, ArmJacobianMatrix& dJa);
-        static void calc_dJa_dq5(const JointVector& q, ArmJacobianMatrix& dJa);
-        static void calc_dJa_dq6(const JointVector& q, ArmJacobianMatrix& dJa);
+        // static void calc_dJa_dxb(const JointVector& q, ArmJacobianMatrix& dJa);
+        // static void calc_dJa_dyb(const JointVector& q, ArmJacobianMatrix& dJa);
+        // static void calc_dJa_dtb(const JointVector& q, ArmJacobianMatrix& dJa);
+        //
+        // static void calc_dJa_dq1(const JointVector& q, ArmJacobianMatrix& dJa);
+        // static void calc_dJa_dq2(const JointVector& q, ArmJacobianMatrix& dJa);
+        // static void calc_dJa_dq3(const JointVector& q, ArmJacobianMatrix& dJa);
+        //
+        // static void calc_dJa_dq4(const JointVector& q, ArmJacobianMatrix& dJa);
+        // static void calc_dJa_dq5(const JointVector& q, ArmJacobianMatrix& dJa);
+        // static void calc_dJa_dq6(const JointVector& q, ArmJacobianMatrix& dJa);
+        static void calc_dJa_dq(const JointVector& q,
+                                ArmJacobianMatrix& dJa_dtb,
+                                ArmJacobianMatrix& dJa_dq1,
+                                ArmJacobianMatrix& dJa_dq2,
+                                ArmJacobianMatrix& dJa_dq3,
+                                ArmJacobianMatrix& dJa_dq4,
+                                ArmJacobianMatrix& dJa_dq5);
 }; // class Kinematics
 
 } // namespace mm

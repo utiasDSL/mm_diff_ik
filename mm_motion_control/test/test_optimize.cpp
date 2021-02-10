@@ -27,14 +27,14 @@ TEST(OptimizeTestSuite, testLinearizedManipulability) {
     JointMatrix Hm;
 
     auto t0 = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < 1000; ++i) {
+    for (int i = 0; i < 10000; ++i) {
         q = JointVector::Random();
         optimizer.linearize_manipulability1(q, dm, STEP_SIZE);
     }
 
     auto t1 = std::chrono::high_resolution_clock::now();
 
-    for (int i = 0; i < 1000; ++i) {
+    for (int i = 0; i < 10000; ++i) {
         q = JointVector::Random();
         Kinematics::manipulability_gradient(q, dm2);
     }
