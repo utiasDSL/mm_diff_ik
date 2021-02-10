@@ -19,7 +19,7 @@ R_bl = np.eye(2)
 p_lb_b = np.array([0.393, 0])
 
 HZ = 100
-RADIUS = 0.1
+RADIUS = 0.05
 
 
 class ObstacleDetector(object):
@@ -36,10 +36,6 @@ class ObstacleDetector(object):
             return
 
         p_ol_ls, valid_mask = mm_lidar.extract_positions(self.scan)
-
-        # ignore last one
-        p_ol_ls = p_ol_ls[:, :-1]
-        valid_mask = valid_mask[:-1]
 
         # convert frames
         p_bw_w = self.q[:2]
