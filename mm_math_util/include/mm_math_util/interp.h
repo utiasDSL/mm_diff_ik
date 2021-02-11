@@ -223,14 +223,23 @@ class QuaternionInterp {
 
 // Spherical linear interpolation between 2D unit vectors a and b.
 inline Eigen::Vector2d slerp2d(const Eigen::Vector2d& a, const Eigen::Vector2d& b,
-                        const double t) {
+                               const double t) {
     Eigen::Vector2d an = a.normalized();
     Eigen::Vector2d bn = b.normalized();
 
     const double eps = 1e-8;
     const double eps1 = 1 - eps;
-    double dot = an.dot(bn);
-    double angle = std::acos(dot);
+
+    // If either vector is zero, return the other vector. If both are zero,
+    // this leads to a zero vector being returned.
+    if (an.norm() < eps) {
+        return bn;
+    } else if (bn.norm() < eps) {
+        return an;
+    }
+
+    const double dot = an.dot(bn);
+    const double angle = std::acos(dot);
 
     if (dot >= eps1) {
         // Unit vectors are the same: just return one of them.

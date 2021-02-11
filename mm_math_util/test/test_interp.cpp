@@ -124,29 +124,29 @@ TEST(InterpolationTestSuite, testSlerp2D) {
 
     // vectors with same direction
     c = slerp2d(a, a, 0);
-    EXPECT_TRUE((c - a).norm() < EPS);
+    EXPECT_NEAR((c - a).norm(), 0, EPS);
 
     c = slerp2d(a, a, 0.5);
-    EXPECT_TRUE((c - a).norm() < EPS);
+    EXPECT_NEAR((c - a).norm(), 0, EPS);
 
     c = slerp2d(a, a, 1);
-    EXPECT_TRUE((c - a).norm() < EPS);
+    EXPECT_NEAR((c - a).norm(), 0, EPS);
 
     // vectors with opposite direction
     b << -1, 0;
     c = slerp2d(a, b, 0);
-    EXPECT_TRUE((c - a).norm() < EPS);
+    EXPECT_NEAR((c - a).norm(), 0, EPS);
 
     c = slerp2d(a, b, 1);
-    EXPECT_TRUE((c - b).norm() < EPS);
+    EXPECT_NEAR((c - b).norm(), 0, EPS);
 
     c = slerp2d(a, b, 0.5);
     c_ex << 0, 1;
-    EXPECT_TRUE((c - c_ex).norm() < EPS);
+    EXPECT_NEAR((c - c_ex).norm(), 0, EPS);
 
     c = slerp2d(a, b, -0.5);
     c_ex << 0, -1;
-    EXPECT_TRUE((c - c_ex).norm() < EPS);
+    EXPECT_NEAR((c - c_ex).norm(), 0, EPS);
 
     // positive dot product
     b << 1, 1;
@@ -155,7 +155,7 @@ TEST(InterpolationTestSuite, testSlerp2D) {
     c_ex = rotation2d(0.5*M_PI_4) * a;
     EXPECT_NEAR((c - c_ex).norm(), 0, EPS);
 
-    // should be symmetric
+    // result should be symmetric when t=0.5
     c = slerp2d(b, a, 0.5);
     EXPECT_NEAR((c - c_ex).norm(), 0, EPS);
 
@@ -170,12 +170,33 @@ TEST(InterpolationTestSuite, testSlerp2D) {
     c_ex << 0, 1;
     EXPECT_NEAR((c - c_ex).norm(), 0, EPS);
 
+    // orthogonal vectors
+    a << 1, 0;
+    b << 0, 1;
+    c = slerp2d(a, b, 0.5);
+    c_ex << 1, 1;
+    c_ex.normalize();
+    EXPECT_NEAR((c - c_ex).norm(), 0, EPS);
+
     // check it works in other quadrants
     a << 0, -1;
     b << -1, 0;
     c = slerp2d(a, b, 0.25);
     c_ex << rotation2d(-0.5*M_PI_4) * a;
     EXPECT_NEAR((c - c_ex).norm(), 0, EPS);
+
+    // bad input: one of the vectors is zero
+    a << 0, 1;
+    b << 0, 0;
+    c = slerp2d(a, b, 0.5);
+    EXPECT_NEAR((c - a).norm(), 0, EPS);
+
+    c = slerp2d(b, a, 0.5);
+    EXPECT_NEAR((c - a).norm(), 0, EPS);
+
+    // when both are zero, result is zero
+    c = slerp2d(b, b, 0.5);
+    EXPECT_NEAR((c - b).norm(), 0, EPS);
 }
 
 
