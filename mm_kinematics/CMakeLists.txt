@@ -71,6 +71,13 @@ target_link_libraries(test_kinematics
   ${PROJECT_NAME}
 )
 
+catkin_add_executable_with_gtest(test_manipulability
+  test/test_manipulability.cpp
+)
+target_link_libraries(test_manipulability
+  ${PROJECT_NAME}
+)
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure

@@ -104,14 +104,14 @@ target_link_libraries(analyse_optimizer
 # )
 
 # Tests
-catkin_add_executable_with_gtest(test_optimize
-  test/test_optimize.cpp
-  src/pose_control/optimizer.cpp
-  src/pose_control/trajectory.cpp
-  src/pose_control/pose_error.cpp
-  src/pose_control/pose_error_jac.cpp
-)
-target_link_libraries(test_optimize
-  ${catkin_LIBRARIES}
-  /usr/local/lib/libqpOASES.so
-)
+# catkin_add_executable_with_gtest(test_optimize
+#   test/test_optimize.cpp
+#   src/pose_control/optimizer.cpp
+#   src/pose_control/trajectory.cpp
+#   src/pose_control/pose_error.cpp
+#   src/pose_control/pose_error_jac.cpp
+# )
+# target_link_libraries(test_optimize
+#   ${catkin_LIBRARIES}
+#   /usr/local/lib/libqpOASES.so
+# )

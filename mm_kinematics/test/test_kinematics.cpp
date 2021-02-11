@@ -63,29 +63,6 @@ TEST(KinematicsTestSuite, testJac3) {
 }
 
 
-TEST(KinematicsTestSuite, testManipulability) {
-    double eps = 1e-10;
-    JointVector q = JointVector::Zero();
-
-    // All zeros is singular.
-    double m1 = Kinematics::manipulability(q);
-    EXPECT_TRUE(0 <= m1 && m1 < eps);
-
-    q(4) = -0.75 * M_PI;
-    q(5) = -M_PI_2;
-
-    // Moving the above joints is still singular.
-    double m2 = Kinematics::manipulability(q);
-    EXPECT_TRUE(0 <= m2 && m2 < eps);
-
-    q(7) = M_PI_4;
-
-    // Finally non-singular.
-    double m3 = Kinematics::manipulability(q);
-    EXPECT_TRUE(0.0134 < m3 && m3 < 0.0135);
-}
-
-
 int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

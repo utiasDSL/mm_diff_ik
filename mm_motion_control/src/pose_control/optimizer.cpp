@@ -380,29 +380,6 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
 }
 
 
-void IKOptimizer::linearize_manipulability1(const JointVector& q,
-                                            JointVector& dm, double h) {
-    dm = JointVector::Zero();
-    JointMatrix I = JointMatrix::Identity();
-
-    // first two and last joint do not affect the MI
-    for (int i = 2; i < NUM_JOINTS - 1; ++i) {
-        JointVector Ii = I.col(i);
-        double m1 = Kinematics::manipulability(q + h*Ii);
-        double m2 = Kinematics::manipulability(q - h*Ii);
-        dm(i) = (m1 - m2) / (2*h);
-    }
-}
-
-
-void IKOptimizer::linearize_manipulability2(const JointVector& q,
-                                            JointVector& dm, JointMatrix& Hm,
-                                            double h) {
-    approx_gradient<NUM_JOINTS>(&Kinematics::manipulability, h, q, dm);
-    approx_hessian<NUM_JOINTS>(&Kinematics::manipulability, h, q, Hm);
-}
-
-
 void IKOptimizer::velocity_damper_limits(const JointVector& q, JointVector& dq_lb,
                                          JointVector& dq_ub) {
     for (int i = 0; i < NUM_JOINTS; ++i) {

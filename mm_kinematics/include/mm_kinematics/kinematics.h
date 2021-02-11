@@ -86,15 +86,23 @@ class Kinematics {
         static void calc_w_T_tool(const JointVector& q,
                                   Eigen::Affine3d& w_T_tool);
 
-        // Manipulability index.
-        static double manipulability(const JointVector& q);
 
         static void calc_base_input_mapping(const JointVector& q,
                                             JointMatrix& B);
 
-        // Calculate gradient of manipulability w.r.t. joint variables.
-        static void manipulability_gradient(const JointVector& q,
-                                            JointVector& m_grad);
+        // Manipulability index.
+        static double manipulability(const JointVector& q);
+
+        // Calculate analytic gradient of manipulability w.r.t. joint
+        // variables.
+        static void manipulability_gradient_analytic(const JointVector& q,
+                                                     JointVector& m_grad);
+
+        // Calculate gradient of manipulability w.r.t. joint variables using
+        // finite differences.
+        static void manipulability_gradient_numeric(const JointVector& q,
+                                                    JointVector& m_grad,
+                                                    double h);
 
     private:
         // Kinematic parameters

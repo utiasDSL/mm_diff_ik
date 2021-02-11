@@ -32,7 +32,7 @@ static const double FORCE_THRESHOLD = 5;
 
 // For numerical differentiation
 // NOTE pushing this down to even 1e-5 makes the numerical Hessian fail
-static const double STEP_SIZE = 1e-3;
+// static const double STEP_SIZE = 1e-3;
 
 
 // State of the Optimizer
@@ -79,17 +79,6 @@ class IKOptimizer {
                   const std::vector<ObstacleModel>& obstacles, double dt,
                   JointVector& dq_opt);
 
-
-        // 1st-order linearization of manipulability index around joint values
-        // q, returning the gradient dm.
-        void linearize_manipulability1(const JointVector& q, JointVector& dm,
-                                       double h);
-
-        // 2nd-order linearization of manipulability index around joint values
-        // q, returning the gradient dm, and Hessian Hm.
-        void linearize_manipulability2(const JointVector& q, JointVector& dm,
-                                       JointMatrix& Hm, double h);
-
         // Compute velocity constraints, including damping as the position
         // limits are approached.
         void velocity_damper_limits(const JointVector& q, JointVector& dq_lb,
@@ -112,6 +101,7 @@ class IKOptimizer {
     private:
         IKOptimizerState state;
 
+        // TODO
         bool freaked_out;
         bool did_print_gs;
 
@@ -122,6 +112,8 @@ class IKOptimizer {
 
         // Construct and solve the QP given our problem-specific matrices.
         // Note that the underlying data for input arguments is not copied.
+        // TODO: ideally, the QP would be abstracted into a class which is used
+        // by the optimizing controller
         int solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
                      JointVector& lb, JointVector& ub, Eigen::VectorXd& ubA,
                      JointVector& dq_opt);

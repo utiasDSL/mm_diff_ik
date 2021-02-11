@@ -27,6 +27,9 @@ def main():
     force_world = np.array([[msg.world.force.x, msg.world.force.y, msg.world.force.z]
                             for msg in wrench_info_msgs])
 
+    force_desired = np.array([msg.force_desired for msg in wrench_info_msgs])
+    # force_desired = -5 * np.ones_like(force_desired)
+
     # f_norms = np.linalg.norm(force_world, axis=1)
     # nf = force_world / f_norms[:, None]
 
@@ -67,23 +70,14 @@ def main():
     plt.ylabel('Force (N)')
     plt.title('World Force (filtered)')
 
-    # plt.figure(4)
-    # plt.grid()
-    # plt.plot(t, f_norms)
-    # plt.xlabel('Time (s)')
-    # plt.ylabel('Force (N)')
-    # plt.title('World Force Magnitude')
-
-    # plt.figure(5)
-    # plt.grid()
-    # plt.plot(t, force_filtered2[:, 0], label='fx')
-    # plt.plot(t, force_filtered2[:, 1], label='fy')
-    # plt.plot(t, force_filtered2[:, 2], label='fz')
-    # plt.plot(t, np.linalg.norm(force_filtered2, axis=1), label='norm', color='k')
-    # plt.legend()
-    # plt.xlabel('Time (s)')
-    # plt.ylabel('Force (N)')
-    # plt.title('Filtered Force 2')
+    plt.figure()
+    plt.grid()
+    plt.plot(t, force_world[:, 2], label='Actual')
+    plt.plot(t, force_desired, label='Desired')
+    plt.legend()
+    plt.xlabel('Time (s)')
+    plt.ylabel('Force (N)')
+    plt.title('Force in z-direction')
 
     plt.show()
 

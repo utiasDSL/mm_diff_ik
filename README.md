@@ -132,6 +132,9 @@ where `[trajectory]` is replaced the desired trajectory.
    # start the UR10 driver (the Ridgeback starts automatically onboard the
    # robot) and the mux node that publishes the combined /mm_joint_states
    # topic.
+   # NOTE: this does usually run fine on the laptop, but can occasionally
+   # generate garbage values for joint position or velocity. On the other hand,
+   # running on the Thing may have time sync issues between the two computers.
    laptop > roslaunch mm_motion_control bringup.launch
 
    # start the motion control node
