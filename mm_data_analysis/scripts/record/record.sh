@@ -2,7 +2,6 @@
 
 rosbag record -o "$1"    \
   /mm_pose_state         \
-  /optimization_state    \
   /mm_joint_states       \
   /ur_driver/joint_speed \
   /ur10_joint_states \
@@ -13,8 +12,8 @@ rosbag record -o "$1"    \
   /vicon/TrayTest/TrayTest \
   /vicon/markers \
   /robotiq_force_torque_wrench \
-  /force_control/state \
   /force/info \
+  /mm_wrench/info \
   /force/desired \
   /front/scan \
   /obstacles

@@ -80,7 +80,7 @@ def main():
     plt.legend()
     plt.title('End Effector Desired Linear Velocity')
     plt.xlabel('Time (s)')
-    plt.ylabel('Position (m)')
+    plt.ylabel('Velocity (m/s)')
 
     plt.figure()
     plt.plot(t, wdx, 'r', label='$w_x$')
@@ -90,7 +90,7 @@ def main():
     plt.legend()
     plt.title('End Effector Desired Angular Velocity')
     plt.xlabel('Time (s)')
-    plt.ylabel('Position (m)')
+    plt.ylabel('Angular velocity (rad/s)')
 
     plt.show()
 

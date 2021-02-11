@@ -132,6 +132,7 @@ class MMWrenchNode(object):
             # Reverse input so that output offset pushes back against applied
             # force.
             force_world = -force_world
+            torque_world = -torque_world
 
             # determine if contact is made
             f_norm = np.linalg.norm(force_world)

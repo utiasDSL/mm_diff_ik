@@ -44,6 +44,7 @@ add_message_files(
   OptimizationState.msg
   ForceControlState.msg
   ForceInfo.msg
+  WrenchInfo.msg
   Obstacle.msg
   Obstacles.msg
 )

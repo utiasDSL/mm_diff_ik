@@ -111,6 +111,7 @@ void IKControllerManager::loop(const double hz) {
 
         // Integrate using the model to get the best estimate of the state.
         // TODO: not sure if it would be better to use u instead of dq
+        // -> would be less noisy
         double dt = t - last_joint_state_time;
         q = q + dt * dq;
         last_joint_state_time = t;

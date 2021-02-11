@@ -203,18 +203,22 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // ROS_INFO_STREAM("torque = " << torque);
 
     Matrix6d Kp_com = Matrix6d::Zero();
-    // Kp_com.diagonal() << 0, 0, 0, 1, 1, 1;
+    Kp_com.diagonal() << 1, 1, 0, 1, 1, 1;
 
     // only comply in directions where gain is non-zero
+    // 0.01 is pretty good for human interaction; could even probably go a bit
+    // higher
     Matrix6d Kf_com = Matrix6d::Zero();
-    // Matrix6d Kf_com = 0.005 * Matrix6d::Identity();
-    Kf_com.diagonal() << 0.01, 0.01, 0.01, 0, 0, 0;
+    // Matrix6d Kf_com = 0.01 * Matrix6d::Identity();
+    Kf_com.diagonal() << 0, 0, 0.005, 0, 0, 0;
     // Kf_com.diagonal() << 0, 0, 0, 0.01, 0.01, 0.01;
 
     // TODO should take in fd as a vector
     Vector6d wrench_compliant_d = Vector6d::Zero();
-    // wrench_compliant_d << fd, 0, 0, 0, 0, 0;
+    // wrench_compliant_d << 0, 0, fd, 0, 0, 0;
+    wrench_compliant_d << 0, 0, -5, 0, 0, 0;
     Vector6d W_err = wrench_compliant_d - wrench_compliant;
+    ROS_INFO_STREAM("Wd = " << wrench_compliant_d);
 
     Vector6d Vc = Vd + Kp_com * P_err + Kf_com * W_err;
 
