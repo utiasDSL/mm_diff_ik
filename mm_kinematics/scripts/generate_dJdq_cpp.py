@@ -1,9 +1,10 @@
 #!/usr/bin/env python2
+import os
 import sys
-import re
-import numpy as np
-from mm_kinematics.symbolic import KinematicModel
-from mm_kinematics import codegen
+from mm_kinematics import SymbolicKinematicModel, codegen, JOINT_NAMES
+
+
+DEFAULT_FILE_NAME = "dJdq.cpp"
 
 
 TEXT_BEFORE = """
@@ -76,45 +77,6 @@ void Kinematics::calc_dJa_dq(const JointVector& q,
     double cq6 = std::cos(q(8));
 """.lstrip()
 
-JOINT_NAMES = ['xb', 'yb', 'tb', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6']
-
-
-def vector_joint_names(s):
-    """Convert from symbolic names to Eigen vector format."""
-    for i, qi in enumerate(JOINT_NAMES):
-        s = re.sub(qi, 'q({})'.format(i), s)
-    return s
-
-
-def encode_matrix(J):
-    """Encode matrix as a string."""
-    J_str = np.empty(J.shape, dtype=object)
-    for i in range(J.shape[0]):
-        for j in range(J.shape[1]):
-            s = str(J[i, j])
-            s = vector_joint_names(s)
-            J_str[i, j] = s
-    return J_str
-
-
-def dJa_dqi_function_signature(qi):
-    """Function signature for the derivative of dJa w.r.t. joint qi."""
-    return "void Kinematics::calc_dJa_d" + qi + "(const JointVector& q, ArmJacobianMatrix& dJa)"
-
-
-def dJa_dqi_function_code(dJa_dqi, qi):
-    """Complete function code derivative of arm Jacobian w.r.t. joint dq."""
-    dJa_dqi_str = codegen.encode_matrix(dJa_dqi)
-    items = [dJa_dqi_function_signature(qi) + ' {', FUNCTION_VARS]
-
-    msg = "  {}({},{}) = {};"
-    for i in range(6):
-        for j in range(6):
-            items.append(msg.format('dJa', i, j, dJa_dqi_str[i, j]))
-    items.append('}\n')
-
-    return '\n'.join(items)
-
 
 def stringify_matrix(M, name):
     M_str = codegen.encode_matrix(M)
@@ -129,11 +91,12 @@ def stringify_matrix(M, name):
 
 def main():
     if len(sys.argv) < 2:
-        print('Usage: generate_dJdq_cpp.py path')
-        return
+        path = os.path.dirname(__file__)
+        path = codegen.get_default_file_path(path, DEFAULT_FILE_NAME)
+    else:
+        path = sys.argv[1]
 
-    path = sys.argv[1]
-    model = KinematicModel()
+    model = SymbolicKinematicModel()
 
     # generate the symbolic derivatives
     Ja = model.J[:, 3:]
@@ -145,16 +108,10 @@ def main():
         items.append(code)
     items.append('}\n\n} // namespace mm')
 
-    # # generate the C++ code for each derivative
-    # items = [TEXT_BEFORE]
-    # for qi, dJa_dqi in zip(JOINT_NAMES, dJa_dqs):
-    #     code = dJa_dqi_function_code(dJa_dqi, qi)
-    #     items.append(code)
-    # items.append(TEXT_AFTER)
-
     with open(path, 'w+') as f:
         f.write('\n'.join(items))
 
+    print("Wrote C++ dJdq function to {}.".format(path))
 
 
 if __name__ == '__main__':

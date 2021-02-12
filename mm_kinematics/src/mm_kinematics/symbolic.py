@@ -1,8 +1,16 @@
+"""Symbolic Python kinematics for the Thing.
+
+This is intended to be the "source of truth" for kinematics for the Thing. This
+module generates to forward and differential kinematics used by other Python
+code, and generates the differential kinematics (i.e., Jacobians) for C++.
+"""
 import numpy as np
 import sympy as sym
 
 from util import R_t_from_T
 
+
+JOINT_NAMES = ['xb', 'yb', 'tb', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6']
 
 PARAM_SUB_DICT = {
     'px': 0.27,
@@ -45,7 +53,7 @@ T_ee_palm = symbolic_dh_transform(0, 0, 0.2, 0)
 T_ee_ft = symbolic_transform(r=sym.Matrix([0.02, 0, 0]))
 
 
-class KinematicModel(object):
+class SymbolicKinematicModel(object):
     """Symbolic kinematic model for the Thing mobile manipulator."""
     def __init__(self):
         self._calc_forward_transforms()
@@ -56,7 +64,7 @@ class KinematicModel(object):
         """Calculate symbolic transforms from intermediate points to world."""
 
         # Joint variables.
-        self.q = sym.symbols('xb,yb,tb,q1:7')
+        self.q = sym.symbols(JOINT_NAMES)
 
         # Offset from base to arm.
         px, py, pz = sym.symbols('px,py,pz')
@@ -179,7 +187,6 @@ class KinematicModel(object):
         """Calculate manipulability index."""
         J = self.jacobian(q)
         Ja = J[:, 3:]
-        # Ja = J
 
         m2 = np.linalg.det(Ja.dot(Ja.T))
 
