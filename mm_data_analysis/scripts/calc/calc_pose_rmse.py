@@ -5,7 +5,7 @@ import numpy as np
 import rosbag
 import tf.transformations as tfs
 
-import mm_kinematics.kinematics as kinematics
+from mm_kinematics import KinematicModel
 import mm_data_analysis.util as util
 
 import IPython
@@ -27,10 +27,12 @@ def rmse_from_pose_state(pose_msgs):
 def rmse_from_joint_state(pose_msgs, joint_msgs):
     """Calculate error based on ground truth reported from joint messages and
        desired pose from the controller pose state messages."""
+    model = KinematicModel()
+
     t0 = util.msg_time(pose_msgs[0])
 
     joint_msgs_traj = util.trim_to_traj(joint_msgs, pose_msgs)
-    Ts = [kinematics.calc_w_T_tool(msg.position) for msg in joint_msgs_traj]
+    Ts = [model.calc_T_w_tool(msg.position) for msg in joint_msgs_traj]
 
     t_pose = util.parse_time(pose_msgs)
     t_joint = util.parse_time(joint_msgs_traj, t0=t0)
@@ -69,8 +71,8 @@ def main():
     joint_msgs = [msg for _, msg, _ in bag.read_messages('/mm_joint_states')]
 
     p_rmse1, angle_rmse1 = rmse_from_pose_state(pose_msgs)
-    print('Position RMSE 2 = {} mm'.format(p_rmse1))
-    print('Rotation RMSE 2 = {} rad'.format(angle_rmse1))
+    print('Position RMSE 1 = {} mm'.format(p_rmse1))
+    print('Rotation RMSE 1 = {} rad'.format(angle_rmse1))
 
     p_rmse2, angle_rmse2 = rmse_from_joint_state(pose_msgs, joint_msgs)
     print('Position RMSE 2 = {} mm'.format(p_rmse2))
