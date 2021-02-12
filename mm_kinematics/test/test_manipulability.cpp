@@ -37,11 +37,15 @@ TEST(ManipulabilityTestSuite, testManipulability) {
 TEST(ManipulabilityTestSuite, testManipulabilityGradientAccuracy) {
     JointVector q;
         q << -1.0, -1.0, 0.0, 0.0, -2.3562, -1.5708, -2.3562, -1.5708, 1.5708;
+    // JointVector q = JointVector::Zero();
 
     double h = 1e-4;
     JointVector dm_analytic, dm_numeric;
     Kinematics::manipulability_gradient_analytic(q, dm_analytic);
     Kinematics::manipulability_gradient_numeric(q, dm_numeric, h);
+
+    // std::cout << "dm_n = " << dm_numeric << std::endl;
+    // std::cout << "dm_a = " << dm_analytic << std::endl;
 
     // Accuracy of numeric solution depends on size of h.
     // Increasing h to 1e-3 causes this test to fail.

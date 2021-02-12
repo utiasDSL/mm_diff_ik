@@ -1,7 +1,7 @@
 import numpy as np
 import sympy as sym
 
-from util import dh_tf, R_t_from_T
+from util import R_t_from_T
 
 
 PARAM_SUB_DICT = {
@@ -16,6 +16,33 @@ PARAM_SUB_DICT = {
     'd6': 0.0922,
     'd7': 0.290
 }
+
+
+def symbolic_dh_transform(q, a, d, alpha):
+    """Constuct a symbolic transformation matrix from D-H parameters."""
+    return sym.Matrix([
+        [sym.cos(q), -sym.sin(q)*sym.cos(alpha),  sym.sin(q)*sym.sin(alpha), a*sym.cos(q)],
+        [sym.sin(q),  sym.cos(q)*sym.cos(alpha), -sym.cos(q)*sym.sin(alpha), a*sym.sin(q)],
+        [0,           sym.sin(alpha),             sym.cos(alpha),            d],
+        [0,           0,                          0,                         1]])
+
+
+def symbolic_transform(C=sym.Matrix.eye(3), r=sym.Matrix.zeros(3, 1)):
+    """Construct a symbolic transformation matrix.
+
+    C is the rotation matrix (defaults to identity; i.e., no rotation),
+    r is the translation vector (defaults to zero)
+    """
+    last_row = sym.Matrix([[0, 0, 0, 1]])
+    T = sym.Matrix.vstack(sym.Matrix.hstack(C, r), last_row)
+    return T
+
+
+# transform from palm to the EE (just an offset added by the gripper)
+T_ee_palm = symbolic_dh_transform(0, 0, 0.2, 0)
+
+# transform from force/torque sensor frame to EE frame
+T_ee_ft = symbolic_transform(r=sym.Matrix([0.02, 0, 0]))
 
 
 class KinematicModel(object):
@@ -40,23 +67,23 @@ class KinematicModel(object):
         self.T = [None] * 13
 
         # Transform from base to world.
-        self.T[0] = dh_tf(sym.pi/2,  0, 0,         sym.pi/2)
-        self.T[1] = dh_tf(sym.pi/2,  0, self.q[0], sym.pi/2)
-        self.T[2] = dh_tf(sym.pi/2,  0, self.q[1], sym.pi/2)
-        self.T[3] = dh_tf(self.q[2], 0, 0,         0)
+        self.T[0] = symbolic_dh_transform(sym.pi/2,  0, 0,         sym.pi/2)
+        self.T[1] = symbolic_dh_transform(sym.pi/2,  0, self.q[0], sym.pi/2)
+        self.T[2] = symbolic_dh_transform(sym.pi/2,  0, self.q[1], sym.pi/2)
+        self.T[3] = symbolic_dh_transform(self.q[2], 0, 0,         0)
 
         # Transform from arm to base.
-        self.T[4] = dh_tf(0, px, pz, -sym.pi/2)
-        self.T[5] = dh_tf(0, 0,  py,  sym.pi/2)
+        self.T[4] = symbolic_dh_transform(0, px, pz, -sym.pi/2)
+        self.T[5] = symbolic_dh_transform(0, 0,  py,  sym.pi/2)
 
         # Transform from end effector to arm.
-        self.T[6]  = dh_tf(self.q[3], 0,  d1,  sym.pi/2)
-        self.T[7]  = dh_tf(self.q[4], a2, 0,   0)
-        self.T[8]  = dh_tf(self.q[5], a3, 0,   0)
-        self.T[9]  = dh_tf(self.q[6], 0,  d4,  sym.pi/2)
-        self.T[10] = dh_tf(self.q[7], 0,  d5, -sym.pi/2)
-        self.T[11] = dh_tf(self.q[8], 0,  d6,  0)
-        self.T[12] = dh_tf(0,         0,  d7,  0)
+        self.T[6]  = symbolic_dh_transform(self.q[3], 0,  d1,  sym.pi/2)
+        self.T[7]  = symbolic_dh_transform(self.q[4], a2, 0,   0)
+        self.T[8]  = symbolic_dh_transform(self.q[5], a3, 0,   0)
+        self.T[9]  = symbolic_dh_transform(self.q[6], 0,  d4,  sym.pi/2)
+        self.T[10] = symbolic_dh_transform(self.q[7], 0,  d5, -sym.pi/2)
+        self.T[11] = symbolic_dh_transform(self.q[8], 0,  d6,  0)
+        self.T[12] = symbolic_dh_transform(0,         0,  d7,  0)
 
         # Transforms from intermediate points to world.
         self.T0 = [sym.eye(4)]
@@ -80,6 +107,7 @@ class KinematicModel(object):
         # self.T0[13] = self.T0[12] * self.T[12]  # tool offset
 
     def _calc_geometric_jacobian(self):
+        # TODO refactor this...
         R0_0,  t0_0  = R_t_from_T(self.T0[0])
         R0_1,  t0_1  = R_t_from_T(self.T0[1])
         R0_2,  t0_2  = R_t_from_T(self.T0[2])
@@ -122,8 +150,26 @@ class KinematicModel(object):
 
     def _lambdify_functions(self):
         """Create lamdified kinematic functions."""
+        # Geometric Jacobian
         self.jacobian = sym.lambdify([self.q], self.J.subs(PARAM_SUB_DICT))
-        self.forward = sym.lambdify([self.q], self.T0[-1].subs(PARAM_SUB_DICT))
+
+        T_w_tool = self.T0[-1].subs(PARAM_SUB_DICT)
+        T_w_ee = self.T0[-2].subs(PARAM_SUB_DICT)
+        T_w_palm = T_w_ee * T_ee_palm
+        T_w_ft = T_w_ee * T_ee_ft
+
+        # forward transform for tool frame
+        self.calc_T_w_tool = sym.lambdify([self.q], T_w_tool)
+
+        # forward transform for EE frame
+        self.calc_T_w_ee = sym.lambdify([self.q], T_w_ee)
+
+        # forward transform for palm frame: this is the palm of the gripper,
+        # which adds an offset to the EE
+        self.calc_T_w_palm = sym.lambdify([self.q], T_w_palm)
+
+        # forward transform for FT frame
+        self.calc_T_w_ft = sym.lambdify([self.q], T_w_ft)
 
     def parameterize(self, expr):
         """Parameterize the expression with the constant model parameters."""
@@ -132,8 +178,8 @@ class KinematicModel(object):
     def manipulability(self, q):
         """Calculate manipulability index."""
         J = self.jacobian(q)
-        # Ja = J[:, 3:]
-        Ja = J
+        Ja = J[:, 3:]
+        # Ja = J
 
         m2 = np.linalg.det(Ja.dot(Ja.T))
 
