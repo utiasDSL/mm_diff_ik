@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 import sympy as sym
 import numpy as np
-from mm_kinematics import KinematicModel
+from mm_kinematics import SymbolicKinematicModel, KinematicModel
 import IPython
 
 
@@ -24,7 +24,8 @@ def mi_analytic_derivative(model, dJdq_func, q):
 
 def main():
     sym.init_printing()
-    model = KinematicModel()
+    model = SymbolicKinematicModel()
+    model_kin = KinematicModel()
 
     # home configuration
     q = np.array([-1.0, -1.0, 0.0, 0.0, -2.3562, -1.5708, -2.3562, -1.5708, 1.5708])
@@ -46,6 +47,7 @@ def main():
 
     print('Numerical gradient = {}'.format(m_grad_n))
     print('Analytic gradient = {}'.format(m_grad_a))
+    print('Analytic gradient 2 = {}'.format(model_kin.manipulability_gradient(q)))
 
 
 if __name__ == '__main__':

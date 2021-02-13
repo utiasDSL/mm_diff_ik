@@ -18,8 +18,11 @@ def main():
     def objective(q):
         return -model.manipulability(q)
 
+    def jac(q):
+        return -model.manipulability_gradient(q)
+
     # 1. try using generic optimization from scipy
-    res = optimize.minimize(objective, q0)
+    res = optimize.minimize(objective, q0, jac=jac)
     m_opt = model.manipulability(res.x)
 
     # 2. try using random sampling

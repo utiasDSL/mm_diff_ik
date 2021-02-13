@@ -1,5 +1,9 @@
+from __future__ import print_function
 import numpy as np
 import tf.transformations as tfs
+
+
+print("This kinematics module is depracated. Use KinematicModel instead.")
 
 
 px = 0.27
