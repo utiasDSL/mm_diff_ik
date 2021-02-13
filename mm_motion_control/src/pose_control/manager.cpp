@@ -226,7 +226,6 @@ void IKControllerManager::obstacle_cb(const mm_msgs::Obstacles& msg) {
 
 
 void IKControllerManager::publish_robot_state(const ros::Time& now) {
-    // ros::Time now = ros::Time::now();
     double t = now.toSec();
 
     // Actual pose.
@@ -287,8 +286,8 @@ void IKControllerManager::publish_robot_state(const ros::Time& now) {
         state_pub->msg_.dq = std::vector<double>(dq.data(), dq.data() + dq.size());
         state_pub->msg_.u = std::vector<double>(u.data(), u.data() + u.size());
 
-        state_pub->msg_.x = std::vector<double>(opt_state.dq_opt.data(),
-                opt_state.dq_opt.data() + opt_state.dq_opt.size());
+        state_pub->msg_.x = std::vector<double>(opt_state.x.data(),
+                opt_state.x.data() + opt_state.x.size());
         state_pub->msg_.objective = opt_state.obj_val;
         state_pub->msg_.ret = opt_state.code;
         state_pub->msg_.status = opt_state.status;

@@ -10,8 +10,8 @@ from mm_trajectories import timescaling, path, util
 
 
 DT = 0.1
-# OFFSET = np.array([3, 0, 0])
-OFFSET = np.array([0, 0.5, 0])
+OFFSET = np.array([3, 0, 0])
+# OFFSET = np.array([0, 0.5, 0])
 # OFFSET = np.array([-1, -1, 0])
 
 
@@ -19,7 +19,7 @@ def main():
     rospy.init_node('trajectory_generator')
 
     duration = float(sys.argv[1]) if len(sys.argv) > 1 else 30
-    duration = 20
+    # duration = 20
 
     # wait until current pose is received
     p0, quat0 = util.wait_for_initial_pose(DT)

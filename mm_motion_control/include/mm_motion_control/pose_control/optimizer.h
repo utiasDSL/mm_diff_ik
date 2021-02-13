@@ -37,7 +37,7 @@ static const double FORCE_THRESHOLD = 5;
 
 // State of the Optimizer
 struct IKOptimizerState {
-    JointVector dq_opt;  // Optimal joint velocities.
+    JointVector x;  // Optimal joint velocities.
     double obj_val;  // Objective value.
 
     // Detailed status code returned by optimization problem. 0 indicates
@@ -77,7 +77,7 @@ class IKOptimizer {
                   double fd, const Eigen::Vector3d& force,
                   const Eigen::Vector3d& torque, const Eigen::Vector3d& pc,
                   const std::vector<ObstacleModel>& obstacles, double dt,
-                  JointVector& dq_opt);
+                  JointVector& u);
 
         // Compute velocity constraints, including damping as the position
         // limits are approached.
@@ -105,6 +105,8 @@ class IKOptimizer {
         bool freaked_out;
         bool did_print_gs;
 
+        bool did_print_once;
+
         // Normal direction of applied force.
         // TODO these should be properties of the controller.
         Eigen::Vector3d nf;
@@ -116,7 +118,7 @@ class IKOptimizer {
         // by the optimizing controller
         int solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
                      JointVector& lb, JointVector& ub, Eigen::VectorXd& ubA,
-                     JointVector& dq_opt);
+                     JointVector& u);
 
         // Build objective matrices H and g, where the quadratic to minimize is
         // x'Hx + g'x.
