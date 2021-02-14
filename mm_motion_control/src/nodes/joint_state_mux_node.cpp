@@ -54,7 +54,11 @@ class JointStateMux {
 
             for (int i = 0; i < NUM_JOINTS; ++i) {
                 if (std::abs(position[i]) > 2 * M_PI) {
-                    ROS_WARN_STREAM(JOINT_NAMES[i] << " = " << position[i]);
+                    ROS_WARN_STREAM(JOINT_NAMES[i] << " position = " << position[i]);
+                    return;
+                }
+                if (std::abs(velocity[i]) > 5.0) {
+                    ROS_WARN_STREAM(JOINT_NAMES[i] << " velocity = " << velocity[i]);
                     return;
                 }
                 mm_joint_states.name.push_back(JOINT_NAMES[i]);
