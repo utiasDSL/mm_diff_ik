@@ -4,7 +4,7 @@ from __future__ import print_function
 import matplotlib.pyplot as plt
 import numpy as np
 
-from mm_data_analysis.util import parse_time, vec3_msg_to_np, trim_to_traj
+from mm_data_analysis.util import parse_time, vec3_list_to_np, trim_to_traj
 
 import IPython
 
@@ -163,10 +163,10 @@ def plot_joint_magnitudes(mm_joint_states_msgs):
 def plot_force_raw_vs_filtered(force_state_msgs):
     t = parse_time(force_state_msgs)
 
-    f_raw = vec3_msg_to_np([msg.force_raw for msg in force_state_msgs])
-    f_filt = vec3_msg_to_np([msg.force_filtered for msg in force_state_msgs])
-    f_world = vec3_msg_to_np([msg.force_world for msg in force_state_msgs])
-    p_off = vec3_msg_to_np([msg.position_offset for msg in force_state_msgs])
+    f_raw = vec3_list_to_np([msg.force_raw for msg in force_state_msgs])
+    f_filt = vec3_list_to_np([msg.force_filtered for msg in force_state_msgs])
+    f_world = vec3_list_to_np([msg.force_world for msg in force_state_msgs])
+    p_off = vec3_list_to_np([msg.position_offset for msg in force_state_msgs])
 
     plt.figure()
     plt.subplot(311)
@@ -196,7 +196,7 @@ def plot_force_raw_vs_filtered(force_state_msgs):
 def plot_forces(force_state_msgs, pose_msgs):
     force_state_msgs = trim_to_traj(force_state_msgs, pose_msgs)
     t_force = parse_time(force_state_msgs)
-    f = vec3_msg_to_np([msg.force_world for msg in force_state_msgs])
+    f = vec3_list_to_np([msg.force_world for msg in force_state_msgs])
 
     fig = plt.figure(figsize=(3.25, 2.1))
     plt.rcParams.update({'font.size': 8,
@@ -218,8 +218,8 @@ def plot_forces(force_state_msgs, pose_msgs):
     plt.legend(labelspacing=0, borderpad=0.3, loc=2)
 
     t_pose = parse_time(pose_msgs)
-    pds = vec3_msg_to_np([msg.desired.position for msg in pose_msgs])
-    # pes = vec3_msg_to_np([msg.error.position for msg in pose_msgs])
+    pds = vec3_list_to_np([msg.desired.position for msg in pose_msgs])
+    # pes = vec3_list_to_np([msg.error.position for msg in pose_msgs])
 
     x0 = pds[0,0]
     xf = pds[-1,0] - force_state_msgs[-1].position_offset.x
@@ -254,7 +254,7 @@ def plot_forces(force_state_msgs, pose_msgs):
 def plot_final(force_state_msgs, joint_state_msgs, obs_msgs, pose_msgs):
     force_state_msgs = trim_to_traj(force_state_msgs, pose_msgs)
     t_force = parse_time(force_state_msgs)
-    f = vec3_msg_to_np([msg.force_world for msg in force_state_msgs])
+    f = vec3_list_to_np([msg.force_world for msg in force_state_msgs])
 
     fig = plt.figure(figsize=(3.25, 3))
     plt.rcParams.update({'font.size': 8,
@@ -275,8 +275,8 @@ def plot_final(force_state_msgs, joint_state_msgs, obs_msgs, pose_msgs):
     plt.legend(labelspacing=0, borderpad=0.3, loc=2)
 
     t_pose = parse_time(pose_msgs)
-    pas = vec3_msg_to_np([msg.error.position for msg in pose_msgs])
-    # pes = vec3_msg_to_np([msg.error.position for msg in pose_msgs])
+    pas = vec3_list_to_np([msg.error.position for msg in pose_msgs])
+    # pes = vec3_list_to_np([msg.error.position for msg in pose_msgs])
 
     plt.subplot(212)
 

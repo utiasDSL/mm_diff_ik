@@ -75,6 +75,14 @@ def main():
     plt.xlabel('Time (s)')
     plt.ylabel('Position (m)')
 
+    plt.figure()
+    plt.plot(t, pz, 'b', label='$p_z$')
+    plt.grid()
+    plt.legend()
+    plt.title('z')
+    plt.xlabel('Time (s)')
+    plt.ylabel('z (m)')
+
     plt.show()
 
 

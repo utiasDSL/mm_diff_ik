@@ -6,7 +6,7 @@ import sys
 
 
 def rms(e):
-    ''' Calculate root mean square of a vector of data. '''
+    """Calculate root mean square of a vector of data."""
     return np.sqrt(np.mean(np.square(e)))
 
 
@@ -65,14 +65,14 @@ def quat_error(q1, q2):
 def quat_angle(q):
     """Return the scalar angle of the axis-angle represented by this quaternion."""
     v = q[:3]  # vector part
-    w = q[3]   # scalar part
+    w = q[3]  # scalar part
     angle = 2 * np.arctan2(np.linalg.norm(v), w)
     return wrap_to_pi(angle)
 
 
 def trim_to_traj(msgs, pose_msgs):
     """Trim the list of msgs such that it only contains those messages which
-       fall within the trajectory."""
+    fall within the trajectory."""
     t0 = msg_time(pose_msgs[0])
     tf = msg_time(pose_msgs[-1])
     return [msg for msg in msgs if msg_time(msg) >= t0 and msg_time(msg) <= tf]
@@ -137,7 +137,9 @@ def linear_interpolate_list(interp_times, times, values, interp_func=_lerp_vecto
 
 
 def spherical_interpolate_quaternions(interp_times, times, quats):
-    return linear_interpolate_list(interp_times, times, quats, interp_func=_slerp_quaternions)
+    return linear_interpolate_list(
+        interp_times, times, quats, interp_func=_slerp_quaternions
+    )
 
 
 # TODO this is broken: commenting out until fixed so not used
@@ -161,10 +163,10 @@ def most_recent_file(pattern):
 
 def arg_or_most_recent(pattern):
     """Return the first argument, if provided, or the most recent file matching
-       pattern otherwise.
+    pattern otherwise.
     """
     if len(sys.argv) > 1:
         fname = sys.argv[1]
     else:
-        fname = most_recent_file('*.bag')
+        fname = most_recent_file("*.bag")
     return fname

@@ -54,12 +54,14 @@ def rmse_from_joint_state(pose_msgs, joint_msgs):
     p_errs = pds - ps
     p_err_norms = np.linalg.norm(p_errs, axis=1)
     p_rmse = util.rms(p_err_norms) * 1000.0
+    p_mae = np.mean(p_err_norms) * 1000.0
 
     quat_errs = [util.quat_error(quatd, quat) for quatd, quat in zip(quatds, quats)]
     angle_errs = np.array([util.quat_angle(quat) for quat in quat_errs])
     angle_rmse = util.rms(angle_errs)
+    angle_mae = np.mean(np.abs(angle_errs))
 
-    return p_rmse, angle_rmse
+    return p_rmse, angle_rmse, p_mae, angle_mae
 
 
 def main():
@@ -74,9 +76,11 @@ def main():
     print('Position RMSE 1 = {} mm'.format(p_rmse1))
     print('Rotation RMSE 1 = {} rad'.format(angle_rmse1))
 
-    p_rmse2, angle_rmse2 = rmse_from_joint_state(pose_msgs, joint_msgs)
+    p_rmse2, angle_rmse2, p_mae, angle_mae = rmse_from_joint_state(pose_msgs, joint_msgs)
     print('Position RMSE 2 = {} mm'.format(p_rmse2))
     print('Rotation RMSE 2 = {} rad'.format(angle_rmse2))
+    print('Position MAE 2 = {} mm'.format(p_mae))
+    print('Rotation MAE 2 = {} rad'.format(angle_mae))
 
 
 if __name__ == '__main__':
