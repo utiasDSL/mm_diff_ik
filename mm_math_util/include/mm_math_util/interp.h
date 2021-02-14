@@ -252,7 +252,7 @@ inline Eigen::Vector2d slerp2d(const Eigen::Vector2d& a, const Eigen::Vector2d& 
     }
 
     Eigen::Vector2d c = (std::sin((1-t)*angle) * an + std::sin(t*angle) * bn) / std::sin(angle);
-    return c;
+    return c.normalized();
 }
 
 

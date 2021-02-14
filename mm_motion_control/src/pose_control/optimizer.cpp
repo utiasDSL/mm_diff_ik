@@ -41,6 +41,14 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
                   Eigen::Dynamic,
                   Eigen::RowMajor> A_rowmajor = A;
 
+    // disable base
+    // lb.head<3>() = Eigen::Vector3d::Zero();
+    // ub.head<3>() = Eigen::Vector3d::Zero();
+
+    // disable arm
+    // lb.tail<6>() = Vector6d::Zero();
+    // ub.tail<6>() = Vector6d::Zero();
+
     // Convert eigen data to raw arrays for qpOASES.
     qpOASES::real_t *H_data = H_rowmajor.data();
     qpOASES::real_t *g_data = g.data();
@@ -160,6 +168,7 @@ int solve_qp_mi(JointVector& g, JointVector& lb, JointVector& ub,
     double obj_val = qp.getObjVal();
     if (isnan(obj_val) || isinf(obj_val)) {
         ROS_WARN_STREAM("MI QP: objective value = " << obj_val);
+        u = JointVector::Zero();
     }
 
     return status;
@@ -278,8 +287,8 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
 
     // TODO should take in fd as a vector
     Vector6d wrench_compliant_d = Vector6d::Zero();
-    // wrench_compliant_d << 0, 0, fd, 0, 0, 0;
-    wrench_compliant_d << 0, 0, -5, 0, 0, 0;
+    wrench_compliant_d << 0, 0, fd, 0, 0, 0;
+    // wrench_compliant_d << 0, 0, -10, 0, 0, 0;
     Vector6d W_err = wrench_compliant_d - wrench_compliant;
     // ROS_INFO_STREAM("Wd = " << wrench_compliant_d);
 
@@ -306,60 +315,46 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
 
     /*************************************************************************/
     /* 7. Pushing */
-    // Eigen::Vector3d p_err = pd - pe;
 
     // position normal
-    // double p_err_norm = P_err.head<2>().norm();
-    // Eigen::Vector2d np_xy = Eigen::Vector2d::Zero();
-    // if (p_err_norm > 1e-2) {
-    //     np_xy = p_err.head<2>() / p_err_norm;
-    // }
     Eigen::Vector2d np_xy = P_err.head<2>().normalized();
 
     // nf_xy decays back to the push direction in the absence of sufficiently
     // large force measurements (i.e. ones that aren't noise)
+    // NOTE: approach is sensitive to noisy force measurements if above the
+    // threshold: they will cause jerky behaviour, because the controller
+    // thinks it is in contact with the object
     Eigen::Vector2d f_xy = force.head<2>();
-    // double f_xy_norm = f_xy.norm();
     if (f_xy.norm() > FORCE_THRESHOLD) {
-        // nf_xy = f_xy / f_xy_norm;
         nf_xy = f_xy.normalized();
+        // ROS_INFO_STREAM("f_xy = " << f_xy);
     } else {
-        double alpha_nf = 0.1;
-        // nf_xy = alpha_nf * nf_xy + (1 - alpha_nf) * np_xy;
-        // nf_xy.normalize();
-        // if (nf_xy.norm() > 1e-3) {
-        //     nf_xy = nf_xy / nf_xy.norm();
-        // }
+        double alpha_nf = 0.01;
         nf_xy = slerp2d(nf_xy, np_xy, alpha_nf);
     }
 
-    // force normal
-    // Eigen::Vector2d nf_xy = nf.head<2>();
-
     // push direction balances between the two
     double alpha_push = 0.5;
-    // Eigen::Vector2d push_dir = ((1+alpha_push)*nf_xy*nf_xy.transpose() - alpha_push*Eigen::Matrix2d::Identity()) * np_xy;
     Eigen::Vector2d push_dir = slerp2d(nf_xy, np_xy, -alpha_push);
 
     // TODO fixed gains for now
-    // double push_dir_norm = push_dir.norm();
     Eigen::Vector3d vp = Eigen::Vector3d::Zero();
     vp << 0.2 * push_dir, 1 * P_err(2);
-    // vp.head<2>() = 0.2 * push_dir.head<2>();  //.normalized();
-    // vp(2) = 1 * p_err(2); // z
-    // if (push_dir_norm > 1e-2) {
-    //     vp.head<2>() << 0.2 * push_dir.head<2>() / push_dir_norm;
-    // }
 
-    // ROS_INFO_STREAM("vp = " << vp);
-
+    Matrix3x9 Jp = J.topRows<3>();
     Eigen::Matrix3d W7 = Eigen::Matrix3d::Identity();
-    // JointMatrix Q7 = B.transpose() * Jp.transpose() * W7 * Jp * B;
-    // JointVector C7 = -vp.transpose() * W7 * Jp * B;
+    JointMatrix Q7 = B.transpose() * Jp.transpose() * W7 * Jp * B;
+    JointVector C7 = -vp.transpose() * W7 * Jp * B;
+
+    // for safety, in case end of trajectory is reached
+    if (P_err(0) <= 0) {
+        Q7 = JointMatrix::Zero();
+        C7 = JointVector::Zero();
+    }
 
     // get rid of these for now to avoid accidental mess ups
-    JointMatrix Q7 = JointMatrix::Zero();
-    JointVector C7 = JointVector::Zero();
+    // JointMatrix Q7 = JointMatrix::Zero();
+    // JointVector C7 = JointVector::Zero();
 
     /*************************************************************************/
     /* Manipulability */
@@ -373,13 +368,12 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
 
     double w1 = 1.0; // minimize velocity -- this should typically be 1.0
     double w2 = 0.0; // avoid joint limits
-    double w3 = 100.0; // minimize pose error
+    double w3 = 0.0; // minimize pose error
     double w4 = 0.0; // minimize acceleration
     double w5 = 0.0; // force compliance
     double w6 = 0.0; // force-based orientation
-    double w7 = 0.0; // pushing
-
-    double w_mi = 100;
+    double w7 = 1.0; // pushing
+    // double w_mi = 100;
 
     if (freaked_out && !did_print_gs) {
         ROS_WARN_STREAM("C1 = " << C1);
@@ -446,26 +440,26 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
     int status = solve_qp(H, g, A_obs, dq_lb, dq_ub, ub_obs, u1);
     u = u1;
 
-    // MI as a secondary objective, solved in the null space
-    JacobianMatrix J;
-    JointMatrix B;
-    Kinematics::jacobian(q, J);
-    Kinematics::calc_base_input_mapping(q, B);
+    // // MI as a secondary objective, solved in the null space
+    // JacobianMatrix J;
+    // JointMatrix B;
+    // Kinematics::jacobian(q, J);
+    // Kinematics::calc_base_input_mapping(q, B);
+    //
+    // JacobianMatrix A_eq = J * B;
+    // Vector6d b_eq = A_eq * u1;
+    //
+    // JointVector m_grad;
+    // Kinematics::manipulability_gradient_analytic(q, m_grad);
+    // double w_mi = 100;
+    // JointVector g_mi = -w_mi * dt * B.transpose() * m_grad;
+    //
+    // int status_mi_qp = solve_qp_mi(g_mi, dq_lb, dq_ub, A_eq, b_eq, A_obs, ub_obs, u2);
+    // if (status_mi_qp) {
+    //     u2 = JointVector::Zero();
+    // }
+    // u = u2;
 
-    JacobianMatrix A_eq = J * B;
-    Vector6d b_eq = A_eq * u1;
-
-    JointVector m_grad;
-    Kinematics::manipulability_gradient_analytic(q, m_grad);
-    double w_mi = 100;
-    JointVector g_mi = -w_mi * dt * B.transpose() * m_grad;
-
-    int status_mi_qp = solve_qp_mi(g_mi, dq_lb, dq_ub, A_eq, b_eq, A_obs, ub_obs, u2);
-    if (status_mi_qp) {
-        u2 = JointVector::Zero();
-    }
-
-    u = u2;
     return status;
 }
 
