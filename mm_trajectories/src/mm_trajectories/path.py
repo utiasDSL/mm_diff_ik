@@ -8,6 +8,7 @@ import tf.transformations as tfs
 
 class PointToPoint(object):
     """Point-to-point trajectory."""
+
     def __init__(self, p0, p1, quat, timescaling):
         self.p0 = p0
         self.p1 = p1
@@ -28,6 +29,7 @@ class PointToPoint(object):
 
 class Circle(object):
     """Circular trajectory."""
+
     def __init__(self, p0, quat0, r, timescaling):
         # p0 is the starting point; center is p0 + [0, -r, 0]
         self.r = r
@@ -38,15 +40,49 @@ class Circle(object):
     def sample_linear(self, t):
         s, ds, dds = self.timescaling.eval(t)
 
-        cs = np.cos(2*np.pi*s)
-        ss = np.sin(2*np.pi*s)
+        cs = np.cos(2 * np.pi * s)
+        ss = np.sin(2 * np.pi * s)
 
         p = self.pc + self.r * np.stack((np.zeros_like(t), cs, ss), axis=1)
-        dpds = 2*np.pi*self.r * np.stack((np.zeros_like(t), -ss, cs), axis=1)
-        dpds2 = 4*np.pi**2*self.r * np.stack((np.zeros_like(t), -cs, -ss), axis=1)
+        dpds = 2 * np.pi * self.r * np.stack((np.zeros_like(t), -ss, cs), axis=1)
+        dpds2 = 4 * np.pi ** 2 * self.r * np.stack((np.zeros_like(t), -cs, -ss), axis=1)
 
         v = dpds * ds[:, None]
-        a = dpds * dds[:, None] + dpds2 * ds[:, None]**2
+        a = dpds * dds[:, None] + dpds2 * ds[:, None] ** 2
+
+        return p, v, a
+
+    def sample_rotation(self, t):
+        n = t.shape[0]
+        return np.tile(self.quat0, (n, 1)), np.zeros((n, 3)), np.zeros((n, 3))
+
+
+class Ellipse(object):
+    """Ellipse trajectory."""
+
+    def __init__(self, p0, quat0, rx, ry, timescaling):
+        # p0 is the starting point; center is p0 + [0, -r, 0]
+        self.rx = rx
+        self.ry = ry
+        self.p0 = p0
+        self.quat0 = quat0
+        # self.pc = p0 + np.array([0, -r, 0])  # start midway up left side of circle
+        self.timescaling = timescaling
+
+    def sample_linear(self, t):
+        s, ds, dds = self.timescaling.eval(t)
+
+        angle = 2 * np.pi * s - 0.5*np.pi
+        cs = np.cos(angle)
+        ss = np.sin(angle)
+
+        p = np.stack((self.rx * cs, self.ry * ss, np.zeros_like(t)), axis=1)
+        p = p - p[0] + self.p0
+        dpds = 2 * np.pi * np.stack((-self.rx * ss, self.ry * cs, np.zeros_like(t)), axis=1)
+        dpds2 = 4 * np.pi ** 2 * np.stack((-self.rx * cs, -self.ry * ss, np.zeros_like(t)), axis=1)
+
+        v = dpds * ds[:, None]
+        a = dpds * dds[:, None] + dpds2 * ds[:, None] ** 2
 
         return p, v, a
 
@@ -57,6 +93,7 @@ class Circle(object):
 
 class Figure8(object):
     """Figure 8 trajectory."""
+
     def __init__(self, p0, quat0, r, timescaling):
         self.r = r
         self.quat0 = quat0
@@ -67,12 +104,12 @@ class Figure8(object):
         s, ds, dds = self.timescaling.eval(t)
 
         # first half: circle to the right
-        cs1 = np.cos(4*np.pi*s[s <= 0.5])
-        ss1 = np.sin(4*np.pi*s[s <= 0.5])
+        cs1 = np.cos(4 * np.pi * s[s <= 0.5])
+        ss1 = np.sin(4 * np.pi * s[s <= 0.5])
 
         # second half: circle to the left
-        cs2 = np.cos(4*np.pi*s[s > 0.5])
-        ss2 = np.sin(4*np.pi*s[s > 0.5])
+        cs2 = np.cos(4 * np.pi * s[s > 0.5])
+        ss2 = np.sin(4 * np.pi * s[s > 0.5])
 
         # put together
         y = np.concatenate((cs1, 2 - cs2))
@@ -87,11 +124,16 @@ class Figure8(object):
 
         # these are all of shape (n, 3)
         p = self.pc + self.r * np.stack((np.zeros_like(t), y, z), axis=1)
-        dpds = 4*np.pi*self.r * np.stack((np.zeros_like(t), dy_ds, dz_ds), axis=1)
-        dpds2 = 4**2*np.pi**2*self.r * np.stack((np.zeros_like(t), dy_ds2, dz_ds2), axis=1)
+        dpds = 4 * np.pi * self.r * np.stack((np.zeros_like(t), dy_ds, dz_ds), axis=1)
+        dpds2 = (
+            4 ** 2
+            * np.pi ** 2
+            * self.r
+            * np.stack((np.zeros_like(t), dy_ds2, dz_ds2), axis=1)
+        )
 
         v = dpds * ds[:, None]
-        a = dpds * dds[:, None] + dpds2 * ds[:, None]**2
+        a = dpds * dds[:, None] + dpds2 * ds[:, None] ** 2
 
         return p, v, a
 
@@ -102,6 +144,7 @@ class Figure8(object):
 
 class SineXY(object):
     """Sinusoidal trajectory: linear in x, sinusoidal in y, constant in z."""
+
     def __init__(self, p0, quat0, lx, amp, freq, timescaling):
         self.p0 = p0
         self.quat = quat0
@@ -122,11 +165,11 @@ class SineXY(object):
         ddx = self.lx * dds
 
         # y = A*sin(w*s)
-        y = self.p0[1] + self.A*np.sin(self.w*s)
-        dyds = self.A*self.w*np.cos(self.w*s)
-        dyds2 = -self.w**2 * y
+        y = self.p0[1] + self.A * np.sin(self.w * s)
+        dyds = self.A * self.w * np.cos(self.w * s)
+        dyds2 = -self.w ** 2 * y
         dy = dyds * ds
-        ddy = dyds * dds + dyds2 * ds**2
+        ddy = dyds * dds + dyds2 * ds ** 2
 
         # z = const
         z = self.p0[2] * np.ones_like(t)
@@ -143,8 +186,61 @@ class SineXY(object):
         return np.tile(self.quat, (n, 1)), np.zeros((n, 3)), np.zeros((n, 3))
 
 
+class Cloud(object):
+    """Cloud trajectory"""
+
+    def __init__(self, p0, quat0, timescaling):
+        self.p0 = p0
+        self.quat0 = quat0
+        self.timescaling = timescaling
+
+    def sample_linear(self, t):
+        # make these different to have an elliptical base shape
+        R1 = 0.8
+        R2 = 0.5
+
+        r = 0.05  # radius of small circle
+        a = 0  # offset of small circle's center from edge of large circle circumference
+        b = 7
+
+        s, ds, dds = self.timescaling.eval(t)
+
+        angle = 2 * np.pi * s - 0.5 * np.pi
+
+        # x
+        x = 0.5 * ((R2 + a) * np.sin(angle) + r * np.sin(b * angle))
+        x = x - x[0] + self.p0[0]  # normalize to start
+        dxds = np.pi * ((R2 + a) * np.cos(angle) + r * b * np.cos(b * angle))
+        dxds2 = -2*np.pi**2 * ((R2 + a) * np.sin(angle) + r * b**2 * np.sin(b * angle))
+        dxdt = dxds * ds
+        dxdt2 = dxds * dds + dxds2 * ds ** 2
+
+        # y
+        y = 0.5 * ((R1 + a) * np.cos(angle) + r * np.cos(b * angle))
+        y = y - y[0] + self.p0[1]
+        dyds = -np.pi * ((R1+a) * np.sin(angle) + r * b * np.sin(b * angle))
+        dyds2 = -2*np.pi**2 * ((R1+a) * np.cos(angle) + r * b**2 * np.cos(b * angle))
+        dydt = dyds * ds
+        dydt2 = dyds * dds + dyds2 * ds ** 2
+
+        # z = const
+        z = self.p0[2] * np.ones_like(t)
+        dzdt = dzdt2 = np.zeros_like(t)
+
+        pos = np.vstack((x, y, z)).T
+        vel = np.vstack((dxdt, dydt, dzdt)).T
+        acc = np.vstack((dxdt2, dydt2, dzdt2)).T
+
+        return pos, vel, acc
+
+    def sample_rotation(self, t):
+        n = t.shape[0]
+        return np.tile(self.quat0, (n, 1)), np.zeros((n, 3)), np.zeros((n, 3))
+
+
 class Spiral(object):
     """Spiral trajectory."""
+
     def __init__(self, p0, quat0, r, freq, lx, timescaling):
         # this is most similar to the sine trajectory
         self.p0 = p0
@@ -168,15 +264,21 @@ class Spiral(object):
 
         y = self.p0[1] + R * np.cos(self.w * s) - R
         dyds = dRds * np.cos(self.w * s) - R * self.w * np.sin(self.w * s) - dRds
-        dyds2 = -2 * dRds * self.w * np.sin(self.w * s) - R * self.w**2 * np.cos(self.w * s)
+        dyds2 = -2 * dRds * self.w * np.sin(self.w * s) - R * self.w ** 2 * np.cos(
+            self.w * s
+        )
         dydt = dyds * dsdt
-        dydt2 = dyds * dsdt2 + dyds2 * dsdt**2
+        dydt2 = dyds * dsdt2 + dyds2 * dsdt ** 2
 
         z = self.p0[2] + R * np.sin(self.w * s)
         dzds = dRds * np.sin(self.w * s) + R * self.w * np.cos(self.w * s)
-        dzds2 = -dRds * self.w * np.sin(self.w * s) + dRds * self.w * np.cos(self.w * s) - R * self.w**2 * np.sin(self.w * s)
+        dzds2 = (
+            -dRds * self.w * np.sin(self.w * s)
+            + dRds * self.w * np.cos(self.w * s)
+            - R * self.w ** 2 * np.sin(self.w * s)
+        )
         dzdt = dzds * dsdt
-        dzdt2 = dzds * dsdt2 + dzds2 * dsdt**2
+        dzdt2 = dzds * dsdt2 + dzds2 * dsdt ** 2
 
         p = np.stack((x, y, z), axis=1)
         v = np.stack((dxdt, dydt, dzdt), axis=1)
@@ -191,6 +293,7 @@ class Spiral(object):
 
 class Rotational(object):
     """Rotate by `angle` about `axis`."""
+
     def __init__(self, p0, quat0, axis, angle, timescaling):
         self.p0 = p0
         self.quat0 = quat0
@@ -218,84 +321,3 @@ class Rotational(object):
         acc = dadt2[:, None] * self.axis
 
         return quats, vel, acc
-
-
-# class RotationalTrajectory(object):
-#     ''' Rotate pi/2 about z then pi/2 about y '''
-#     def __init__(self, p0, quat0, duration):
-#         self.name = 'Rotational'
-#         self.p0 = p0
-#         self.quat0 = quat0
-#         self.duration = duration
-#
-#     def sample_linear(self, t):
-#         # Positions do not change
-#         return self.p0, np.zeros(3)
-#
-#     def sample_rotation(self, t):
-#         # small rotation about the z-axis
-#         w = np.pi / self.duration
-#         az = np.array([0, 0, 1])
-#         ay = np.array([-1, 0, 0])
-#
-#         if t < self.duration / 2.0:
-#             rz = w * t
-#             ry = 0.0
-#             axis = az
-#         else:
-#             rz = w * self.duration / 2.0
-#             ry = w * (t - self.duration / 2.0)
-#             axis = ay
-#
-#         qy = tfs.quaternion_about_axis(ry, ay)
-#         qz = tfs.quaternion_about_axis(rz, az)
-#         dq = tfs.quaternion_multiply(qy, qz)
-#         quat = tfs.quaternion_multiply(dq, self.quat0)
-#
-#         return quat, w * axis
-
-
-# class SquareTrajectory(object):
-#     def __init__(self, p0, quat0, duration):
-#         self.name = 'Square'
-#         self.p0 = p0
-#         self.quat0 = quat0
-#         self.duration = duration
-#
-#     def sample_linear(self, t):
-#         R = 0.5
-#
-#         x = self.p0[0]
-#         y = self.p0[1]
-#         z = self.p0[2]
-#
-#         dx = dy = dz = 0
-#
-#         # Total distance travelled is 8 * R; d is the current distance
-#         # travelled
-#         v = 8 * R / self.duration
-#         d = v * t
-#
-#         if t < self.duration / 8.0:
-#             y -= d
-#             dy = -v
-#         elif t < self.duration * 3.0 / 8.0:
-#             x += d - R
-#             y -= R
-#             dx = v
-#         elif t < self.duration * 5.0 / 8.0:
-#             x += 2*R
-#             y += d - 4*R
-#             dy = v
-#         elif t < self.duration * 7.0 / 8.0:
-#             x -= d - 7*R
-#             y += R
-#             dx = -v
-#         else:
-#             y += 8*R - d
-#             dy = -v
-#
-#         return np.array([x, y, z]), np.array([dx, dy, dz])
-#
-#     def sample_rotation(self, t):
-#         return self.quat0, np.zeros(3)

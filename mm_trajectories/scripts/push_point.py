@@ -13,7 +13,7 @@ from mm_trajectories import util
 
 
 DT = 0.1
-OFFSET = np.array([3, 0, 0])  # offset from current position
+OFFSET = np.array([4, 0, 0])  # offset from current position
 
 
 def main():
