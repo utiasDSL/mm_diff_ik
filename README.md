@@ -3,13 +3,34 @@
 High-performance optimization-based control for mobile manipulation.
 
 This repository contains ROS packages for control of the UTIAS mobile
-manipulator. It is designed to be install on Ubuntu 14.04 with ROS Indigo,
-because these are the versions in use on the robot itself (as of May 2020).
+manipulator (the "Thing"). It is designed to be installed on Ubuntu 14.04 with
+ROS Indigo, because these are the versions in use on the robot itself (as of
+January 2021).
 
 If you have a later version of Ubuntu, you can emulate a 14.04 environment
 using [docker](https://github.com/adamheins/mm-docker).
 
-## Installation
+## Robot Information
+
+### Hardware
+
+The robot consists of a UR10 manipulator mounted on a Ridgeback omnidirectional
+mobile base. The base has a Hokuyo UST-10LX laser range finder mounted at the
+front that provides a two-dimensional scan in a 270 degree arc in front of the
+robot. The end effector has a Robotiq FT 300 force torque sensor mounted at the
+wrist to measure the applied wrench, as well as Robotiq 3 finger gripper for
+manipulation. See the `datasheets/` directory for more details on each of the
+components.
+
+### Software
+
+The UR10 is running firmware version 3.9 and communicating using
+[ur_modern_driver](https://github.com/ros-industrial/ur_modern_driver), which
+is deprecated. A complete upgrade of the system and dependencies to a more
+recent version of Ubuntu, ROS, driver, and firmware is planned for sometime in
+the future.
+
+## Software Installation
 
 First, install required dependencies we can get from `apt`:
 ```
