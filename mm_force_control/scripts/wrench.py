@@ -19,8 +19,8 @@ HZ = 100  # Control loop rate (Hz)
 N_BIAS = 100  # Number of samples to use for wrench bias estimation.
 
 # Exponential smoothing time constants
-FORCE_FILTER_TAU = 0.1
-TORQUE_FILTER_TAU = 0.1
+FORCE_FILTER_TAU = 0.05
+TORQUE_FILTER_TAU = 0.05
 
 
 class MMWrenchNode(object):

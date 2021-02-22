@@ -28,7 +28,7 @@ def main():
     mm_joint_msgs_traj = util.trim_to_traj(mm_joint_msgs, pose_msgs)
     t2 = util.parse_time(mm_joint_msgs_traj, t0=t0)
     qs2 = np.array([msg.position for msg in mm_joint_msgs_traj])
-    # dqs2 = np.array([msg.velocity for msg in mm_joint_msgs_traj])
+    dqs2 = np.array([msg.velocity for msg in mm_joint_msgs_traj])
 
     ur_joint_msgs = [msg for _, msg, _ in bag.read_messages('/ur10_joint_states')]
     ur_joint_msgs_traj = util.trim_to_traj(ur_joint_msgs, pose_msgs)

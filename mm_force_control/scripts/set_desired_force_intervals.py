@@ -4,16 +4,17 @@ import rospy
 from std_msgs.msg import Float64
 
 
-START = -5
-INCREMENT = -5
+INTERVAL = 30
+START = -10
+INCREMENT = -10
 
 
 def wait_and_count(n):
     rate = rospy.Rate(1.0)
     seconds = 0
     while not rospy.is_shutdown() and seconds < n:
-        seconds += 1
         print(n - seconds)
+        seconds += 1
         rate.sleep()
 
 
@@ -31,5 +32,5 @@ if __name__ == '__main__':
         force_des_pub.publish(msg)
         print('Published desired force = {}'.format(force))
 
-        wait_and_count(20)
+        wait_and_count(INTERVAL)
         force += INCREMENT

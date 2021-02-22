@@ -228,7 +228,7 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // Kp.diagonal() << 1, 1, 1, 0, 0, 0;
 
     Matrix6d W3 = Matrix6d::Identity();
-    W3.diagonal() << 1, 1, 1, 0, 0, 0;
+    // W3.diagonal() << 1, 1, 1, 0, 0, 0;
 
     JointMatrix Q3 = JB.transpose() * W3 * JB;
     JointVector C3 = -(Kp * P_err + Vd).transpose() * W3 * JB;
@@ -287,12 +287,13 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
 
     // TODO should take in fd as a vector
     Vector6d wrench_compliant_d = Vector6d::Zero();
-    wrench_compliant_d << 0, 0, fd, 0, 0, 0;
-    // wrench_compliant_d << 0, 0, -10, 0, 0, 0;
+    // wrench_compliant_d << 0, 0, fd, 0, 0, 0;
+    wrench_compliant_d << 0, 0, -10, 0, 0, 0;
     Vector6d W_err = wrench_compliant_d - wrench_compliant;
     // ROS_INFO_STREAM("Wd = " << wrench_compliant_d);
 
     Vector6d Vc = Vd + Kp_com * P_err + Kf_com * W_err;
+    // ROS_INFO_STREAM("Vc = " << Vc);
 
     Matrix6d W5 = Matrix6d::Identity();
     JointMatrix Q5 = JB.transpose() * W5 * JB;
@@ -300,6 +301,7 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
 
     /*************************************************************************/
     /* 6. Orientation of EE tracks nf. */
+    // TODO delete: unused
 
     // Eigen::Matrix3d Re = w_T_tool.rotation();
     // Eigen::Vector3d ae = Re.col(2);
@@ -338,23 +340,28 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     Eigen::Vector2d push_dir = slerp2d(nf_xy, np_xy, -alpha_push);
 
     // TODO fixed gains for now
-    Eigen::Vector3d vp = Eigen::Vector3d::Zero();
-    vp << 0.2 * push_dir, 1 * P_err(2);
+    Vector6d Vp = Vector6d::Zero();
+    Vp << 0.2 * push_dir, 1 * P_err.tail<4>();
 
-    Matrix3x9 Jp = J.topRows<3>();
-    Eigen::Matrix3d W7 = Eigen::Matrix3d::Identity();
-    JointMatrix Q7 = B.transpose() * Jp.transpose() * W7 * Jp * B;
-    JointVector C7 = -vp.transpose() * W7 * Jp * B;
+    // ROS_INFO_STREAM("np_xy = " << np_xy);
+    // ROS_INFO_STREAM("nf_xy = " << nf_xy);
+    // ROS_INFO_STREAM("push_dir = " << push_dir);
+
+    // Matrix3x9 Jp = J.topRows<3>();
+    Matrix6d W7 = Matrix6d::Identity();
+    JointMatrix Q7 = B.transpose() * J.transpose() * W7 * J * B;
+    JointVector C7 = -Vp.transpose() * W7 * J * B;
 
     // for safety, in case end of trajectory is reached
-    if (P_err(0) <= 0) {
-        Q7 = JointMatrix::Zero();
-        C7 = JointVector::Zero();
-    }
+    // if (P_err.head<2>().norm() <= 0.2) {
+    //     ROS_INFO_STREAM("near end, stopping");
+    //     Q7 = JointMatrix::Zero();
+    //     C7 = JointVector::Zero();
+    // }
 
     // get rid of these for now to avoid accidental mess ups
-    // JointMatrix Q7 = JointMatrix::Zero();
-    // JointVector C7 = JointVector::Zero();
+    Q7 = JointMatrix::Zero();
+    C7 = JointVector::Zero();
 
     /*************************************************************************/
     /* Manipulability */
@@ -370,10 +377,10 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     double w2 = 0.0; // avoid joint limits
     double w3 = 0.0; // minimize pose error
     double w4 = 0.0; // minimize acceleration
-    double w5 = 0.0; // force compliance
+    double w5 = 1.0; // force compliance
     double w6 = 0.0; // force-based orientation
-    double w7 = 1.0; // pushing
-    // double w_mi = 100;
+    double w7 = 0.0; // pushing
+    double w_mi = 0.0;
 
     if (freaked_out && !did_print_gs) {
         ROS_WARN_STREAM("C1 = " << C1);
@@ -451,11 +458,12 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
     //
     // JointVector m_grad;
     // Kinematics::manipulability_gradient_analytic(q, m_grad);
-    // double w_mi = 100;
+    // double w_mi = 0;
     // JointVector g_mi = -w_mi * dt * B.transpose() * m_grad;
     //
     // int status_mi_qp = solve_qp_mi(g_mi, dq_lb, dq_ub, A_eq, b_eq, A_obs, ub_obs, u2);
     // if (status_mi_qp) {
+    //     ROS_WARN_STREAM("MI QP infeasible: status = " << status_mi_qp);
     //     u2 = JointVector::Zero();
     // }
     // u = u2;

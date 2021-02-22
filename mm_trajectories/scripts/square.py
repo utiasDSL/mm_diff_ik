@@ -28,6 +28,8 @@ def main():
                             [S,  R, 0],
                             [0,  R, 0],
                             [0,  0, 0]])
+
+    # TODO this seems to work, but is non-intuitive: revise or comment
     durations = duration / np.array([8.0, 4.0, 4.0, 4.0, 8.0])
 
     waypoints = []

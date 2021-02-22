@@ -5,7 +5,7 @@
 <launch>
   <node pkg="mm_motion_control" type="home" name="home_trajectory_node" output="screen">
     <rosparam param="/joint_home_positions">
-      [-2.0, -1.0, 0.0, 0.0, -2.9671, -1.5708, -1.7453, -1.5708, 1.5708]
+      [-1.0, 0.0, 0.0, 0.0, -2.3562, -0.7854, -1.5708,  1.5708, 0]
     </rosparam>
   </node>
 </launch>

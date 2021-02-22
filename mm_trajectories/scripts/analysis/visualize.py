@@ -3,16 +3,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-import mm_trajectories.trajectory as trajectory
+from mm_trajectories import timescaling, path, util
 
 
 DURATION = 30
 DT = 0.1
 
 
-def plot_traj(traj, ax, label):
-    waypoints = trajectory.create_waypoints(traj, DURATION, DT)
-
+def plot_traj_from_waypoints(waypoints, ax, label):
     xs = [wp.pose.position.x for wp in waypoints]
     ys = [wp.pose.position.y for wp in waypoints]
     zs = [wp.pose.position.z for wp in waypoints]
@@ -20,14 +18,41 @@ def plot_traj(traj, ax, label):
     ax.plot(xs, ys, zs=zs, linewidth=2, label=label)
 
 
-def main():
-    quat0 = np.array([0, 0, 0, 1])
+def plot_traj(traj, ax, label):
+    waypoints = util.create_waypoints(traj, DURATION, DT)
+    plot_traj_from_waypoints(waypoints, ax, label)
 
-    line = trajectory.LineTrajectory(np.zeros(3), quat0, DURATION)
-    sine = trajectory.SineXYTrajectory(np.zeros(3), quat0, DURATION)
-    figure8 = trajectory.CircleTrajectory(np.zeros(3), quat0, DURATION)
-    square = trajectory.SquareTrajectory(np.zeros(3), quat0, DURATION)
-    spiral = trajectory.SpiralTrajectory(np.zeros(3), quat0, DURATION)
+
+def make_square_waypoints(p0, quat0, s, duration):
+    # s is sidelength of the square
+    r = 0.5 * s
+    points = p0 + np.array([[0,  0, 0],
+                            [0, -r, 0],
+                            [s, -r, 0],
+                            [s,  r, 0],
+                            [0,  r, 0],
+                            [0,  0, 0]])
+    durations = duration / np.array([8.0, 4.0, 4.0, 4.0, 8.0])
+
+    waypoints = []
+    for i in xrange(5):
+        scaling = timescaling.QuinticTimeScaling(durations[i])
+        traj = path.PointToPoint(points[i, :], points[i+1, :], quat0, scaling)
+        waypoints.extend(util.create_waypoints(traj, durations[i], DT))
+    return waypoints
+
+
+def main():
+    p0 = np.zeros(3)
+    quat0 = np.array([0, 0, 0, 1])
+    scaling = timescaling.QuinticTimeScaling(DURATION)
+
+    line = path.PointToPoint(p0, p0 + [3, 0, 0], quat0, scaling)
+    sine = path.SineXY(p0, quat0, 3.0, 1.0, 1.0, scaling)
+    figure8 = path.Figure8(p0, quat0, 0.25, scaling)
+    square_waypoints = make_square_waypoints(p0, quat0, 1.0, DURATION)
+    spiral = path.Spiral(p0, quat0, 0.5, 2.0, 3.0, scaling)
+    ellipse = path.Ellipse(p0, quat0, 0.2, 0.4, scaling)
 
     fig = plt.figure(figsize=(3.25, 2.3))
     plt.rcParams.update({'font.size': 8,
@@ -40,11 +65,12 @@ def main():
 
     ax.zaxis.labelpad = 40
 
-    plot_traj(line, ax, '$\mathrm{Line}$')
-    plot_traj(sine, ax, '$\mathrm{Sine}$')
-    plot_traj(figure8, ax, '$\mathrm{Figure 8}$')
-    plot_traj(square, ax, '$\mathrm{Square}$')
-    plot_traj(spiral, ax, '$\mathrm{Spiral}$')
+    plot_traj(line, ax, r'$\mathrm{Line}$')
+    plot_traj(sine, ax, r'$\mathrm{Sine}$')
+    plot_traj(figure8, ax, r'$\mathrm{Figure\ 8}$')
+    plot_traj_from_waypoints(square_waypoints, ax, r'$\mathrm{Square}$')
+    plot_traj(ellipse, ax, r'$\mathrm{Ellipse}$')
+    plot_traj(spiral, ax, r'$\mathrm{Spiral}$')
 
     ax.set_xlim([-0, 3])
     ax.set_ylim([-1.0, 1.0])
@@ -64,9 +90,9 @@ def main():
     # manually place axis labels
     # ax.annotate('x (m)', (170, 15), xycoords='figure pixels')
     # ax.annotate('y (m)', (40, 15), xycoords='figure pixels')
-    ax.annotate('$z\mathrm{\ (m)}$', (4, 130), xycoords='figure pixels')
-    ax.set_xlabel('$x\mathrm{\ (m)}$')
-    ax.set_ylabel('$y\mathrm{\ (m)}$')
+    ax.annotate(r'$z\mathrm{\ (m)}$', (4, 130), xycoords='figure pixels')
+    ax.set_xlabel(r'$x\mathrm{\ (m)}$')
+    ax.set_ylabel(r'$y\mathrm{\ (m)}$')
     # ax.set_zlabel('$z\mathrm{\ (m)}$')
 
     # set background colors to white
@@ -74,13 +100,15 @@ def main():
     ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
     ax.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
 
+    # don't rotate labels
     ax.xaxis.set_rotate_label(False)
     ax.yaxis.set_rotate_label(False)
     ax.zaxis.set_rotate_label(False)
 
+    # fix the 3D view angle
     ax.view_init(elev=37, azim=-135)
 
-    ax.legend(labelspacing=0.1, borderpad=0.2, bbox_to_anchor=(0.5, 1))
+    ax.legend(labelspacing=0.2, ncol=2)
 
     fig.tight_layout(pad=1)
     fig.savefig('trajectories.pdf')
