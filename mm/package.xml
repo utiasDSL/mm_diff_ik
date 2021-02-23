@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>mm</name>
+  <version>0.0.1</version>
+  <description>The mm metapackage: code for controlling the Thing mobile manipulator.</description>
+
+  <maintainer email="adam.heins@robotics.utias.utoronto.ca">adam</maintainer>
+  <author>Adam Heins</author>
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <export>
+    <metapackage />
+  </export>
+</package>
