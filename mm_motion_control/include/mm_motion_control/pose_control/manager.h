@@ -46,7 +46,7 @@ class IKControllerManager {
 
         StatePublisherPtr state_pub;
 
-        // Subsribe to desired end effector pose trajectories.
+        // Subscribe to desired end effector pose trajectories.
         ros::Subscriber pose_traj_sub;
 
         ros::Subscriber point_traj_sub;

@@ -1,19 +1,16 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>mm_kinematics</name>
+  <name>mm_control</name>
   <version>0.0.0</version>
-  <description>Kinematics for the Thing mobile manipulator.</description>
+  <description>The mm_control package</description>
+
   <maintainer email="adam.heins@robotics.utias.utoronto.ca">Adam Heins</maintainer>
   <author>Adam Heins</author>
   <license>TODO</license>
 
   <depend>roscpp</depend>
   <depend>cmake_modules</depend>
-  <depend>mm_math_util</depend>
-
-  <!-- Runtime dependencies. -->
-  <exec_depend>python-numpy</exec_depend>
-  <exec_depend>python-sympy</exec_depend>
+  <depend>mm_kinematics</depend>
 
   <buildtool_depend>catkin</buildtool_depend>
 </package>

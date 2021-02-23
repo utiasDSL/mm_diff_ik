@@ -10,10 +10,10 @@
 namespace mm {
 
 
-// Base controller manager from which others must be derived.
-class MMControllerManager {
+// Base controller from which others must be derived.
+class MMController {
     public:
-        MMControllerManager() {}
+        MMController() {}
 
         bool init(ros::NodeHandle& nh);
 
@@ -36,7 +36,11 @@ class MMControllerManager {
         JointVector dq;
         JointVector u;
 
+        // True if a joint state message has been received.
         bool joint_state_rec;
+
+        // Time when the last joint state message was received.
+        double last_joint_state_time;
 
         /* FUNCTIONS */
 
@@ -46,6 +50,6 @@ class MMControllerManager {
         // Callback to update joint positions and velocities from the robot.
         void mm_joint_states_cb(const sensor_msgs::JointState& msg);
 
-}; // class MMControllerManager
+}; // class MMController
 
 } // namespace mm

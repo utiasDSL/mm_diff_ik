@@ -96,13 +96,6 @@ target_link_libraries(analyse_optimizer
   /usr/local/lib/libqpOASES.so
 )
 
-# add_executable(pose_publisher
-#   src/pose_publisher.cpp
-# )
-# target_link_libraries(pose_publisher
-#   ${catkin_LIBRARIES}
-# )
-
 # Tests
 # catkin_add_executable_with_gtest(test_optimize
 #   test/test_optimize.cpp
