@@ -161,8 +161,9 @@ class SymbolicKinematicModel(object):
         # Geometric Jacobian
         self.jacobian = sym.lambdify([self.q], self.J.subs(PARAM_SUB_DICT))
 
-        T_w_tool = self.T0[-1].subs(PARAM_SUB_DICT)
+        T_w_base = self.T0[4].subs(PARAM_SUB_DICT)
         T_w_ee = self.T0[-2].subs(PARAM_SUB_DICT)
+        T_w_tool = self.T0[-1].subs(PARAM_SUB_DICT)
         T_w_palm = T_w_ee * T_ee_palm
         T_w_ft = T_w_ee * T_ee_ft
 
@@ -178,6 +179,15 @@ class SymbolicKinematicModel(object):
 
         # forward transform for FT frame
         self.calc_T_w_ft = sym.lambdify([self.q], T_w_ft)
+
+        # forward transform to base frame
+        self.calc_T_w_base = sym.lambdify([self.q], T_w_base)
+
+        # full forward kinematic chain
+        chain = []
+        for T in self.T0:
+            chain.append(T.subs(PARAM_SUB_DICT))
+        self.calc_chain = sym.lambdify([self.q], chain)
 
     def parameterize(self, expr):
         """Parameterize the expression with the constant model parameters."""

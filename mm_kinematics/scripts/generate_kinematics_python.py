@@ -23,6 +23,8 @@ def main():
         "calc_T_w_ee": model.calc_T_w_ee,
         "calc_T_w_palm": model.calc_T_w_palm,
         "calc_T_w_ft": model.calc_T_w_ft,
+        "calc_T_w_base": model.calc_T_w_base,
+        "calc_chain": model.calc_chain,
     }
 
     dill.settings["recurse"] = True

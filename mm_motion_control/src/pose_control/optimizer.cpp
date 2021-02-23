@@ -375,9 +375,9 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
 
     double w1 = 1.0; // minimize velocity -- this should typically be 1.0
     double w2 = 0.0; // avoid joint limits
-    double w3 = 0.0; // minimize pose error
+    double w3 = 100.0; // minimize pose error
     double w4 = 0.0; // minimize acceleration
-    double w5 = 1.0; // force compliance
+    double w5 = 0.0; // force compliance
     double w6 = 0.0; // force-based orientation
     double w7 = 0.0; // pushing
     double w_mi = 0.0;

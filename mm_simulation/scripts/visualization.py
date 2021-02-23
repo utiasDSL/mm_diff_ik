@@ -9,7 +9,7 @@ from scipy.linalg import null_space
 from sensor_msgs.msg import JointState
 
 from mm_msgs.msg import Obstacles, PoseTrajectory
-import mm_kinematics.kinematics as kinematics
+from mm_kinematics import KinematicModel
 
 
 class RobotPlotter(object):
@@ -22,6 +22,8 @@ class RobotPlotter(object):
 
         self.traj_sub = rospy.Subscriber('/trajectory/poses', PoseTrajectory,
                                          self._traj_cb)
+
+        self.model = KinematicModel()
 
     def start(self, q0):
         ''' Launch the plot. '''
@@ -95,10 +97,11 @@ class RobotPlotter(object):
         self.traj_changed = True
 
     def _calc_arm_positions(self):
-        Ts = kinematics.chain(self.q)
-        w_T_b = Ts[3]
-        w_T_e = Ts[-2]  # EE
-        w_T_t = Ts[-1]  # tool
+        Ts = self.model.calc_chain(self.q)
+
+        w_T_b = self.model.calc_T_w_base(self.q)
+        w_T_e = self.model.calc_T_w_ee(self.q)
+        w_T_t = self.model.calc_T_w_tool(self.q)
 
         w_p_b = tfs.translation_from_matrix(w_T_b)
         w_p_e = tfs.translation_from_matrix(w_T_e)
