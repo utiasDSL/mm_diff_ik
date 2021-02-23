@@ -51,4 +51,13 @@ target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
 )
 
+# Executables
+
+add_executable(home
+  src/nodes/home.cpp
+)
+target_link_libraries(home
+  ${catkin_LIBRARIES}
+  ${PROJECT_NAME}
+)
 

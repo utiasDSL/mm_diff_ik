@@ -14,6 +14,9 @@
 
 namespace mm {
 
+MMController::MMController() {}
+MMController::~MMController() {}
+
 
 bool MMController::init(ros::NodeHandle& nh) {
     q = JointVector::Zero();

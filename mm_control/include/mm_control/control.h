@@ -13,14 +13,16 @@ namespace mm {
 // Base controller from which others must be derived.
 class MMController {
     public:
-        MMController() {}
+        MMController();
+        ~MMController();
 
+        // Initialize the node: setup subscribers and publishers, etc.
         bool init(ros::NodeHandle& nh);
 
         // Enter control loop.
         // Parameters:
         //   hz: rate at which to run the loop
-        virtual void loop(const double hz);
+        virtual void loop(const double hz) = 0;
 
     protected:
         /* VARIABLES */
