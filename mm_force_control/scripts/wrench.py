@@ -8,7 +8,7 @@ from geometry_msgs.msg import WrenchStamped
 from sensor_msgs.msg import JointState
 from mm_msgs.msg import WrenchInfo
 
-import mm_kinematics.kinematics as kinematics
+from mm_kinematics import KinematicModel
 
 from mm_force_control.filter import ExponentialSmoother
 from mm_force_control.bias import FTBiasEstimator
@@ -25,6 +25,7 @@ TORQUE_FILTER_TAU = 0.05
 
 class MMWrenchNode(object):
     def __init__(self, bias=np.zeros(6)):
+        self.model = KinematicModel()
         self.force_smoother = ExponentialSmoother(tau=FORCE_FILTER_TAU,
                                                   x0=np.zeros(3))
         self.torque_smoother = ExponentialSmoother(tau=TORQUE_FILTER_TAU,
@@ -124,7 +125,7 @@ class MMWrenchNode(object):
 
         while not rospy.is_shutdown():
             # Transform force to the world frame
-            w_T_ft = kinematics.calc_w_T_ft(self.q)
+            w_T_ft = self.model.calc_T_w_ft(self.q)
             w_R_ft = w_T_ft[:3, :3]
             force_world = w_R_ft.dot(self.force_filt)
             torque_world = w_R_ft.dot(self.torque_filt)
