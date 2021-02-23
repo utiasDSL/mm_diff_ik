@@ -122,8 +122,11 @@ published.
 Contains forward kinematics code in both C++ and Python for use by other
 packages.
 
-## Run
-### Simulation
+## Simulation
+
+This repository contains a very basic simulation of the robot in
+`mm_simulation`, which is just a wireframe in a 3D matplotlib plot. To use
+this, run:
 ```bash
 > roscore
 > roslaunch mm_simulation sim.launch
@@ -132,7 +135,22 @@ packages.
 ```
 where `[trajectory]` is replaced the desired trajectory.
 
-### Experiment
+Alternatively, there is a separate
+[respository](https://github.com/utiasDSL/dsl__projects__mobile_manipulator_gazebo)
+containing packages for a Gazebo simulation, which should be entirely
+compatible with the controllers in this package. Assuming that repository has been installed in the workspace, built, and sourced, then instead of
+```
+> roslaunch mm_simulation sim.launch
+```
+one can use
+```
+> roslaunch mm_gazebo simulation.launch
+```
+Everything else should remain the same.
+
+## Experiment
+Steps for experiments on the real robot:
+
 1. Connect to `DSL_DroneNet_5G` network.
 2. Connect to the Thing via Ethernet.
 3. Ensure ROS is configured to use the Thing as master:
