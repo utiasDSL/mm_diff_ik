@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>mm_force_control</name>
+  <name>mm_force_torque</name>
   <version>0.0.0</version>
-  <description>Force control for mobile manipulator.</description>
+  <description>Force/torque utilities for the Thing mobile manipulator.</description>
   <maintainer email="adam.heins@robotics.utias.utoronto.ca">Adam Heins</maintainer>
   <license>TODO</license>
 

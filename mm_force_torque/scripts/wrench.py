@@ -10,8 +10,8 @@ from mm_msgs.msg import WrenchInfo
 
 from mm_kinematics import KinematicModel
 
-from mm_force_control.filter import ExponentialSmoother
-from mm_force_control.bias import FTBiasEstimator
+from mm_force_torque.filter import ExponentialSmoother
+from mm_force_torque.bias import FTBiasEstimator
 
 
 CONTACT_THRESHOLD = 5  # Force threshold when contact is detected (N)

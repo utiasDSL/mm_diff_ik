@@ -1,16 +1,14 @@
 #!/usr/bin/env python2
+# TODO this script must be updated: or, instead, write a robotiq sensor
+# simulator
 import rospy
 import numpy as np
 
 from std_msgs.msg import Float64
-from geometry_msgs.msg import WrenchStamped
 from sensor_msgs.msg import JointState
 from mm_msgs.msg import ForceInfo
 
 import mm_kinematics.kinematics as kinematics
-
-from mm_force_control.filter import ExponentialSmoother
-from mm_force_control.bias import FTBiasEstimator
 
 
 CONTACT_THRESHOLD = 5  # Threshold when contact is detected
