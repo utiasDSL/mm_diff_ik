@@ -59,16 +59,22 @@ class QProblem {
 
         int solve(Eigen::VectorXd& x);
 
-    private:
+    protected:
         // Number of variables and constraints. These cannot change, so are
         // passed to constructor to indicate the fact.
         int nv, nc;
 };
 
 
-// class SQProblem {
-//
-// };
+class SQProblem : public QProblem {
+    public:
+        SQProblem(int nv, int nc);
+
+        int solve(Eigen::VectorXd& x);
+
+    private:
+        qpOASES::SQProblem sqp;
+};
 
 } // namespace qpoases
 } // namespace mm
