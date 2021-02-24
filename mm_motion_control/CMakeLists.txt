@@ -67,23 +67,6 @@ target_link_libraries(mm_control_node
   /usr/local/lib/libqpOASES.so
 )
 
-## joint_state_mux
-add_executable(joint_state_mux
-  src/nodes/joint_state_mux_node.cpp
-)
-target_link_libraries(joint_state_mux
-  ${catkin_LIBRARIES}
-)
-
-## home
-add_executable(home
-  src/nodes/go_home_node.cpp
-  src/joint_control/controller.cpp src/joint_control/manager.cpp
-)
-target_link_libraries(home
-  ${catkin_LIBRARIES}
-)
-
 ## analyse_optimizer
 add_executable(analyse_optimizer
   src/nodes/analyse_optimizer.cpp

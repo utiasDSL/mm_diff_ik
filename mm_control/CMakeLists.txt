@@ -56,6 +56,7 @@ target_link_libraries(${PROJECT_NAME}
 
 # Executables
 
+## home
 add_executable(home
   src/nodes/home.cpp
 )
@@ -64,3 +65,10 @@ target_link_libraries(home
   ${PROJECT_NAME}
 )
 
+## joint_state_mux
+add_executable(joint_state_mux
+  src/nodes/joint_state_mux_node.cpp
+)
+target_link_libraries(joint_state_mux
+  ${catkin_LIBRARIES}
+)

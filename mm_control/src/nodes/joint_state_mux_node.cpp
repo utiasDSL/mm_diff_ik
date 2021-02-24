@@ -5,6 +5,9 @@
 #include <mm_kinematics/kinematics.h>
 
 
+static const double HZ = 125;
+
+
 namespace mm {
 
 // Combines /rb_joint_states and /ur10_joint_states messages into a single
@@ -53,6 +56,8 @@ class JointStateMux {
             mm_joint_states.header.stamp = ros::Time::now();
 
             for (int i = 0; i < NUM_JOINTS; ++i) {
+                // Bail in the case of bad position or velocity measurements
+                // from the driver.
                 if (std::abs(position[i]) > 2 * M_PI) {
                     ROS_WARN_STREAM(JOINT_NAMES[i] << " position = " << position[i]);
                     return;
@@ -100,7 +105,7 @@ int main(int argc, char **argv) {
   mm::JointStateMux mux;
   mux.init(nh);
 
-  ros::Rate rate(125);
+  ros::Rate rate(HZ);
 
   // Wait until the mux is ready to begin publishing.
   while (ros::ok() && !mux.ready()) {
