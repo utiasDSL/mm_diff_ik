@@ -262,11 +262,6 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     Vector6d Vp = Vector6d::Zero();
     Vp << 0.2 * push_dir, 1 * P_err.tail<4>();
 
-    // ROS_INFO_STREAM("np_xy = " << np_xy);
-    // ROS_INFO_STREAM("nf_xy = " << nf_xy);
-    // ROS_INFO_STREAM("push_dir = " << push_dir);
-
-    // Matrix3x9 Jp = J.topRows<3>();
     Matrix6d W7 = Matrix6d::Identity();
     JointMatrix Q7 = B.transpose() * J.transpose() * W7 * J * B;
     JointVector C7 = -Vp.transpose() * W7 * J * B;
