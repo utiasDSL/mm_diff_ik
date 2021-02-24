@@ -3,11 +3,6 @@ import tf2_ros
 import numpy as np
 
 
-def bound_array(a, lb, ub):
-    ''' Elementwise bound array above and below. '''
-    return np.minimum(np.maximum(a, lb), ub)
-
-
 def apply_transform(T, v):
     ''' Apply 4x4 homogeneous transform T to 3d vector v. '''
     return T.dot(np.append(v, 1))[:3]

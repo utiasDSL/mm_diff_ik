@@ -3,6 +3,7 @@ import os
 import numpy as np
 import dill
 
+from mm_math_util import rotation2d
 from mm_kinematics import codegen
 
 
@@ -29,6 +30,18 @@ class KinematicModel(object):
                 print("Did not find {}. Functions not loaded.".format(pickle))
 
             self.__dict__.update(func_dict)
+
+    def calc_joint_input_map(self, q):
+        """Calculate B where dq = Bu."""
+        B = np.eye(9)
+        B[:2, :2] = rotation2d(q[2])
+        return B
+
+    def calc_joint_input_map_inv(self, q):
+        """Calculate inv(B) with dq = Bu."""
+        Binv = np.eye(9)
+        Binv[:2, :2] = rotation2d(q[2]).T
+        return Binv
 
     def manipulability(self, q):
         """Calculate manipulability index."""

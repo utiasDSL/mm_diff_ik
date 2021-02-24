@@ -6,6 +6,8 @@ from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory
 from geometry_msgs.msg import Twist
 
+from mm_math_util import bound_array, rotation2d
+
 
 SIM_RATE = 250.0  # Hz
 SIM_DT = 1.0 / SIM_RATE
@@ -30,17 +32,6 @@ ARM_VEL_LIM = np.array([2.16, 2.16, 3.15, 3.2, 3.2, 3.2])
 
 BASE_ACC_LIM = np.ones(3)
 ARM_ACC_LIM = 8.0 * np.ones(6)
-
-
-def rotation2d(angle):
-    """Principal rotation matrix about the z axis."""
-    c = np.cos(angle)
-    s = np.sin(angle)
-    return np.array([[c, -s], [s, c]])
-
-
-def bound_array(a, lb, ub):
-    return np.minimum(np.maximum(a, lb), ub)
 
 
 class RobotSim(object):
