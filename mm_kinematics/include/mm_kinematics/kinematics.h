@@ -87,8 +87,10 @@ class Kinematics {
                                   Eigen::Affine3d& w_T_tool);
 
 
-        static void calc_base_input_mapping(const JointVector& q,
-                                            JointMatrix& B);
+        static void calc_joint_input_map(const JointVector& q, JointMatrix& B);
+
+        static void calc_joint_input_map_inv(const JointVector& q,
+                                             JointMatrix& Binv);
 
         // Manipulability index.
         static double manipulability(const JointVector& q);
@@ -129,17 +131,6 @@ class Kinematics {
 
         // Derivatives of arm Jacobian w.r.t. all joint variables. Used for
         // computing the derivative of manipulability.
-        // static void calc_dJa_dxb(const JointVector& q, ArmJacobianMatrix& dJa);
-        // static void calc_dJa_dyb(const JointVector& q, ArmJacobianMatrix& dJa);
-        // static void calc_dJa_dtb(const JointVector& q, ArmJacobianMatrix& dJa);
-        //
-        // static void calc_dJa_dq1(const JointVector& q, ArmJacobianMatrix& dJa);
-        // static void calc_dJa_dq2(const JointVector& q, ArmJacobianMatrix& dJa);
-        // static void calc_dJa_dq3(const JointVector& q, ArmJacobianMatrix& dJa);
-        //
-        // static void calc_dJa_dq4(const JointVector& q, ArmJacobianMatrix& dJa);
-        // static void calc_dJa_dq5(const JointVector& q, ArmJacobianMatrix& dJa);
-        // static void calc_dJa_dq6(const JointVector& q, ArmJacobianMatrix& dJa);
         static void calc_dJa_dq(const JointVector& q,
                                 ArmJacobianMatrix& dJa_dtb,
                                 ArmJacobianMatrix& dJa_dq1,

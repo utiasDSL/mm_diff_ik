@@ -132,11 +132,19 @@ void Kinematics::dh_transform(double q, double a, double d, double alpha,
                   0,   0,          0,         1;
 }
 
-void Kinematics::calc_base_input_mapping(const JointVector& q, JointMatrix& B) {
+void Kinematics::calc_joint_input_map(const JointVector& q, JointMatrix& B) {
     // Rotation matrix from base to world frame.
     Eigen::Matrix2d R_wb = rotation2d(q(2));
     B = JointMatrix::Identity();
     B.topLeftCorner<2, 2>() = R_wb;
+}
+
+void Kinematics::calc_joint_input_map_inv(const JointVector& q,
+                                          JointMatrix& Binv) {
+    // Rotation matrix from base to world frame.
+    Eigen::Matrix2d R_wb = rotation2d(q(2));
+    Binv = JointMatrix::Identity();
+    Binv.topLeftCorner<2, 2>() = R_wb.transpose();
 }
 
 } // namespace mm

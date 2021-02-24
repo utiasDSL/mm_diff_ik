@@ -184,7 +184,7 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     // Calculate mapping from base inputs to generalized coordinates. The
     // former are in the base frame while the latter are in the world frame.
     JointMatrix B = JointMatrix::Identity();
-    Kinematics::calc_base_input_mapping(q, B);
+    Kinematics::calc_joint_input_map(q, B);
 
     // Calculate pose error.
     Vector6d P_err;

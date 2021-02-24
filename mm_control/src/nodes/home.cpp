@@ -54,9 +54,12 @@ class JointController : mm::MMController {
                 }
 
                 // Proportional control.
-                u = K * e;
+                mm::JointMatrix Binv;
+                mm::Kinematics::calc_joint_input_map_inv(q, Binv);
+                u = Binv * K * e;
 
                 // Bound commands. For base joints, these could be quite large.
+                // TODO C++ bound_array function would be useful
                 for (int i = 0; i < mm::NUM_JOINTS; ++i) {
                     if (u(i) > MAX_U) {
                         u(i) = MAX_U;
