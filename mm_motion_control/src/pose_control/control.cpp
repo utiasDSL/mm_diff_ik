@@ -39,10 +39,10 @@ void CartesianController::pose_traj_cb(const mm_msgs::PoseTrajectory& msg) {
 
 
 void CartesianController::point_traj_cb(const geometry_msgs::PoseStamped& msg) {
-    Eigen::Vector3d p;
-    Eigen::Quaterniond q;
-    pose_msg_to_eigen(msg.pose, p, q);
-    trajectory.stay_at(p, q);
+    Eigen::Vector3d pos;
+    Eigen::Quaterniond quat;
+    pose_msg_to_eigen(msg.pose, pos, quat);
+    trajectory.stay_at(pos, quat);
     traj_active = true;
 
     ROS_INFO("Maintaining current pose.");

@@ -2,6 +2,7 @@
 
 rosbag record -o "$1"    \
   /mm_pose_state         \
+  /mm_control_state         \
   /mm_joint_states       \
   /ur_driver/joint_speed \
   /ur10_joint_states \

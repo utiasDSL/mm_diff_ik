@@ -1,15 +1,19 @@
-#include "mm_motion_control/pose_control/control.h"
+#include "mm_motion_control/pose_control/diffik.h"
 
 #include <Eigen/Eigen>
 #include <ros/ros.h>
+#include <qpOASES/qpOASES.hpp>
 
 #include <std_msgs/Float64.h>
 #include <mm_msgs/WrenchInfo.h>
 #include <mm_msgs/Obstacles.h>
 
+#include <mm_optimization/qpoases.h>
 #include <mm_kinematics/kinematics.h>
-#include <mm_control/control.h>
+#include <mm_math_util/interp.h>
 #include <mm_control/util/messages.h>
+#include <mm_motion_control/pose_control/obstacle.h>
+#include <mm_motion_control/pose_control/pose_error.h>
 
 
 namespace mm {
@@ -36,11 +40,6 @@ bool DiffIKController::init(ros::NodeHandle& nh, const double hz) {
 
 
 int DiffIKController::update(const ros::Time& now) {
-    double t = now.toSec();
-    Eigen::Affine3d Td;
-    Vector6d Vd;
-    trajectory.sample(t, Td, Vd);
-
     // Primary objective function.
     JointMatrix H;
     JointVector g;
@@ -48,16 +47,14 @@ int DiffIKController::update(const ros::Time& now) {
 
     // Velocity damper inequality constraints on joints.
     JointVector u_lb, u_ub;
-    calc_joint_limits(q, u_lb, u_ub);
+    calc_joint_limits(u_lb, u_ub);
 
     // Obstacle constraints.
     Eigen::MatrixXd A_obs;
     Eigen::VectorXd ub_obs;
     calc_obstacle_constraints(A_obs, ub_obs);
 
-
-    /*** SOLVE QP ***/
-
+    // Setup and solve the first QP.
     // TODO handle state
     qpoases::QProblem qp(NUM_JOINTS, A_obs.rows());
     qp.options.printLevel = qpOASES::PL_LOW;
@@ -72,9 +69,10 @@ int DiffIKController::update(const ros::Time& now) {
     qp.data.ubA = ub_obs;
     qp.data.lbA.setConstant(A_obs.rows(), -qpOASES::INFTY);
 
+    // Second QP can optimize manipulability.
     Eigen::VectorXd u1, u2;
     int status1 = qp.solve(u1);
-    int status2 = nullspace_manipulability(q, qp.data, u1, u2);
+    int status2 = nullspace_manipulability(qp.data, u1, u2);
     u = u2;
 
     return status1;
@@ -92,20 +90,19 @@ void DiffIKController::loop() {
         ros::Time now = ros::Time::now();
         double t = now.toSec();
 
-        // When the trajectory ends, make sure to publish a zero velocity in
-        // the case the trajectory itself doesn't end at zero.
-        // TODO can I do this here or is the trajectory in a bad state?
-        if (trajectory.done(t)) {
-            ROS_INFO("Trajectory ended.");
-            traj_active = false;
-            continue;
-        }
-
         // Do nothing if there is no trajectory active.
         if (!traj_active) {
             u = JointVector::Zero();
             publish_joint_speeds(now);
             rate.sleep();
+            continue;
+        }
+
+        // If the trajectory is over, mark inactive and skip the rest of the
+        // loop. Then hits the above condition and proceeds publishing zero.
+        if (trajectory.done(t)) {
+            ROS_INFO("Trajectory ended.");
+            traj_active = false;
             continue;
         }
 
@@ -123,7 +120,7 @@ void DiffIKController::loop() {
         // u = JointVector::Zero();
 
         publish_joint_speeds(now);
-        publish_robot_state(now);
+        publish_state(now);
 
         rate.sleep();
     }

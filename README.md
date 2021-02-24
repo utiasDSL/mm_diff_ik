@@ -56,8 +56,7 @@ sudo ln -s <path/to/qpOASES>/bin/libqpOASES.so   /usr/local/lib/libqpOASES.so
 ```
 
 Now, clone this repository into the `src` directory of your catkin workspace.
-Then you should be able to build with `catkin` (alternatively use `catkin_make`
-or `catkin_make_isolated`):
+Then you should be able to build with `catkin`:
 ```bash
 # normal build
 catkin build

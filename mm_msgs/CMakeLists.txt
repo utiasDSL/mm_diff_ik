@@ -6,6 +6,7 @@ project(mm_msgs)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
+  sensor_msgs
   message_generation
 )
 
@@ -45,7 +46,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES mm_msgs
+  LIBRARIES ${PROJECT_NAME}
 )
 
 include_directories(
