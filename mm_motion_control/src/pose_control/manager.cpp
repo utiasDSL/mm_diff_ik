@@ -247,11 +247,7 @@ void IKControllerManager::publish_robot_state(const ros::Time& now) {
 
     // Error.
     Eigen::Vector3d pos_err = pos_des - pos_act;
-
-    // TODO use a single function for this (also required for orientation tracking)
     Eigen::Quaterniond quat_err = quat_des * quat_act.inverse();
-    Eigen::Vector3d rot_err;
-    calc_rotation_error(Rd, Re, rot_err);
 
     // Optimizer info
     IKOptimizerState opt_state;
@@ -274,12 +270,6 @@ void IKControllerManager::publish_robot_state(const ros::Time& now) {
 
         // Twist.
         state_pub->msg_.twist_desired = Vd_msg;
-
-        // Rotation error used for control purposes (not necessarily the same
-        // as the actual orientation error).
-        state_pub->msg_.rotation_error.x = rot_err(0);
-        state_pub->msg_.rotation_error.y = rot_err(1);
-        state_pub->msg_.rotation_error.z = rot_err(2);
 
         // Joint space.
         state_pub->msg_.q = std::vector<double>(q.data(), q.data() + q.size());

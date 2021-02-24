@@ -302,16 +302,6 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     /*************************************************************************/
     /* 6. Orientation of EE tracks nf. */
     // TODO delete: unused
-
-    // Eigen::Matrix3d Re = w_T_tool.rotation();
-    // Eigen::Vector3d ae = Re.col(2);
-    //
-    // Matrix3x9 Jn, Js, Ja;
-    // calc_rotation_error_jacobians(q, Jn, Js, Ja);
-    //
-    // Eigen::Matrix3d W6 = Eigen::Matrix3d::Identity();
-    // JointMatrix Q6 = dt * dt * Ja.transpose() * W6 * Ja;
-    // JointVector C6 = dt * (ae - nf).transpose() * W6 * Ja;
     JointMatrix Q6 = JointMatrix::Zero();
     JointVector C6 = JointVector::Zero();
 

@@ -160,15 +160,17 @@ int MPCOptimizer::solve(double t0, PoseTrajectory& trajectory,
             JointVector qk = qbar.segment<NUM_JOINTS>(NUM_JOINTS * k);
 
             // calculate pose error
-            Matrix6d Kp = Matrix6d::Identity();
             Vector6d ek;
             calc_pose_error(Td, qk, ek);
             ebar.segment<6>(6 * k) = ek;
 
-            // calculate Jacobian of pose error
+            // calculate Jacobian and B to map inputs to generalized velocities
+            JointMatrix Bk;
             JacobianMatrix Jk;
-            calc_pose_error_jacobian(Td, qk, Jk);
-            Jbar.block<6, NUM_JOINTS>(6 * k, NUM_JOINTS * k) = Jk;
+            Kinematics::calc_joint_input_map(qk, Bk);
+            Kinematics::jacobian(qk, Jk);
+            JacobianMatrix JBk = Jk * Bk;
+            Jbar.block<6, NUM_JOINTS>(6 * k, NUM_JOINTS * k) = JBk;
         }
 
         // Construct overall objective matrices.
