@@ -15,8 +15,8 @@
 namespace mm {
 
 
-bool CartesianController::init(ros::NodeHandle& nh) {
-    mm::MMController::init(nh);
+bool CartesianController::init(ros::NodeHandle& nh, const double hz) {
+    mm::MMController::init(nh, hz);
 
     state_pub = nh.advertise<mm_msgs::CartesianControllerState>(
             "/mm_control_state", 1);

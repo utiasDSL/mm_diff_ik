@@ -17,15 +17,16 @@ class MMController {
         ~MMController();
 
         // Initialize the node: setup subscribers and publishers, etc.
-        bool init(ros::NodeHandle& nh);
+        bool init(ros::NodeHandle& nh, const double hz);
 
         // Enter control loop.
-        // Parameters:
-        //   hz: rate at which to run the loop
-        virtual void loop(const double hz) = 0;
+        virtual void loop() = 0;
 
     protected:
         /* VARIABLES */
+
+        // Controller timestep and rate. dt = 1 / hz
+        double dt, hz;
 
         // Subscriber for current joint state of the robot.
         ros::Subscriber mm_joint_states_sub;

@@ -17,7 +17,7 @@ class CartesianController : MMController {
         CartesianController() {}
         ~CartesianController() {}
 
-    private:
+    protected:
         /** VARIABLES **/
 
         ros::Publisher state_pub;
@@ -43,10 +43,6 @@ class CartesianController : MMController {
         void point_traj_cb(const geometry_msgs::PoseStamped& msg);
 };
 
-
-class DiffIKController : CartesianController {
-
-};
 
 // class MPController : CartesianController {
 //

@@ -25,10 +25,9 @@ class JointController : mm::MMController {
         JointController() {}
         ~JointController() {}
 
-        bool init(ros::NodeHandle& nh, mm::JointVector& qd) {
-            // Initialize parent.
-            mm::MMController::init(nh);
-
+        bool init(ros::NodeHandle& nh, const double hz,
+                  mm::JointVector& qd) {
+            mm::MMController::init(nh, hz);
             this->qd = qd;
         }
 
@@ -56,7 +55,7 @@ class JointController : mm::MMController {
             return 0;
         }
 
-        void loop(const double hz) {
+        void loop() {
             ros::Rate rate(hz);
 
             // Wait until we get at joint state message to know the actual
@@ -114,8 +113,8 @@ int main(int argc, char **argv) {
   ROS_INFO("Going home...");
 
   JointController controller;
-  controller.init(nh, qd);
-  controller.loop(HZ);
+  controller.init(nh, HZ, qd);
+  controller.loop();
 
   ROS_INFO("Done");
 

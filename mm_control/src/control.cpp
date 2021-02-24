@@ -18,7 +18,10 @@ MMController::MMController() {}
 MMController::~MMController() {}
 
 
-bool MMController::init(ros::NodeHandle& nh) {
+bool MMController::init(ros::NodeHandle& nh, const double hz) {
+    this->hz = hz;
+    dt = 1.0 / hz;
+
     q = JointVector::Zero();
     dq = JointVector::Zero();
     u = JointVector::Zero();

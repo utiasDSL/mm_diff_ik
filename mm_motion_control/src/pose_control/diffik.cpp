@@ -15,8 +15,8 @@
 namespace mm {
 
 
-bool DiffIKController::init(ros::NodeHandle& nh) {
-    mm::CartesianController::init(nh);
+bool DiffIKController::init(ros::NodeHandle& nh, const double hz) {
+    mm::CartesianController::init(nh, hz);
 
     wrench_info_sub = nh.subscribe("/mm_wrench/info",
             1, &DiffIKController::wrench_info_cb, this);
@@ -74,7 +74,7 @@ int DiffIKController::update(const ros::Time& now) {
 
     Eigen::VectorXd u1, u2;
     int status1 = qp.solve(u1);
-    int status2 = nullspace_manipulability(q, qp.data, u1, dt, u2);
+    int status2 = nullspace_manipulability(q, qp.data, u1, u2);
     u = u2;
 
     return status1;
@@ -82,7 +82,7 @@ int DiffIKController::update(const ros::Time& now) {
 
 
 // Control loop.
-void DiffIKController::loop(const double hz) {
+void DiffIKController::loop() {
     ros::Rate rate(hz);
     ROS_INFO("Control loop started, waiting for trajectory...");
 
@@ -153,7 +153,6 @@ void DiffIKController::obstacle_cb(const mm_msgs::Obstacles& msg) {
 int DiffIKController::nullspace_manipulability(
         qpoases::QPData& qp1_data,
         const Eigen::VectorXd& u1,
-        double dt,  // TODO want dt to a const property of the controller
         Eigen::VectorXd& u2) {
     JacobianMatrix J;
     JointMatrix B;
@@ -437,6 +436,5 @@ int DiffIKController::calc_obstacle_constraints(Eigen::MatrixXd& A,
 
     return num_obs;
 }
-
 
 } // namespace mm
