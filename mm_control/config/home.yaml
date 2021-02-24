@@ -1,0 +1,22 @@
+# specify base position once; can be easily changed
+base: [-1.0, 0, 0]
+
+# positions for the arm are independent of the base
+arm:
+  standard: [0.0, -2.3562, -1.5708, -2.3562, -1.5708, 1.5708]
+  extended: [0.0, -2.8798, -0.5236, -2.8798, -1.5708, 1.5708]
+
+  # High-up end effector
+  high_ee: [0.0, -2.3562, -0.7854, -3.1416, -1.5708, 1.5708]
+
+  # High-up end effector pointing downward
+  high_ee_down: [0.0, -2.3562, -0.7854, -1.5708,  1.5708, -1.5708]
+
+  # Home position for pushing
+  push: [0.0, -2.70526, -1.5708, -2.007128, -1.5708, 1.5708]
+
+  # Home position for low pushing
+  push_low: [0.0, -2.9671, -1.5708, -1.7453, -1.5708, 1.5708]
+
+  # Tray balance home position
+  tray_balance: [0.0, -2.3562, -1.5708, -0.7854, -1.5708, 1.5708]
