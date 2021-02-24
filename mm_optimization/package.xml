@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>mm_optimization</name>
+  <version>0.0.0</version>
+  <description>Interfaces for optimization solvers.</description>
+
+  <maintainer email="adam.heins@robotics.utias.utoronto.ca">Adam Heins</maintainer>
+  <author>Adam Heins</author>
+  <license>TODO</license>
+
+  <depend>roscpp</depend>
+  <depend>cmake_modules</depend>
+
+  <buildtool_depend>catkin</buildtool_depend>
+</package>
