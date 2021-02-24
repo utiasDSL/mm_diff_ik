@@ -9,6 +9,8 @@
 #include <geometry_msgs/Vector3Stamped.h>
 #include <std_msgs/Float64.h>
 
+#include <mm_control/control.h>
+
 #include <mm_msgs/PoseTrajectory.h>
 #include <mm_msgs/PoseControlState.h>
 #include <mm_msgs/Obstacles.h>
@@ -22,7 +24,6 @@
 
 
 namespace mm {
-
 
 // The IKControllerManager runs the control loop that commands and receives feedback
 // from the robot.

@@ -3,12 +3,6 @@ project(mm_control)
 
 add_compile_options(-std=c++11)
 
-# Required for qpOASES
-# add_compile_options(
-#   -D__USE_LONG_INTEGERS__
-#   -D__USE_LONG_FINTS__
-# )
-
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -35,6 +29,8 @@ catkin_python_setup()
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS mm_kinematics
 )
 

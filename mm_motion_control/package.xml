@@ -12,6 +12,7 @@
   <depend>mm_kinematics</depend>
   <depend>mm_math_util</depend>
   <depend>mm_optimization</depend>
+  <depend>mm_control</depend>
 
   <exec_depend>message_runtime</exec_depend>
 

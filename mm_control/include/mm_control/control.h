@@ -46,11 +46,19 @@ class MMController {
 
         /* FUNCTIONS */
 
-        // Publish joint speed commands to the robot.
-        void publish_joint_speeds(const ros::Time& now);
-
         // Callback to update joint positions and velocities from the robot.
         void mm_joint_states_cb(const sensor_msgs::JointState& msg);
+
+        // Publish joint speed commands to the robot. Should be called from
+        // loop().
+        void publish_joint_speeds(const ros::Time& now);
+
+        // Generate new control commands. Should be called from loop().
+        virtual int update(const ros::Time& now) = 0;
+
+        // Publish state of the controller, for logging and analysis. Should be
+        // called from loop().
+        virtual void publish_state(const ros::Time& now) = 0;
 
 }; // class MMController
 

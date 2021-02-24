@@ -32,6 +32,30 @@ class JointController : mm::MMController {
             this->qd = qd;
         }
 
+        int update(const ros::Time& now) {
+            // Error. If small enough, no need to do anything.
+            mm::JointVector e = qd - q;
+            if (e.isZero(1e-3)) {
+                return 1;
+            }
+
+            // Proportional control.
+            mm::JointMatrix Binv;
+            mm::Kinematics::calc_joint_input_map_inv(q, Binv);
+            u = Binv * K * e;
+
+            // Bound commands. For base joints, these could be quite large.
+            // TODO C++ bound_array function would be useful
+            for (int i = 0; i < mm::NUM_JOINTS; ++i) {
+                if (u(i) > MAX_U) {
+                    u(i) = MAX_U;
+                } else if (u(i) < -MAX_U) {
+                    u(i) = -MAX_U;
+                }
+            }
+            return 0;
+        }
+
         void loop(const double hz) {
             ros::Rate rate(hz);
 
@@ -47,32 +71,22 @@ class JointController : mm::MMController {
 
                 ros::Time now = ros::Time::now();
 
-                // Error. If small enough, no need to do anything.
-                mm::JointVector e = qd - q;
-                if (e.isZero(1e-3)) {
+                int status = update(now);
+
+                // non-zero status means we've converged, so we're done
+                if (status) {
                     break;
                 }
 
-                // Proportional control.
-                mm::JointMatrix Binv;
-                mm::Kinematics::calc_joint_input_map_inv(q, Binv);
-                u = Binv * K * e;
-
-                // Bound commands. For base joints, these could be quite large.
-                // TODO C++ bound_array function would be useful
-                for (int i = 0; i < mm::NUM_JOINTS; ++i) {
-                    if (u(i) > MAX_U) {
-                        u(i) = MAX_U;
-                    } else if (u(i) < -MAX_U) {
-                        u(i) = -MAX_U;
-                    }
-                }
-
                 publish_joint_speeds(now);
+                publish_state(now);
 
                 rate.sleep();
             }
         }
+
+        // Don't bother publishing anything.
+        void publish_state(const ros::Time& now) {};
 
     private:
         // Desired joint positions.

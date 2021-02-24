@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   mm_kinematics
   mm_math_util
   mm_optimization
+  mm_control
   message_runtime
   cmake_modules
 )
@@ -35,7 +36,7 @@ find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  CATKIN_DEPENDS mm_msgs mm_kinematics mm_math_util mm_optimization
+  CATKIN_DEPENDS mm_msgs mm_kinematics mm_math_util mm_optimization mm_control
 )
 
 ###########
@@ -50,6 +51,7 @@ include_directories(
   ${mm_kinematics_INCLUDE_DIRS}
   ${mm_math_util_INCLUDE_DIRS}
   ${mm_optimization_INCLUDE_DIRS}
+  ${mm_control_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
   /usr/local/include/qpOASES
 )
