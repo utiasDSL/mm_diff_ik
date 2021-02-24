@@ -126,7 +126,7 @@ packages.
 ### Simulation
 ```bash
 > roscore
-> roslaunch mm_simulation sim.launch
+> roslaunch mm_simulation simulation.launch
 > rosrun mm_motion_control mm_control_node
 > rosrun mm_trajectories [trajectory].py
 ```
