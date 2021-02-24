@@ -101,15 +101,8 @@ class IKOptimizer {
     private:
         IKOptimizerState state;
 
-        // TODO
-        bool freaked_out;
-        bool did_print_gs;
-
-        bool did_print_once;
-
         // Normal direction of applied force.
         // TODO these should be properties of the controller.
-        Eigen::Vector3d nf;
         Eigen::Vector2d nf_xy; // planar force
 
         // Construct and solve the QP given our problem-specific matrices.

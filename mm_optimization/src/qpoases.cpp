@@ -66,6 +66,12 @@ int QProblem::solve(Eigen::VectorXd& x) {
         x.setZero(nv, 1);
     }
 
+    // Set to zero if the QP is infeasible.
+    if (status) {
+        ROS_WARN_STREAM("QP is infeasible.");
+        x.setZero(nv, 1);
+    }
+
     return status;
 }
 

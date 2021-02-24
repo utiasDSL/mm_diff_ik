@@ -27,6 +27,7 @@ find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
+  LIBRARIES ${PROJECT_NAME}
 )
 
 ###########

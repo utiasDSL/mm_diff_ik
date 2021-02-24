@@ -4,8 +4,8 @@
 #include <qpOASES/qpOASES.hpp>
 
 #include <mm_kinematics/kinematics.h>
-#include <mm_math_util/differentiation.h>
 #include <mm_math_util/interp.h>
+#include <mm_optimization/qpoases.h>
 
 #include "mm_motion_control/pose_control/obstacle.h"
 #include "mm_motion_control/pose_control/pose_error.h"
@@ -19,11 +19,7 @@ static const int NUM_WSR = 50;
 
 
 bool IKOptimizer::init() {
-    nf << 1, 0, 0;
     nf_xy << 1, 0;
-    freaked_out = false;
-    did_print_gs = false;
-    did_print_once = false;
     return true;
 }
 
@@ -83,95 +79,51 @@ int IKOptimizer::solve_qp(JointMatrix& H, JointVector& g, Eigen::MatrixXd& A,
     state.code = ret;
     state.status = status;
 
-    if (isnan(state.obj_val) || isinf(state.obj_val)) {
-        if (!freaked_out) {
-            ROS_WARN_STREAM("Objective value = " << state.obj_val);
-            ROS_WARN_STREAM("u = " << u);
-            ROS_WARN_STREAM("ret = " << ret);
-            ROS_WARN_STREAM("status = " << status);
-            ROS_WARN_STREAM("num_obs = " << num_obstacles);
-            ROS_WARN_STREAM("H = " << H);
-            ROS_WARN_STREAM("g = " << g);
-            ROS_WARN_STREAM("lb = " << lb);
-            ROS_WARN_STREAM("ub = " << ub);
-
-            qp.printProperties();
-            qp.printOptions();
-            freaked_out = true;
-        }
-
-        u = JointVector::Zero();
-    }
-
-    // TODO redundant for now, but want to be safe
-    if (freaked_out) {
-        u = JointVector::Zero();
-    }
-
     return status;
 }
 
 
-int solve_qp_mi(JointVector& g, JointVector& lb, JointVector& ub,
-                JacobianMatrix& A_eq, Vector6d& b_eq, Eigen::MatrixXd& A_obs,
-                Eigen::VectorXd& ub_obs, JointVector& u) {
-    using QPMatrixX = Eigen::Matrix<qpOASES::real_t,
-                                    Eigen::Dynamic,
-                                    Eigen::Dynamic,
-                                    Eigen::RowMajor>;
+int nullspace_manipulability(const JointVector& q, qpoases::QPData& qp1_data,
+                             const Eigen::VectorXd& u1, double dt,
+                             Eigen::VectorXd& u2) {
+    JacobianMatrix J;
+    JointMatrix B;
+    Kinematics::jacobian(q, J);
+    Kinematics::calc_joint_input_map(q, B);
 
-    // For stability
-    JointMatrix H = JointMatrix::Identity();
+    JacobianMatrix A_eq = J * B;
+    Vector6d b_eq = A_eq * u1;
 
-    QPMatrixX A(A_eq.rows() + A_obs.rows(), A_eq.cols());
-        A << A_obs, A_eq;
+    JointVector m_grad;
+    Kinematics::manipulability_gradient_analytic(q, m_grad);
+    double w_mi = 1;
+    JointVector g = -w_mi * dt * B.transpose() * m_grad;
 
-    Eigen::VectorXd lb_obs(A_obs.rows());
-    lb_obs.setConstant(A_obs.rows(), -qpOASES::INFTY);
+    // Add the equality constraints.
+    Eigen::MatrixXd A(A_eq.rows() + qp1_data.A.rows(), A_eq.cols());
+        A << qp1_data.A, A_eq;
+
     Eigen::VectorXd lbA(A.rows());
-        lbA << lb_obs, b_eq;
+        lbA << qp1_data.lbA, b_eq;
 
     Eigen::VectorXd ubA(A.rows());
-        ubA << ub_obs, b_eq;
+        ubA << qp1_data.ubA, b_eq;
 
-    // Convert eigen data to raw arrays for qpOASES.
-    qpOASES::real_t *H_data = H.data();
-    qpOASES::real_t *g_data = g.data();
+    qpoases::QProblem qp(NUM_JOINTS, A.rows());
+    qp.options.setToReliable();
+    qp.options.printLevel = qpOASES::PL_LOW;
 
-    qpOASES::real_t *lb_data = lb.data();
-    qpOASES::real_t *ub_data = ub.data();
+    // Reuse the data from the first QP, except where we need to make changes.
+    qp.data = qp1_data;
+    qp.data.H = JointMatrix::Identity();
+    qp.data.g = g;
 
-    // Equality constraint.
-    qpOASES::real_t *A_data = A.data();
-    qpOASES::real_t *lbA_data = lbA.data();
-    qpOASES::real_t *ubA_data = ubA.data();
+    qp.data.A = A;
+    qp.data.lbA = lbA;
+    qp.data.ubA = ubA;
 
-    qpOASES::int_t nWSR = NUM_WSR;
 
-    // Setting options to reliable seems to be necessary for the solver to
-    // work for this problem.
-    qpOASES::Options options;
-    options.setToReliable();
-    options.printLevel = qpOASES::PL_LOW;
-
-    // Solve the QP.
-    qpOASES::QProblem qp(NUM_JOINTS, A.rows());
-    qp.setOptions(options);
-    qpOASES::returnValue ret = qp.init(H_data, g_data, A_data, lb_data, ub_data,
-                                       lbA_data, ubA_data, nWSR);
-    int status = qpOASES::getSimpleStatus(ret);
-
-    qpOASES::real_t x[NUM_JOINTS];
-    qp.getPrimalSolution(x);
-    u = Eigen::Map<JointVector>(x); // map back to eigen
-
-    double obj_val = qp.getObjVal();
-    if (isnan(obj_val) || isinf(obj_val)) {
-        ROS_WARN_STREAM("MI QP: objective value = " << obj_val);
-        u = JointVector::Zero();
-    }
-
-    return status;
+    return qp.solve(u2);
 }
 
 
@@ -195,12 +147,7 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     Kinematics::jacobian(q, J);
     JacobianMatrix JB = J * B;
 
-    // If applied force is suitably large, then we update the contact direction
-    // unit vector nf.
     double f_norm = force.norm();
-    // if (f_norm > FORCE_THRESHOLD) {
-    //     nf = f / f_norm;
-    // }
 
     /*************************************************************************/
     /* 1. Minimize velocity objective. */
@@ -259,20 +206,8 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
         f_compliant = MAX_COMPLIANCE_FORCE * force / f_norm;
     }
 
-    // Only start to comply with forces above a certain magnitude, to reject
-    // noise.
-    // if (f_norm > FORCE_THRESHOLD) {
-    //     double alpha_compliant = 2;
-    //     double b_compliant = 1 - f_norm / FORCE_THRESHOLD;  // TODO: bad name
-    //     f_compliant = f * (1 - exp(alpha_compliant * b_compliant));
-    // } else {
-    //     f_compliant = Eigen::Vector3d::Zero();
-    // }
     Vector6d wrench_compliant;
     wrench_compliant << f_compliant, torque_compliant;
-
-    // ROS_INFO_STREAM("force = " << force);
-    // ROS_INFO_STREAM("torque = " << torque);
 
     Matrix6d Kp_com = Matrix6d::Zero();
     Kp_com.diagonal() << 1, 1, 0, 1, 1, 1;
@@ -298,12 +233,6 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     Matrix6d W5 = Matrix6d::Identity();
     JointMatrix Q5 = JB.transpose() * W5 * JB;
     JointVector C5 = -Vc.transpose() * W5 * JB;
-
-    /*************************************************************************/
-    /* 6. Orientation of EE tracks nf. */
-    // TODO delete: unused
-    JointMatrix Q6 = JointMatrix::Zero();
-    JointVector C6 = JointVector::Zero();
 
     /*************************************************************************/
     /* 7. Pushing */
@@ -368,23 +297,11 @@ void IKOptimizer::calc_objective(const Eigen::Affine3d& Td, const Vector6d& Vd,
     double w3 = 100.0; // minimize pose error
     double w4 = 0.0; // minimize acceleration
     double w5 = 0.0; // force compliance
-    double w6 = 0.0; // force-based orientation
     double w7 = 0.0; // pushing
     double w_mi = 0.0;
 
-    if (freaked_out && !did_print_gs) {
-        ROS_WARN_STREAM("C1 = " << C1);
-        ROS_WARN_STREAM("C2 = " << C2);
-        ROS_WARN_STREAM("C3 = " << C3);
-        ROS_WARN_STREAM("C4 = " << C4);
-        ROS_WARN_STREAM("C5 = " << C5);
-        ROS_WARN_STREAM("C6 = " << C6);
-        ROS_WARN_STREAM("C7 = " << C7);
-        did_print_gs = true;
-    }
-
-    H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w6*Q6 + w7*Q7;
-    g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w6*C6 + w7*C7; // + w_mi*C_mi;
+    H = w1*Q1 + w2*Q2 + w3*Q3 + w4*Q4 + w5*Q5 + w7*Q7;
+    g = w1*C1 + w2*C2 + w3*C3 + w4*C4 + w5*C5 + w7*C7; // + w_mi*C_mi;
 }
 
 
@@ -414,8 +331,8 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
     // ub
 
     // Velocity damper inequality constraints
-    JointVector dq_lb, dq_ub;
-    velocity_damper_limits(q, dq_lb, dq_ub);
+    JointVector u_lb, u_ub;
+    velocity_damper_limits(q, u_lb, u_ub);
 
     // Base FoV constraint -- in the simplest case, it just constrains the
     // base not to move backward.
@@ -432,33 +349,27 @@ int IKOptimizer::solve(double t, PoseTrajectory& trajectory,
 
 
     /*** SOLVE QP ***/
+    // TODO handle state
+    qpoases::QProblem qp(NUM_JOINTS, A_obs.rows());
+    qp.options.printLevel = qpOASES::PL_LOW;
 
-    JointVector u1, u2;
-    int status = solve_qp(H, g, A_obs, dq_lb, dq_ub, ub_obs, u1);
-    u = u1;
+    qp.data.H = H;
+    qp.data.g = g;
 
-    // // MI as a secondary objective, solved in the null space
-    // JacobianMatrix J;
-    // JointMatrix B;
-    // Kinematics::jacobian(q, J);
-    // Kinematics::calc_base_input_mapping(q, B);
-    //
-    // JacobianMatrix A_eq = J * B;
-    // Vector6d b_eq = A_eq * u1;
-    //
-    // JointVector m_grad;
-    // Kinematics::manipulability_gradient_analytic(q, m_grad);
-    // double w_mi = 0;
-    // JointVector g_mi = -w_mi * dt * B.transpose() * m_grad;
-    //
-    // int status_mi_qp = solve_qp_mi(g_mi, dq_lb, dq_ub, A_eq, b_eq, A_obs, ub_obs, u2);
-    // if (status_mi_qp) {
-    //     ROS_WARN_STREAM("MI QP infeasible: status = " << status_mi_qp);
-    //     u2 = JointVector::Zero();
-    // }
-    // u = u2;
+    qp.data.lb = u_lb;
+    qp.data.ub = u_ub;
 
-    return status;
+    qp.data.A = A_obs;
+    qp.data.ubA = ub_obs;
+    qp.data.lbA.setConstant(A_obs.rows(), -qpOASES::INFTY);
+
+    // JointVector u1, u2;
+    Eigen::VectorXd u1, u2;
+    int status1 = qp.solve(u1);
+    int status2 = nullspace_manipulability(q, qp.data, u1, dt, u2);
+    u = u2;
+
+    return status1;
 }
 
 

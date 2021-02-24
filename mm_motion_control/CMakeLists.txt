@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   mm_msgs
   mm_kinematics
   mm_math_util
+  mm_optimization
   message_runtime
   cmake_modules
 )
@@ -34,7 +35,7 @@ find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  CATKIN_DEPENDS mm_msgs mm_kinematics mm_math_util
+  CATKIN_DEPENDS mm_msgs mm_kinematics mm_math_util mm_optimization
 )
 
 ###########
@@ -48,6 +49,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${mm_kinematics_INCLUDE_DIRS}
   ${mm_math_util_INCLUDE_DIRS}
+  ${mm_optimization_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
   /usr/local/include/qpOASES
 )
@@ -68,16 +70,16 @@ target_link_libraries(mm_control_node
 )
 
 ## analyse_optimizer
-add_executable(analyse_optimizer
-  src/nodes/analyse_optimizer.cpp
-  src/pose_control/pose_error.cpp
-  src/pose_control/optimizer.cpp
-  src/pose_control/trajectory.cpp
-)
-target_link_libraries(analyse_optimizer
-  ${catkin_LIBRARIES}
-  /usr/local/lib/libqpOASES.so
-)
+# add_executable(analyse_optimizer
+#   src/nodes/analyse_optimizer.cpp
+#   src/pose_control/pose_error.cpp
+#   src/pose_control/optimizer.cpp
+#   src/pose_control/trajectory.cpp
+# )
+# target_link_libraries(analyse_optimizer
+#   ${catkin_LIBRARIES}
+#   /usr/local/lib/libqpOASES.so
+# )
 
 # Tests
 # catkin_add_executable_with_gtest(test_optimize
