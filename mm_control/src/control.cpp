@@ -22,6 +22,8 @@ bool MMController::init(ros::NodeHandle& nh, const double hz) {
     this->hz = hz;
     dt = 1.0 / hz;
 
+    did_become_unsafe = false;
+
     q = JointVector::Zero();
     dq = JointVector::Zero();
     u = JointVector::Zero();

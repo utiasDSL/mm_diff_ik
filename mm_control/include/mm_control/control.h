@@ -25,6 +25,10 @@ class MMController {
     protected:
         /* VARIABLES */
 
+        // Set to true if an unsafe action is detected so the robot can be
+        // stopped.
+        bool did_become_unsafe;
+
         // Controller timestep and rate. dt = 1 / hz
         double dt, hz;
 

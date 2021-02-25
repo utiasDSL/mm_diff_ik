@@ -34,6 +34,8 @@ static const bool POSITIION_LIMITED[] = {
 static const double MAX_COMPLIANCE_FORCE = 100;
 static const double FORCE_THRESHOLD = 5;
 
+static const int NUM_WSR = 50; // max number of working set recalculations
+
 
 class DiffIKController : public CartesianController {
     public:
@@ -41,8 +43,6 @@ class DiffIKController : public CartesianController {
         ~DiffIKController() {}
 
         bool init(ros::NodeHandle& nh, const double hz);
-
-        void loop();
 
     private:
         /** VARIABLES **/

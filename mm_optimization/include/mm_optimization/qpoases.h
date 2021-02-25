@@ -8,8 +8,6 @@ namespace mm {
 namespace qpoases {
 
 
-static const int NUM_WSR = 50;
-
 using QPMatrixXd = Eigen::Matrix<qpOASES::real_t,
                                  Eigen::Dynamic,
                                  Eigen::Dynamic,
@@ -55,7 +53,7 @@ class QProblem {
         QPState state;
         qpOASES::Options options;
 
-        QProblem(int nv, int nc);
+        QProblem(int nv, int nc, qpOASES::int_t nWSR);
 
         int solve(Eigen::VectorXd& x);
 
@@ -63,12 +61,13 @@ class QProblem {
         // Number of variables and constraints. These cannot change, so are
         // passed to constructor to indicate the fact.
         int nv, nc;
+        qpOASES::int_t nWSR;
 };
 
 
 class SQProblem : public QProblem {
     public:
-        SQProblem(int nv, int nc);
+        SQProblem(int nv, int nc, qpOASES::int_t nWSR);
 
         int solve(Eigen::VectorXd& x);
 

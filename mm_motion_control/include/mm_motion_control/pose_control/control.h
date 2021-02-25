@@ -20,6 +20,8 @@ class CartesianController : public MMController {
 
         bool init(ros::NodeHandle& nh, const double hz);
 
+        void loop();
+
     protected:
         /** VARIABLES **/
 

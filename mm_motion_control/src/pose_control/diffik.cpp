@@ -40,6 +40,13 @@ bool DiffIKController::init(ros::NodeHandle& nh, const double hz) {
 
 
 int DiffIKController::update(const ros::Time& now) {
+    // Integrate using the model to get the best estimate of the state.
+    // TODO: not sure if it would be better to use u instead of dq
+    // -> would be less noisy
+    // double dt = t - last_joint_state_time;
+    // q = q + dt * dq;
+    // last_joint_state_time = t;
+
     // Primary objective function.
     JointMatrix H;
     JointVector g;
@@ -56,7 +63,7 @@ int DiffIKController::update(const ros::Time& now) {
 
     // Setup and solve the first QP.
     // TODO handle state
-    qpoases::QProblem qp(NUM_JOINTS, A_obs.rows());
+    qpoases::QProblem qp(NUM_JOINTS, A_obs.rows(), NUM_WSR);
     qp.options.printLevel = qpOASES::PL_LOW;
 
     qp.data.H = H;
@@ -75,55 +82,8 @@ int DiffIKController::update(const ros::Time& now) {
     int status2 = nullspace_manipulability(qp.data, u1, u2);
     u = u2;
 
+    // TODO combine both statuses
     return status1;
-}
-
-
-// Control loop.
-void DiffIKController::loop() {
-    ros::Rate rate(hz);
-    ROS_INFO("Control loop started, waiting for trajectory...");
-
-    while (ros::ok()) {
-        ros::spinOnce();
-
-        ros::Time now = ros::Time::now();
-        double t = now.toSec();
-
-        // Do nothing if there is no trajectory active.
-        if (!traj_active) {
-            u = JointVector::Zero();
-            publish_joint_speeds(now);
-            rate.sleep();
-            continue;
-        }
-
-        // If the trajectory is over, mark inactive and skip the rest of the
-        // loop. Then hits the above condition and proceeds publishing zero.
-        if (trajectory.done(t)) {
-            ROS_INFO("Trajectory ended.");
-            traj_active = false;
-            continue;
-        }
-
-        // Integrate using the model to get the best estimate of the state.
-        // TODO: not sure if it would be better to use u instead of dq
-        // -> would be less noisy
-        // double dt = t - last_joint_state_time;
-        // q = q + dt * dq;
-        // last_joint_state_time = t;
-
-        int status = update(now);
-
-        // print but then publish 0
-        // ROS_INFO_STREAM("u = " << u);
-        // u = JointVector::Zero();
-
-        publish_joint_speeds(now);
-        publish_state(now);
-
-        rate.sleep();
-    }
 }
 
 
@@ -174,7 +134,7 @@ int DiffIKController::nullspace_manipulability(
     Eigen::VectorXd ubA(A.rows());
         ubA << qp1_data.ubA, b_eq;
 
-    qpoases::QProblem qp(NUM_JOINTS, A.rows());
+    qpoases::QProblem qp(NUM_JOINTS, A.rows(), NUM_WSR);
     qp.options.setToReliable();
     qp.options.printLevel = qpOASES::PL_LOW;
 

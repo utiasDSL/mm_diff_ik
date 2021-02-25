@@ -70,6 +70,18 @@ target_link_libraries(diff_ik_control_node
   /usr/local/lib/libqpOASES.so
 )
 
+add_executable(mpc_node
+  src/nodes/mpc_node.cpp
+  src/pose_control/control.cpp
+  src/pose_control/mpc.cpp
+  src/pose_control/pose_error.cpp
+  src/pose_control/trajectory.cpp
+)
+target_link_libraries(mpc_node
+  ${catkin_LIBRARIES}
+  /usr/local/lib/libqpOASES.so
+)
+
 ## analyse_optimizer
 # add_executable(analyse_optimizer
 #   src/nodes/analyse_optimizer.cpp

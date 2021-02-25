@@ -30,6 +30,50 @@ bool CartesianController::init(ros::NodeHandle& nh, const double hz) {
     traj_active = false;
 }
 
+// Control loop.
+void CartesianController::loop() {
+    ros::Rate rate(hz);
+    ROS_INFO("Control loop started, waiting for trajectory...");
+
+    while (ros::ok()) {
+        ros::spinOnce();
+
+        ros::Time now = ros::Time::now();
+        double t = now.toSec();
+
+        // Do nothing if there is no trajectory active or an unsafe action has
+        // been detected.
+        if (!traj_active || did_become_unsafe) {
+            u = JointVector::Zero();
+            publish_joint_speeds(now);
+            rate.sleep();
+            continue;
+        }
+
+        // If the trajectory is over, mark inactive and skip the rest of the
+        // loop. Then hits the above condition and proceeds publishing zero.
+        if (trajectory.done(t)) {
+            ROS_INFO("Trajectory ended.");
+            traj_active = false;
+            continue;
+        }
+
+        int status = update(now);
+        if (status) {
+            u = JointVector::Zero();
+            did_become_unsafe = true;
+        }
+
+        // print but then publish 0
+        // ROS_INFO_STREAM("u = " << u);
+        // u = JointVector::Zero();
+
+        publish_joint_speeds(now);
+        publish_state(now);
+
+        rate.sleep();
+    }
+}
 
 void CartesianController::pose_traj_cb(const mm_msgs::PoseTrajectory& msg) {
     trajectory.follow(msg);

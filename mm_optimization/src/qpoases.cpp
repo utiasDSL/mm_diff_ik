@@ -10,9 +10,10 @@ namespace qpoases {
 
 
 
-QProblem::QProblem(int nv, int nc) {
+QProblem::QProblem(int nv, int nc, qpOASES::int_t nWSR) {
     this->nv = nv;
     this->nc = nc;
+    this->nWSR = nWSR;
 }
 
 
@@ -41,12 +42,11 @@ int QProblem::solve(Eigen::VectorXd& x) {
         lbA = data.lbA.data();
     }
 
-    qpOASES::int_t nWSR = NUM_WSR;
-
     // Solve the QP: no warmstarting.
     qpOASES::QProblem qp(nv, nc);
     qp.setOptions(options);
-    qpOASES::returnValue ret = qp.init(H, g, A, lb, ub, lbA, ubA, nWSR);
+    qpOASES::int_t nWSR_ = nWSR;
+    qpOASES::returnValue ret = qp.init(H, g, A, lb, ub, lbA, ubA, nWSR_);
     int status = qpOASES::getSimpleStatus(ret);
 
     qpOASES::real_t x_arr[nv];
@@ -76,7 +76,7 @@ int QProblem::solve(Eigen::VectorXd& x) {
 }
 
 
-SQProblem::SQProblem(int nv, int nc) : QProblem(nv, nc), sqp(nv, nc) {}
+SQProblem::SQProblem(int nv, int nc, qpOASES::int_t nWSR) : QProblem(nv, nc, nWSR), sqp(nv, nc) {}
 
 // TODO would like to reduce the duplication between here and above
 int SQProblem::solve(Eigen::VectorXd& x) {
@@ -104,14 +104,13 @@ int SQProblem::solve(Eigen::VectorXd& x) {
         lbA = data.lbA.data();
     }
 
-    qpOASES::int_t nWSR = NUM_WSR;
-
     sqp.setOptions(options);  // TODO maybe move elsewhere
     qpOASES::returnValue ret;
+    qpOASES::int_t nWSR_ = nWSR;
     if (sqp.isInitialised()) {
-        ret = sqp.hotstart(H, g, A, lb, ub, lbA, ubA, nWSR);
+        ret = sqp.hotstart(H, g, A, lb, ub, lbA, ubA, nWSR_);
     } else {
-        ret = sqp.init(H, g, A, lb, ub, lbA, ubA, nWSR);
+        ret = sqp.init(H, g, A, lb, ub, lbA, ubA, nWSR_);
     }
     int status = qpOASES::getSimpleStatus(ret);
 
