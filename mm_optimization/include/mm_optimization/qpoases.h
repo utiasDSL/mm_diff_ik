@@ -14,6 +14,11 @@ using QPMatrixXd = Eigen::Matrix<qpOASES::real_t,
                                  Eigen::RowMajor>;
 using QPVectorXd = Eigen::Matrix<qpOASES::real_t, Eigen::Dynamic, 1>;
 
+
+// TODO idea for supporting multiple solvers
+// struct QPData { };
+// struct QPDataBounded : public QPData { };
+
 // Data matrices for the QP.
 struct QPData {
     QPMatrixXd H;

@@ -46,6 +46,6 @@ class CartesianController : public MMController {
   void point_traj_cb(const geometry_msgs::PoseStamped& msg);
 
   void publish_state(const ros::Time& now);
-};
+};  // class CartesianController
 
 }  // namespace mm
