@@ -10,7 +10,7 @@ from sensor_msgs.msg import JointState
 
 import mm_msgs.conversions as conversions
 from mm_kinematics import KinematicModel
-from mm_msgs.msg import PoseTrajectory
+from mm_msgs.msg import CartesianTrajectory
 
 
 def create_waypoints(traj, duration, dt):
@@ -35,16 +35,15 @@ def create_waypoints(traj, duration, dt):
 
 def publish(waypoints, dt):
     """Publish the waypoints."""
-    traj_pub = rospy.Publisher("/trajectory/poses", PoseTrajectory, queue_size=10)
+    traj_pub = rospy.Publisher("/trajectory/poses", CartesianTrajectory, queue_size=10)
 
     # Need to wait a second between setting up the publisher and actually using
     # it to publish a message.
     rospy.sleep(1.0)
 
-    msg = PoseTrajectory()
+    msg = CartesianTrajectory()
     msg.header.stamp = rospy.Time.now()
     msg.points = waypoints
-    msg.dt = rospy.Duration(dt)
 
     traj_pub.publish(msg)
 

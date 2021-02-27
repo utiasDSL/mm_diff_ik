@@ -1,15 +1,12 @@
 #include "mm_control/control.h"
 
 #include <ros/ros.h>
-#include <Eigen/Eigen>
 
 #include <trajectory_msgs/JointTrajectory.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Twist.h>
 
 #include <mm_kinematics/kinematics.h>
-
-#include "mm_control/util/messages.h"
 
 
 namespace mm {
@@ -45,8 +42,7 @@ void MMController::publish_joint_speeds(const ros::Time& now) {
     trajectory_msgs::JointTrajectory traj_arm_msg;
     geometry_msgs::Twist twist_base_msg;
 
-    joint_speed_msgs(u, traj_arm_msg, twist_base_msg);
-
+    joint_speed_msgs_from_eigen(u, traj_arm_msg, twist_base_msg);
     traj_arm_msg.header.stamp = now;
 
     ur10_joint_vel_pub.publish(traj_arm_msg);

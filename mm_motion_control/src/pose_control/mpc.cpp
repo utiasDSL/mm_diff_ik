@@ -5,9 +5,7 @@
 #include <qpOASES/qpOASES.hpp>
 
 #include <mm_optimization/qpoases.h>
-#include <mm_kinematics/spatial.h>
 #include <mm_kinematics/kinematics.h>
-#include <mm_control/util/messages.h>
 #include <mm_motion_control/pose_control/pose_error.h>
 
 

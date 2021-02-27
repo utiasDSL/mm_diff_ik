@@ -3,11 +3,12 @@
 #include <ros/ros.h>
 #include <Eigen/Eigen>
 
+#include <mm_kinematics/spatial.h>
+#include <mm_kinematics/conversion.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <mm_msgs/CartesianTrajectory.h>
 #include <mm_msgs/CartesianControllerState.h>
+#include <mm_msgs/CartesianTrajectory.h>
 
-#include <mm_control/util/messages.h>
 #include <mm_control/cartesian/trajectory.h>
 #include <mm_control/control.h>
 
@@ -37,7 +38,12 @@ void CartesianController::loop() {
     ros::spinOnce();
 
     ros::Time now = ros::Time::now();
-    double t = now.toSec();
+
+    if (trajectory.initialized() && !trajectory.started()) {
+      trajectory.start(now);
+      traj_active = true;
+      ROS_INFO("Trajectory started.");
+    }
 
     // Do nothing if there is no trajectory active or an unsafe action has
     // been detected.
@@ -50,7 +56,7 @@ void CartesianController::loop() {
 
     // If the trajectory is over, mark inactive and skip the rest of the
     // loop. Then hits the above condition and proceeds publishing zero.
-    if (trajectory.done(now)) {
+    if (trajectory.finished(now)) {
       ROS_INFO("Trajectory ended.");
       traj_active = false;
       continue;
@@ -75,50 +81,34 @@ void CartesianController::loop() {
 
 void CartesianController::pose_traj_cb(
     const mm_msgs::CartesianTrajectory& msg) {
-  trajectory.from_message(msg);
-  traj_active = true;
-  ROS_INFO("Trajectory started.");
+  trajectory.init(msg);
 }
 
 void CartesianController::point_traj_cb(const geometry_msgs::PoseStamped& msg) {
-  Pose pose;
-  pose.position << msg.pose.position.x, msg.pose.position.y, msg.pose.position.z;
-  pose.orientation.coeffs() << msg.pose.orientation.x, msg.pose.orientation.y,
-      msg.pose.orientation.z, msg.pose.orientation.w;
-  trajectory.from_point(pose);
-  traj_active = true;
-
+  Pose pose = pose_msg_to_eigen(msg.pose);
+  trajectory.init(pose);
   ROS_INFO("Maintaining current pose.");
 }
 
 void CartesianController::publish_state(const ros::Time& now) {
-  double t = now.toSec();
-
-  // TODO could rewrite a lot of of this much more nicely
   // Actual pose.
-  Eigen::Affine3d w_T_tool;
+  Transform w_T_tool;
   Kinematics::calc_w_T_tool(q, w_T_tool);
-  Pose Pa(w_T_tool);
 
   // Sample desired trajectory.
-  CartesianPosVelAcc Xd;
-  trajectory.sample(now, Xd);
-  Pose Pd = Xd.pose;
+  CartesianPosVelAcc X_des;
+  trajectory.sample(now, X_des);
 
-  // Error.
-  Eigen::Vector3d pos_err = Pd.position - Pa.position;
-  Eigen::Quaterniond quat_err = Pd.orientation * Pa.orientation.inverse();
+  Pose P_des = X_des.pose;
+  Pose P_act(w_T_tool);
+  Pose P_err = P_des.error(P_act);
 
   mm_msgs::CartesianControllerState msg;
-  geometry_msgs::Pose Pa_msg, P_err_msg;
-
-  pose_msg_from_eigen(Pa.position, Pa.orientation, Pa_msg);
-  pose_msg_from_eigen(pos_err, quat_err, P_err_msg);
 
   // Cartesian space
-  msg.actual.pose = Pa_msg;
-  msg.error.pose = P_err_msg;
-  cartesian_state_to_message(Xd, msg.desired);
+  pose_msg_from_eigen(P_act, msg.actual.pose);
+  pose_msg_from_eigen(P_err, msg.error.pose);
+  cartesian_state_from_eigen(X_des, msg.desired);
 
   // Joint space
   msg.joints.position = std::vector<double>(q.data(), q.data() + q.size());

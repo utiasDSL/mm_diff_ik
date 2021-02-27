@@ -4,11 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import tf.transformations as tfs
-from scipy.linalg import null_space
 
 from sensor_msgs.msg import JointState
 
-from mm_msgs.msg import Obstacles, PoseTrajectory
+from mm_msgs.msg import Obstacles, CartesianTrajectory
 from mm_kinematics import KinematicModel
 
 
@@ -20,7 +19,7 @@ class RobotPlotter(object):
         self.obstacle_sub = rospy.Subscriber('/obstacles', Obstacles,
                                              self._obstacle_cb)
 
-        self.traj_sub = rospy.Subscriber('/trajectory/poses', PoseTrajectory,
+        self.traj_sub = rospy.Subscriber('/trajectory/poses', CartesianTrajectory,
                                          self._traj_cb)
 
         self.model = KinematicModel()
@@ -91,9 +90,9 @@ class RobotPlotter(object):
         self.obstacles = msg.obstacles
 
     def _traj_cb(self, msg):
-        self.x_traj = [point.pose.position.x for point in msg.points]
-        self.y_traj = [point.pose.position.y for point in msg.points]
-        self.z_traj = [point.pose.position.z for point in msg.points]
+        self.x_traj = [point.state.pose.position.x for point in msg.points]
+        self.y_traj = [point.state.pose.position.y for point in msg.points]
+        self.z_traj = [point.state.pose.position.z for point in msg.points]
         self.traj_changed = True
 
     def _calc_arm_positions(self):

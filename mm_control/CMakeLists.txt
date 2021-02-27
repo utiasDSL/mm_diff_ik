@@ -49,6 +49,7 @@ add_library(${PROJECT_NAME}
   src/control.cpp
   src/cartesian/control.cpp
   src/cartesian/trajectory.cpp
+  src/cartesian/spline.cpp
 )
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}

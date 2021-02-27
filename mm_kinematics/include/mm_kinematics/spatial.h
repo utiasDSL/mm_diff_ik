@@ -17,11 +17,12 @@ typedef Eigen::Affine3d Transform;
 // For poses, it is more convenient to hold a position vector and orientation
 // quaternion, to mirror the ROS message format.
 struct Pose {
-     // Default constructor: zero pose.
+  // Default constructor: zero pose.
   Pose() : position(0, 0, 0), orientation(1, 0, 0, 0) {}
 
   // Initialize directly from position and quaternion.
-  Pose(Eigen::Vector3d& p, Eigen::Quaterniond& q) : position(p), orientation(q) {}
+  Pose(Eigen::Vector3d p, Eigen::Quaterniond q)
+      : position(p), orientation(q) {}
 
   // Initialize from a transform.
   Pose(Transform& T) {
@@ -30,11 +31,10 @@ struct Pose {
   }
 
   // Calculate error between this and another pose.
-  // Pose error(const Pose& other) {
-  //   Eigen::Vector3d pe = position - other.position;
-  //   Eigen::Quaterniond qe = orientation * other.orientation.inverse();
-  //   return Pose(pe, qe);
-  // }
+  Pose error(const Pose& other) {
+    return Pose(position - other.position,
+                orientation * other.orientation.inverse());
+  }
 
   Eigen::Vector3d position;
   Eigen::Quaterniond orientation;
@@ -47,7 +47,7 @@ struct Twist {
   // Get the twist as a single 6-dimensional vector.
   Vector6d vector() {
     Vector6d V;
-        V << linear, angular;
+    V << linear, angular;
     return V;
   }
 

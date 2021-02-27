@@ -1,6 +1,6 @@
 import rospy
 from geometry_msgs.msg import Vector3, Quaternion, Pose
-from mm_msgs.msg import PoseTrajectoryPoint
+from mm_msgs.msg import CartesianTrajectoryPoint
 
 
 def quat_msg(q):
@@ -33,15 +33,15 @@ def pose_msg(p, q):
 def waypoint_msg(t, p, v, a, q, w, alpha):
     ''' Generate PoseTrajectoryPoint message from time, position, orientation,
         and linear and angular velocities. '''
-    waypoint = PoseTrajectoryPoint()
-    waypoint.time_from_start = rospy.Time(t)
+    waypoint = CartesianTrajectoryPoint()
+    waypoint.time = rospy.Duration(t)
 
-    waypoint.pose = pose_msg(p, q)
+    waypoint.state.pose = pose_msg(p, q)
 
-    waypoint.velocity.linear = vec3_msg(v)
-    waypoint.velocity.angular = vec3_msg(w)
+    waypoint.state.twist.linear = vec3_msg(v)
+    waypoint.state.twist.angular = vec3_msg(w)
 
-    waypoint.acceleration.linear = vec3_msg(a)
-    waypoint.acceleration.angular = vec3_msg(alpha)
+    waypoint.state.acceleration.linear = vec3_msg(a)
+    waypoint.state.acceleration.angular = vec3_msg(alpha)
 
     return waypoint
