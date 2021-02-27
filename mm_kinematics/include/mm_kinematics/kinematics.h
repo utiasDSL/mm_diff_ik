@@ -3,8 +3,10 @@
 #include <ros/ros.h>
 #include <Eigen/Eigen>
 
+#include <mm_kinematics/spatial.h>
 
-#define DH_TF(T, q, a, d, alpha) Eigen::Affine3d T; dh_transform(q, a, d, alpha, T);
+
+#define DH_TF(T, q, a, d, alpha) Transform T; dh_transform(q, a, d, alpha, T);
 
 
 namespace mm {
@@ -12,9 +14,6 @@ namespace mm {
 const uint32_t NUM_BASE_JOINTS = 3;
 const uint32_t NUM_ARM_JOINTS = 6;
 const uint32_t NUM_JOINTS = NUM_BASE_JOINTS + NUM_ARM_JOINTS;
-
-typedef Eigen::Matrix<double, 6, 1> Vector6d;
-typedef Eigen::Matrix<double, 6, 6> Matrix6d;
 
 typedef Eigen::Matrix<double, NUM_ARM_JOINTS,  NUM_ARM_JOINTS>  ArmJointMatrix;
 typedef Eigen::Matrix<double, NUM_BASE_JOINTS, NUM_BASE_JOINTS> BaseJointMatrix;
@@ -27,8 +26,6 @@ typedef Eigen::Matrix<double, NUM_JOINTS,      1> JointVector;
 typedef Eigen::Matrix<double, 6, NUM_BASE_JOINTS> BaseJacobianMatrix;
 typedef Eigen::Matrix<double, 6, NUM_ARM_JOINTS>  ArmJacobianMatrix;
 typedef Eigen::Matrix<double, 6, NUM_JOINTS>      JacobianMatrix;
-
-typedef Eigen::Matrix<double, 3, 9> Matrix3x9;
 
 
 // Joint position limits
@@ -72,19 +69,17 @@ class Kinematics {
         static void jacobian(const JointVector& q, JacobianMatrix& J);
 
         // Transform from mobile base to world.
-        static void calc_w_T_base(const JointVector& q,
-                                  Eigen::Affine3d& w_T_base);
+        static void calc_w_T_base(const JointVector& q, Transform& w_T_base);
 
         // Transform from base of arm to world.
         static void calc_w_T_arm(const JointVector& q,
-                                 Eigen::Affine3d& w_T_arm);
+                                 Transform& w_T_arm);
 
         // Transform from EE to world.
-        static void calc_w_T_ee(const JointVector& q, Eigen::Affine3d& w_T_ee);
+        static void calc_w_T_ee(const JointVector& q, Transform& w_T_ee);
 
         // Transform from tool to world.
-        static void calc_w_T_tool(const JointVector& q,
-                                  Eigen::Affine3d& w_T_tool);
+        static void calc_w_T_tool(const JointVector& q, Transform& w_T_tool);
 
 
         static void calc_joint_input_map(const JointVector& q, JointMatrix& B);
@@ -124,7 +119,7 @@ class Kinematics {
 
         // Create transformation matrix from D-H parameters.
         static void dh_transform(double q, double a, double d, double alpha,
-                                 Eigen::Affine3d& T);
+                                 Transform& T);
 
         static void jacobians(const JointVector& q, ArmJacobianMatrix& Ja,
                               BaseJacobianMatrix& Jb);

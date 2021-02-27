@@ -5,6 +5,8 @@
 
 #include <Eigen/Eigen>
 
+#include <geometry_msgs/Vector3.h>
+#include <geometry_msgs/Point.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Twist.h>
 #include <trajectory_msgs/JointTrajectory.h>
@@ -13,6 +15,19 @@
 
 
 namespace mm {
+
+
+inline Eigen::Vector3d vec3_msg_to_eigen(const geometry_msgs::Vector3& msg) {
+   return Eigen::Vector3d(msg.x, msg.y, msg.z);
+}
+
+inline Eigen::Vector3d point_msg_to_eigen(const geometry_msgs::Point& msg) {
+   return Eigen::Vector3d(msg.x, msg.y, msg.z);
+}
+
+inline Eigen::Quaterniond quat_msg_to_eigen(const geometry_msgs::Quaternion& msg) {
+   return Eigen::Quaterniond(msg.w, msg.x, msg.y, msg.z);
+}
 
 
 // Populate Pose message from Eigen types.

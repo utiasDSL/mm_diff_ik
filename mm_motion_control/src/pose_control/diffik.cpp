@@ -9,9 +9,9 @@
 #include <mm_msgs/Obstacles.h>
 
 #include <mm_optimization/qpoases.h>
+#include <mm_kinematics/spatial.h>
 #include <mm_kinematics/kinematics.h>
 #include <mm_math_util/interp.h>
-#include <mm_control/util/messages.h>
 #include <mm_motion_control/pose_control/obstacle.h>
 #include <mm_motion_control/pose_control/pose_error.h>
 
@@ -154,10 +154,11 @@ void DiffIKController::calc_primary_objective(const ros::Time& now,
                                               JointMatrix& H,
                                               JointVector& g) {
     // Sample the trajectory.
-    double t = now.toSec();
-    Eigen::Affine3d Td;
+    CartesianPosVelAcc Xd;
+    trajectory.sample(now, Xd);
+
     Vector6d Vd;
-    trajectory.sample(t, Td, Vd);
+        Vd << Xd.twist.linear, Xd.twist.angular;
 
     // Calculate mapping from base inputs to generalized coordinates. The
     // former are in the base frame while the latter are in the world frame.
@@ -166,7 +167,7 @@ void DiffIKController::calc_primary_objective(const ros::Time& now,
 
     // Calculate pose error.
     Vector6d P_err;
-    calc_pose_error(Td, q, P_err);
+    calc_pose_error(Xd.pose, q, P_err);
 
     // Calculate Jacobian.
     JacobianMatrix J;

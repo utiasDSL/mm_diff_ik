@@ -4,10 +4,10 @@
 #include <Eigen/Eigen>
 
 #include <geometry_msgs/PoseStamped.h>
-#include <mm_msgs/PoseTrajectory.h>
+#include <mm_msgs/CartesianTrajectory.h>
 
 #include <mm_control/control.h>
-#include <mm_motion_control/pose_control/trajectory.h>
+#include <mm_control/cartesian/trajectory.h>
 
 namespace mm {
 
@@ -31,7 +31,7 @@ class CartesianController : public MMController {
   ros::Subscriber point_traj_sub;
 
   // Trajectory interpolator.
-  PoseTrajectory trajectory;
+  CartesianTrajectory trajectory;
 
   // True if we currently have a trajectory to follow, false otherwise.
   bool traj_active;
@@ -39,7 +39,7 @@ class CartesianController : public MMController {
   /** FUNCTIONS **/
 
   // Receive a trajectory of waypoints to follow.
-  void pose_traj_cb(const mm_msgs::PoseTrajectory& msg);
+  void pose_traj_cb(const mm_msgs::CartesianTrajectory& msg);
 
   // Receive a command to keep the EE in place (but the motion control
   // loop is still running so it can respond to e.g. applied forces).

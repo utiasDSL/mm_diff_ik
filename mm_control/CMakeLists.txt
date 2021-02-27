@@ -12,6 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
   message_runtime
   cmake_modules
   mm_kinematics
+  mm_msgs
+  mm_math_util
 )
 
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
@@ -31,7 +33,7 @@ catkin_python_setup()
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS mm_kinematics
+  CATKIN_DEPENDS mm_kinematics mm_msgs mm_math_util
 )
 
 # Headers
@@ -45,6 +47,8 @@ include_directories(
 # Library
 add_library(${PROJECT_NAME}
   src/control.cpp
+  src/cartesian/control.cpp
+  src/cartesian/trajectory.cpp
 )
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}

@@ -15,17 +15,20 @@ catkin_python_setup()
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  PoseTrajectoryPoint.msg
-  PoseTrajectory.msg
-  PoseControlState.msg
   OptimizationState.msg
-  ForceControlState.msg
-  ForceInfo.msg
   WrenchInfo.msg
   Obstacle.msg
   Obstacles.msg
   CartesianState.msg
   CartesianControllerState.msg
+  CartesianTrajectory.msg
+  CartesianTrajectoryPoint.msg
+
+  ForceControlState.msg
+  ForceInfo.msg
+  PoseTrajectoryPoint.msg
+  PoseTrajectory.msg
+  PoseControlState.msg
 )
 
 ## Generate added messages and services with any dependencies listed here

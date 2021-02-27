@@ -5,6 +5,7 @@
 #include <qpOASES/qpOASES.hpp>
 
 #include <mm_optimization/qpoases.h>
+#include <mm_kinematics/spatial.h>
 #include <mm_kinematics/kinematics.h>
 #include <mm_control/util/messages.h>
 #include <mm_motion_control/pose_control/pose_error.h>
@@ -90,15 +91,13 @@ int MPController::update(const ros::Time& now) {
     // timestep into the future (this is the control input for which we wish to
     // solve). Each subsequent one is one lookahead time step into the future,
     // which are generally larger than the control timesteps.
-    std::vector<Eigen::Affine3d> Tds;
+    std::vector<Pose> Pds;
     for (int k = 1; k <= NUM_HORIZON; ++k) {
-        double t = t0 + k * LOOKAHEAD_TIMESTEP;
+        ros::Time sample_time = now + ros::Duration(k * LOOKAHEAD_TIMESTEP);
 
-        Eigen::Affine3d Td;
-        Vector6d Vd;
-        trajectory.sample(t, Td, Vd);
-
-        Tds.push_back(Td);
+        CartesianPosVelAcc Xd;
+        trajectory.sample(sample_time, Xd);
+        Pds.push_back(Xd.pose);
     }
 
     int status = 0;
@@ -114,7 +113,7 @@ int MPController::update(const ros::Time& now) {
         // makes more sense to start from zero programmatically. This is in
         // contrast to the above loop rolling out the lookahead trajectory.
         for (int k = 0; k < NUM_HORIZON; ++k) {
-            Eigen::Affine3d Td = Tds[k];
+            Pose Pd = Pds[k];
 
             // current guess for joint values k steps in the future
             JointVector qk = qbar.segment<NUM_JOINTS>(NUM_JOINTS * k);
@@ -122,7 +121,7 @@ int MPController::update(const ros::Time& now) {
             // calculate pose error
             // TODO we may need to go back to an analytic Jacobian for this to work
             Vector6d ek;
-            calc_pose_error(Td, qk, ek);
+            calc_pose_error(Pd, qk, ek);
             ebar.segment<6>(6 * k) = ek;
 
             // calculate Jacobian and B to map inputs to generalized velocities

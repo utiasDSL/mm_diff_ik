@@ -2,6 +2,7 @@
 
 #include <Eigen/Eigen>
 
+#include <mm_kinematics/spatial.h>
 #include <mm_kinematics/kinematics.h>
 #include <mm_math_util/linalg.h>
 
@@ -13,7 +14,7 @@ namespace mm {
 //   Td: desired pose
 //   q:  current joint positions
 //   e:  populated with orientation error vector
-void calc_pose_error(const Eigen::Affine3d& Td, const JointVector& q, Vector6d& e);
+void calc_pose_error(const Pose& Pd, const JointVector& q, Vector6d& e);
 
 
 // Calculate rotation error.

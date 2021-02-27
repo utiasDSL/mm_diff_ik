@@ -1,3 +1,3 @@
 Header header
 duration dt
-PoseTrajectoryPoint[] points
+mm_msgs/PoseTrajectoryPoint[] points

@@ -5,7 +5,7 @@
 
 #include <mm_kinematics/kinematics.h>
 #include <mm_optimization/qpoases.h>
-#include <mm_motion_control/pose_control/control.h>
+#include <mm_control/cartesian/control.h>
 
 
 namespace mm {

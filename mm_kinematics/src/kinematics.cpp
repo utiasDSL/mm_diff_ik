@@ -18,7 +18,7 @@ void Kinematics::jacobian(const JointVector& q, JacobianMatrix& J) {
 }
 
 void Kinematics::calc_w_T_base(const JointVector& q,
-                               Eigen::Affine3d& w_T_base) {
+                               Transform& w_T_base) {
     DH_TF(T1, M_PI_2, 0, 0,    M_PI_2);
     DH_TF(T2, M_PI_2, 0, q(0), M_PI_2);
     DH_TF(T3, M_PI_2, 0, q(1), M_PI_2);
@@ -27,8 +27,8 @@ void Kinematics::calc_w_T_base(const JointVector& q,
     w_T_base = T1 * T2 * T3 * T4;
 }
 
-void Kinematics::calc_w_T_arm(const JointVector& q, Eigen::Affine3d& w_T_arm) {
-    Eigen::Affine3d w_T_base;
+void Kinematics::calc_w_T_arm(const JointVector& q, Transform& w_T_arm) {
+    Transform w_T_base;
     calc_w_T_base(q, w_T_base);
 
     DH_TF(T5, 0, px, pz, -M_PI_2);
@@ -37,8 +37,8 @@ void Kinematics::calc_w_T_arm(const JointVector& q, Eigen::Affine3d& w_T_arm) {
     w_T_arm = w_T_base * T5 * T6;
 }
 
-void Kinematics::calc_w_T_ee(const JointVector& q, Eigen::Affine3d& w_T_ee) {
-    Eigen::Affine3d w_T_arm;
+void Kinematics::calc_w_T_ee(const JointVector& q, Transform& w_T_ee) {
+    Transform w_T_arm;
     calc_w_T_arm(q, w_T_arm);
 
     DH_TF(T7,  q(3), 0,  d1,  M_PI_2);
@@ -52,8 +52,8 @@ void Kinematics::calc_w_T_ee(const JointVector& q, Eigen::Affine3d& w_T_ee) {
 }
 
 void Kinematics::calc_w_T_tool(const JointVector& q,
-                               Eigen::Affine3d& w_T_tool) {
-    Eigen::Affine3d w_T_ee;
+                               Transform& w_T_tool) {
+    Transform w_T_ee;
     calc_w_T_ee(q, w_T_ee);
     DH_TF(ee_T_tool, 0, 0, d7,  0);
     w_T_tool = w_T_ee * ee_T_tool;
@@ -120,7 +120,7 @@ void Kinematics::manipulability_gradient_analytic(const JointVector& q,
 }
 
 void Kinematics::dh_transform(double q, double a, double d, double alpha,
-                              Eigen::Affine3d& T) {
+                              Transform& T) {
     double sq = std::sin(q);
     double cq = std::cos(q);
     double salpha = std::sin(alpha);

@@ -15,22 +15,21 @@ void calc_rotation_error(const Eigen::Matrix3d& Rd, const Eigen::Matrix3d& Re,
     e << quat.x(), quat.y(), quat.z();
 }
 
-void calc_pose_error(const Eigen::Affine3d& Td, const JointVector& q, Vector6d& e) {
-    Eigen::Matrix3d Rd = Td.rotation();
-    Eigen::Vector3d pd = Td.translation();
-
+void calc_pose_error(const Pose& Pd, const JointVector& q, Vector6d& e) {
     // Current EE pose.
     Eigen::Affine3d w_T_tool;
     Kinematics::calc_w_T_tool(q, w_T_tool);
-    Eigen::Matrix3d Re = w_T_tool.rotation();
-    Eigen::Vector3d pe = w_T_tool.translation();
 
-    // Calculate errors.
-    Eigen::Vector3d pos_err, rot_err;
-    pos_err = pd - pe;
-    calc_rotation_error(Rd, Re, rot_err);
+    // Orientation error.
+    Eigen::Quaterniond Q_act(w_T_tool.rotation());
+    Eigen::Quaterniond Q_err = Pd.orientation * Q_act.inverse();
 
-    e << pos_err, rot_err;
+    // Control error: normal position error and the vector part of the
+    // quaternion (which is zero when the orientation error is zero).
+    Eigen::Vector3d p_err = Pd.position - w_T_tool.translation();
+    Eigen::Vector3d rot_err(Q_err.x(), Q_err.y(), Q_err.z());
+
+    e << p_err, rot_err;
 }
 
 
