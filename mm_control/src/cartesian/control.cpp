@@ -121,4 +121,23 @@ void CartesianController::publish_state(const ros::Time& now) {
   state_pub.publish(msg);
 }
 
+void calc_cartesian_control_error(const Pose& Pd,
+                                  const JointVector& q,
+                                  Vector6d& e) {
+  // Current EE pose.
+  Eigen::Affine3d w_T_tool;
+  Kinematics::calc_w_T_tool(q, w_T_tool);
+
+  // Orientation error.
+  Eigen::Quaterniond Q_act(w_T_tool.rotation());
+  Eigen::Quaterniond Q_err = Pd.orientation * Q_act.inverse();
+
+  // Control error: normal position error and the vector part of the
+  // quaternion (which is zero when the orientation error is zero).
+  Eigen::Vector3d p_err = Pd.position - w_T_tool.translation();
+  Eigen::Vector3d rot_err(Q_err.x(), Q_err.y(), Q_err.z());
+
+  e << p_err, rot_err;
+}
+
 }  // namespace mm

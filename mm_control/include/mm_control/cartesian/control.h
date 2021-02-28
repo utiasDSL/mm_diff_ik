@@ -6,8 +6,8 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <mm_msgs/CartesianTrajectory.h>
 
-#include <mm_control/control.h>
 #include <mm_control/cartesian/trajectory.h>
+#include <mm_control/control.h>
 
 namespace mm {
 
@@ -47,5 +47,10 @@ class CartesianController : public MMController {
 
   void publish_state(const ros::Time& now);
 };  // class CartesianController
+
+// Calculate the 6D pose error for control.
+void calc_cartesian_control_error(const Pose& Pd,
+                                  const JointVector& q,
+                                  Vector6d& e);
 
 }  // namespace mm

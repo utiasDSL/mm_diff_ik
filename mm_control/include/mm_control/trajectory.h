@@ -11,7 +11,7 @@ class Trajectory {
       : index(0), is_finite(true), is_initialized(false), is_started(false) {}
   ~Trajectory() {}
 
-  virtual bool start(const ros::Time& time) {
+  virtual bool start(const ros::Time& now) {
     if (!initialized()) {
       return false;
     }
@@ -20,7 +20,7 @@ class Trajectory {
     return true;
   }
 
-  virtual bool finished(const ros::Time& time) {
+  virtual bool finished(const ros::Time& now) {
     // Infinite trajectories don't end
     if (!is_finite) {
       return false;

@@ -6,7 +6,6 @@
 
 #include <mm_optimization/qpoases.h>
 #include <mm_kinematics/kinematics.h>
-#include <mm_motion_control/pose_control/pose_error.h>
 
 
 namespace mm {
@@ -71,7 +70,7 @@ bool MPController::init(ros::NodeHandle& nh, const double hz) {
 
 
 int MPController::update(const ros::Time& now) {
-    double t0 = now.toSec();
+    // double t0 = now.toSec();
 
     // Stacked vector of initial joint positions.
     OptVector q0bar = OptVector::Zero();
@@ -89,20 +88,29 @@ int MPController::update(const ros::Time& now) {
     // timestep into the future (this is the control input for which we wish to
     // solve). Each subsequent one is one lookahead time step into the future,
     // which are generally larger than the control timesteps.
-    std::vector<Pose> Pds;
-    for (int k = 1; k <= NUM_HORIZON; ++k) {
-        ros::Time sample_time = now + ros::Duration(k * LOOKAHEAD_TIMESTEP);
+    // std::vector<Pose> Pds;
+    // for (int k = 1; k <= NUM_HORIZON; ++k) {
+    //     ros::Time sample_time = now + ros::Duration(k * LOOKAHEAD_TIMESTEP);
+    //
+    //     CartesianPosVelAcc Xd;
+    //     trajectory.sample(sample_time, Xd);
+    //     Pds.push_back(Xd.pose);
+    // }
 
-        CartesianPosVelAcc Xd;
-        trajectory.sample(sample_time, Xd);
-        Pds.push_back(Xd.pose);
+    std::vector<ros::Time> sample_times;
+    for (int k = 1; k <= NUM_HORIZON; ++k) {
+        sample_times.push_back(now + ros::Duration(k * LOOKAHEAD_TIMESTEP));
     }
+    std::vector<CartesianPosVelAcc> Xds;
+    trajectory.sample(now, sample_times, Xds);
 
     int status = 0;
 
     // Outer loop iterates over linearizations (i.e. QP solves).
     for (int i = 0; i < NUM_ITER; ++i) {
         // Integrate to get joint positions.
+        // TODO this is not right due to B(q) being introduced: need to rewrite
+        // to accommodate this
         qbar = q0bar + LOOKAHEAD_TIMESTEP * Ebar * ubar;
 
         // Inner loop iterates over timesteps to build up the matrices.
@@ -111,15 +119,14 @@ int MPController::update(const ros::Time& now) {
         // makes more sense to start from zero programmatically. This is in
         // contrast to the above loop rolling out the lookahead trajectory.
         for (int k = 0; k < NUM_HORIZON; ++k) {
-            Pose Pd = Pds[k];
+            Pose Pd = Xds[k].pose;
 
             // current guess for joint values k steps in the future
             JointVector qk = qbar.segment<NUM_JOINTS>(NUM_JOINTS * k);
 
             // calculate pose error
-            // TODO we may need to go back to an analytic Jacobian for this to work
             Vector6d ek;
-            calc_pose_error(Pd, qk, ek);
+            calc_cartesian_control_error(Pd, qk, ek);
             ebar.segment<6>(6 * k) = ek;
 
             // calculate Jacobian and B to map inputs to generalized velocities

@@ -13,7 +13,6 @@
 #include <mm_kinematics/kinematics.h>
 #include <mm_math_util/interp.h>
 #include <mm_motion_control/pose_control/obstacle.h>
-#include <mm_motion_control/pose_control/pose_error.h>
 
 
 namespace mm {
@@ -167,7 +166,7 @@ void DiffIKController::calc_primary_objective(const ros::Time& now,
 
     // Calculate pose error.
     Vector6d P_err;
-    calc_pose_error(Xd.pose, q, P_err);
+    calc_cartesian_control_error(Xd.pose, q, P_err);
 
     // Calculate Jacobian.
     JacobianMatrix J;

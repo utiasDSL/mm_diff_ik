@@ -26,10 +26,17 @@ class CartesianTrajectory : public Trajectory {
   // Initialize from a single setpoint.
   bool init(Pose pose);
 
-  // Sample the trajectory at the given time. Returns false if the trajectory
+  // Sample the trajectory at the given time `now`. Returns false if the trajectory
   // is sampled in an invalid state, in which case the `state` variable should
-  // not be trusted.
-  bool sample(const ros::Time& time, CartesianPosVelAcc& state);
+  // not be trusted. Trajectories are assumed to be sampled at monotonically
+  // increasing times.
+  bool sample(const ros::Time& now, CartesianPosVelAcc& state);
+
+  // Sample the trajectory at `times` in the after the given time `now`. The
+  // `times` are expected to be monotonically increasing.
+  bool sample(const ros::Time& now,
+              const std::vector<ros::Time>& times,
+              std::vector<CartesianPosVelAcc>& states);
 
  protected:
   // First and last points in the trajectory.

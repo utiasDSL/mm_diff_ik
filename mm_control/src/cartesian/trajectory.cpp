@@ -49,19 +49,68 @@ bool CartesianTrajectory::init(Pose pose) {
   return true;
 }
 
-bool CartesianTrajectory::sample(const ros::Time& time,
+bool CartesianTrajectory::sample(const ros::Time& now,
                                  CartesianPosVelAcc& state) {
-  if (!started() || finished(time)) {
+  if (!started() || finished(now)) {
+    // TODO should this be here? It is undefined behaviour, but am I relying on
+    // it?
+    state = last;
     return false;
   }
 
-  // Update current segment
-  double t = time.toSec();
+  double t = now.toSec();
+
+  // If the trajectory is past its end time but infinite, return the last
+  // point.
+  if (!is_finite && t >= start_time + duration) {
+    state = last;
+    return true;
+  }
+
+  // Finite, active trajectory: update current segment
+  while (t > start_time + segments[index].time + segments[index].duration) {
+    index++;
+  }
+  return segments[index].sample(t - start_time, state);
+}
+
+bool CartesianTrajectory::sample(const ros::Time& now,
+                                 const std::vector<ros::Time>& times,
+                                 std::vector<CartesianPosVelAcc>& states) {
+  if (!started() || finished(now)) {
+    return false;
+  }
+
+  // Update the current index based on the provided current time.
+  double t = now.toSec();
   while (t > start_time + segments[index].time + segments[index].duration) {
     index++;
   }
 
-  return segments[index].sample(t - start_time, state);
+  // Sample at all of the sample times, using the dummy variable i to avoid
+  // modifying the real index.
+  size_t i = index;
+  for (auto time : times) {
+    if (finished(time)) {
+      states.push_back(last);
+      continue;
+    }
+
+    t = time.toSec();
+    if (!is_finite && t >= start_time + duration) {
+      states.push_back(last);
+      continue;
+    }
+
+    while (t > start_time + segments[i].time + segments[i].duration) {
+      i++;
+    }
+
+    CartesianPosVelAcc state;
+    segments[i].sample(t - start_time, state);
+    states.push_back(state);
+  }
+  return true;
 }
 
 }  // namespace mm

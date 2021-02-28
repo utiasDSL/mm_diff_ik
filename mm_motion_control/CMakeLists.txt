@@ -61,7 +61,6 @@ include_directories(
 add_executable(diff_ik_control_node
   src/nodes/diff_ik_control_node.cpp
   src/pose_control/diffik.cpp
-  src/pose_control/pose_error.cpp
 )
 target_link_libraries(diff_ik_control_node
   ${catkin_LIBRARIES}
@@ -71,24 +70,11 @@ target_link_libraries(diff_ik_control_node
 add_executable(mpc_node
   src/nodes/mpc_node.cpp
   src/pose_control/mpc.cpp
-  src/pose_control/pose_error.cpp
 )
 target_link_libraries(mpc_node
   ${catkin_LIBRARIES}
   /usr/local/lib/libqpOASES.so
 )
-
-## analyse_optimizer
-# add_executable(analyse_optimizer
-#   src/nodes/analyse_optimizer.cpp
-#   src/pose_control/pose_error.cpp
-#   src/pose_control/optimizer.cpp
-#   src/pose_control/trajectory.cpp
-# )
-# target_link_libraries(analyse_optimizer
-#   ${catkin_LIBRARIES}
-#   /usr/local/lib/libqpOASES.so
-# )
 
 # Tests
 # catkin_add_executable_with_gtest(test_optimize
