@@ -246,16 +246,16 @@ Steps for experiments on the real robot:
    ```
 
 ### Go Home
-Go to home position defined in the launch file. Requires bringup.launch to
-already be launched and running.
+Go to home position defined in `mm_control/config/home.yaml`. Requires
+bringup.launch to already be launched and running.
 ```bash
-laptop > roslaunch mm_motion_control home.launch
+laptop > roslaunch mm_control home.py <config_name>
 ```
 
 ### Gripper
 Open or close the gripper (experiment only). Run on the laptop:
 ```bash
-laptop > roslaunch mm_gripper gripper.launch
+laptop > roslaunch mm_gripper bringup.launch
 
 # <cmd> is either o (open) or c (close)
 laptop > rosrun mm_gripper gripper.py <cmd>
@@ -266,3 +266,12 @@ To set the desired force at runtime, use:
 ```
 laptop > rostopic pub /force/desired std_msgs/Float64 <value>
 ```
+
+## Development
+
+C++ code should be formatted using
+[clang-format](https://clang.llvm.org/docs/ClangFormat.html) and Python code
+should be formatted using [Black](https://github.com/psf/black).
+
+C++ tests use [gtest](https://github.com/google/googletest) and Python tests
+use [pytest](https://docs.pytest.org/en/stable/index.html).
