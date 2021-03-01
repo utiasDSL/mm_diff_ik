@@ -96,23 +96,18 @@ int MPController::update(const ros::Time& now) {
       // Add entries to the linearized dynamics matrix
       // k-th column is handled separately: it is derivate of q_k w.r.t.
       // u_{k-1}
-      Fbar.block(NUM_JOINTS * k, NUM_JOINTS * k, NUM_JOINTS * (NUM_HORIZON - k),
+      Fbar.block(k * NUM_JOINTS, k * NUM_JOINTS, (NUM_HORIZON - k) * NUM_JOINTS,
                  NUM_JOINTS) =
-          LOOKAHEAD_TIMESTEP * Bk.replicate(NUM_JOINTS - k, 1);
+          LOOKAHEAD_TIMESTEP * Bk.replicate(NUM_HORIZON - k, 1);
 
-      // Do the columns before the k-th: derivative of q_k w.r.t. q_{k-c-1}
-      // TODO we can replace this with a large block (as above) and a call to
-      // applyOnTheLeft
+      // Columns before the k-th: derivative of q_k w.r.t. q_{k-1}
+      JointMatrix M = JointMatrix::Identity();
+      M.block<2, 1>(0, 2) =
+          LOOKAHEAD_TIMESTEP * rotation2d_derivative(qk(2)) * uk.head<2>();
       for (int c = 0; c < k; ++c) {
         for (int r = k; r < NUM_HORIZON; ++r) {
-          JointMatrix F = Fbar.block<NUM_JOINTS, NUM_JOINTS>(NUM_JOINTS * r,
-                                                             NUM_JOINTS * c);
-          JointMatrix M = JointMatrix::Identity();
-          // TODO is there a mistake in the calculation?
-          M.block<2, 1>(0, 2) =
-              LOOKAHEAD_TIMESTEP * rotation2d_derivative(qk(2)) * uk.head<2>();
-          Fbar.block<NUM_JOINTS, NUM_JOINTS>(NUM_JOINTS * r, NUM_JOINTS * c) =
-              M * F;
+          Fbar.block<NUM_JOINTS, NUM_JOINTS>(NUM_JOINTS * r, NUM_JOINTS * c)
+              .applyOnTheLeft(M);
         }
       }
 
