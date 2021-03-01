@@ -89,34 +89,35 @@ int MPController::update(const ros::Time& now) {
     // makes more sense to start from zero programmatically. This is in
     // contrast to the above loop rolling out the lookahead trajectory.
     for (int k = 0; k < NUM_HORIZON; ++k) {
-      // use motion model to determine current guess for k based on the
-      // previous optimal inputs
       JointVector uk = ubar.segment<NUM_JOINTS>(NUM_JOINTS * k);
       JointMatrix Bk;
       Kinematics::calc_joint_input_map(qk, Bk);
-      qk = qk + LOOKAHEAD_TIMESTEP * Bk * uk;
 
       // Add entries to the linearized dynamics matrix
       // k-th column is handled separately: it is derivate of q_k w.r.t.
       // u_{k-1}
-      // the column should be zero before this
-      for (int r = k; r < NUM_HORIZON; ++r) {
-        Fbar.block<NUM_JOINTS, NUM_JOINTS>(NUM_JOINTS * r, NUM_JOINTS * k) =
-            LOOKAHEAD_TIMESTEP * Bk;
-      }
+      Fbar.block(NUM_JOINTS * k, NUM_JOINTS * k, NUM_JOINTS * (NUM_HORIZON - k),
+                 NUM_JOINTS) =
+          LOOKAHEAD_TIMESTEP * Bk.replicate(NUM_JOINTS - k, 1);
 
       // Do the columns before the k-th: derivative of q_k w.r.t. q_{k-c-1}
+      // TODO we can replace this with a large block (as above) and a call to
+      // applyOnTheLeft
       for (int c = 0; c < k; ++c) {
         for (int r = k; r < NUM_HORIZON; ++r) {
           JointMatrix F = Fbar.block<NUM_JOINTS, NUM_JOINTS>(NUM_JOINTS * r,
                                                              NUM_JOINTS * c);
           JointMatrix M = JointMatrix::Identity();
+          // TODO is there a mistake in the calculation?
           M.block<2, 1>(0, 2) =
               LOOKAHEAD_TIMESTEP * rotation2d_derivative(qk(2)) * uk.head<2>();
           Fbar.block<NUM_JOINTS, NUM_JOINTS>(NUM_JOINTS * r, NUM_JOINTS * c) =
               M * F;
         }
       }
+
+      // Integrate motion model forward using previous optimal inputs
+      qk = qk + LOOKAHEAD_TIMESTEP * Bk * uk;
 
       // Calculate Cartesian pose error
       ebar.segment<6>(6 * k) = calc_cartesian_control_error(Xds[k].pose, qk);

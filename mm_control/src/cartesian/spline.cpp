@@ -5,8 +5,8 @@
 
 namespace mm {
 
-CartesianSplineSegment::CartesianSplineSegment(CartesianTrajectoryPoint& a,
-                                               CartesianTrajectoryPoint& b) {
+CartesianSplineSegment::CartesianSplineSegment(
+    const CartesianTrajectoryPoint& a, const CartesianTrajectoryPoint& b) {
   time = a.time;
   duration = b.time - a.time;
 

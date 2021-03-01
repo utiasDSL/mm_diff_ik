@@ -12,8 +12,8 @@ namespace mm {
 class CartesianSplineSegment {
  public:
   // Initialize and interpolate between the provided points.
-  CartesianSplineSegment(CartesianTrajectoryPoint& a,
-                         CartesianTrajectoryPoint& b);
+  CartesianSplineSegment(const CartesianTrajectoryPoint& a,
+                         const CartesianTrajectoryPoint& b);
 
   // Sample the spline. The given time is relative to the start of the
   // trajectory.

@@ -10,7 +10,7 @@
 
 namespace mm {
 
-bool CartesianTrajectory::init(mm_msgs::CartesianTrajectory msg) {
+bool CartesianTrajectory::init(const mm_msgs::CartesianTrajectory& msg) {
   std::vector<CartesianTrajectoryPoint> waypoints;
 
   for (auto point : msg.points) {
@@ -23,7 +23,8 @@ bool CartesianTrajectory::init(mm_msgs::CartesianTrajectory msg) {
   return init(waypoints);
 }
 
-bool CartesianTrajectory::init(std::vector<CartesianTrajectoryPoint> points) {
+bool CartesianTrajectory::init(
+    const std::vector<CartesianTrajectoryPoint>& points) {
   for (int i = 0; i < points.size() - 1; ++i) {
     CartesianSplineSegment segment(points[i], points[i + 1]);
     segments.push_back(segment);
@@ -38,7 +39,7 @@ bool CartesianTrajectory::init(std::vector<CartesianTrajectoryPoint> points) {
   return true;
 }
 
-bool CartesianTrajectory::init(Pose pose) {
+bool CartesianTrajectory::init(const Pose& pose) {
   // First and last points are the same, and stationary at the given pose.
   first.pose = pose;
   last = first;

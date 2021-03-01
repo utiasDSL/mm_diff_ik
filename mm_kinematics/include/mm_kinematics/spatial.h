@@ -21,11 +21,11 @@ struct Pose {
   Pose() : position(0, 0, 0), orientation(1, 0, 0, 0) {}
 
   // Initialize directly from position and quaternion.
-  Pose(Eigen::Vector3d p, Eigen::Quaterniond q)
+  Pose(const Eigen::Vector3d& p, const Eigen::Quaterniond& q)
       : position(p), orientation(q) {}
 
   // Initialize from a transform.
-  Pose(Transform& T) {
+  Pose(const Transform& T) {
     position = T.translation();
     orientation = Eigen::Quaterniond(T.rotation());
   }
@@ -43,6 +43,9 @@ struct Pose {
 // Twist represents a 6-DOF velocity in 3D space.
 struct Twist {
   Twist() : linear(0, 0, 0), angular(0, 0, 0) {}
+
+  Twist(const Eigen::Vector3d& linear, const Eigen::Vector3d& angular)
+      : linear(linear), angular(angular) {}
 
   // Get the twist as a single 6-dimensional vector.
   Vector6d vector() {
