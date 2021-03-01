@@ -67,6 +67,8 @@ catkin build -DCMAKE_BUILD_TYPE=Release
 
 ## Packages
 
+Within this metapackage, we have:
+
 ### mm_motion_control
 
 Inner-loop motion controller that implements proportional control with velocity
@@ -94,35 +96,94 @@ velocities to send to the robot. Written in C++. Optimizer is qpOASES.
 * `/mm_pose_state` (`mm_msgs/PoseControlState`): Information about the actual,
   desired, and error pose of the EE.
 
-### mm_force_control
+### mm_force_torque
 
-Outer-loop force controller, also responsible for trajectory generation. Runs
-at ~10Hz. Written in Python.
+Tools for working with the Robotiq force-torque sensor.
 
-### mm_simulation
+To run the real sensor, use
+```
+roslaunch mm_force_torque bringup.launch
+```
+but note that **this must be run onboard the robot.** A very basic simulation
+of the FT sensor is also available in `scripts/simulate_ft_sensor.py`.
 
-Basic simulation of the Thing kinematics in Python for visualization. Should
-eventually be replaced by a proper Gazebo simulation.
+The main utility is the script `scripts/wrench.py`, which processes wrenches
+from the sensor by filtering and rotating into the world frame. This
+information is then published under the topic `/mm_wrench/info`.
 
-### mm_msgs
 
-Defines custom ROS messages used by other packages in the project.
+### mm_gripper
 
-### mm_vicon
+Very basic tools for working with the gripper.
 
-Contains Vicon estimation code and launch files for the Vicon system. To
-publish the Thing base pose from Vicon, connect to the Vicon wifi
-`DSL_DroneNet_5G` (see the wiki for the password) and run `roslaunch mm_vicon
-vicon.launch`. You should see the topic `/vicon/ThingBase/ThingBase` bring
-published.
+Bring up the gripper using
+```
+roslaunch mm_gripper bringup.launch
+```
+Then command the gripper to open or close using
+```
+rosrun mm_gripper gripper.py <cmd> [delay]
+```
+where `<cmd>` is either `o` for open or `c` for close, and `[delay]` is a an
+optional number of seconds to wait before executing the desired command. For
+example,
+```
+rosrun mm_gripper gripper.py c 5
+```
+will close the gripper in 5 seconds, which allows me to position something to
+be grabbed.
+
 
 ### mm_kinematics
 
 Contains forward kinematics code in both C++ and Python for use by other
 packages.
 
-## Run
-### Simulation
+
+### mm_lidar
+
+Tools for using the Hokuyo laser scanner mounted at the front of the base. The
+laser scanner is automatically started by the software onboard the robot and
+publishes its raw data to `/front/scan`. This package contains scripts for
+processing the detections into actual positions of objects in the world frame,
+primarily for obstacle avoidance.
+
+
+### mm_math_util
+
+Miscellaneous math utilities shared by other packages.
+
+
+### mm_msgs
+
+Defines custom ROS messages used by other packages in the project.
+
+
+### mm_simulation
+
+Basic simulation of the Thing kinematics in Python with a simple matplotlib
+visualization. There is also a Gazebo simulation available
+[here](https://github.com/utiasDSL/dsl__projects__mobile_manipulator_gazebo).
+
+
+### mm_trajectories
+
+Trajectory generation. Generates trajectories to be tracked by the controllers.
+
+
+### mm_vicon
+
+Contains Vicon estimation code and launch files for the Vicon system. To
+publish the mobile base pose from Vicon, connect to the Vicon wifi
+`DSL_DroneNet_5G` (see the wiki for the password) and run `roslaunch mm_vicon
+vicon.launch`.
+
+
+## Simulation
+
+This repository contains a very basic simulation of the robot in
+`mm_simulation`, which is just a wireframe in a 3D matplotlib plot. To use
+this, run:
 ```bash
 > roscore
 > roslaunch mm_simulation simulation.launch
@@ -131,7 +192,22 @@ packages.
 ```
 where `[trajectory]` is replaced the desired trajectory.
 
-### Experiment
+Alternatively, there is a separate
+[respository](https://github.com/utiasDSL/dsl__projects__mobile_manipulator_gazebo)
+containing packages for a Gazebo simulation, which should be entirely
+compatible with the controllers in this package. Assuming that repository has been installed in the workspace, built, and sourced, then instead of
+```
+> roslaunch mm_simulation sim.launch
+```
+one can use
+```
+> roslaunch mm_gazebo simulation.launch
+```
+Everything else should remain the same.
+
+## Experiment
+Steps for experiments on the real robot:
+
 1. Connect to `DSL_DroneNet_5G` network.
 2. Connect to the Thing via Ethernet.
 3. Ensure ROS is configured to use the Thing as master:
