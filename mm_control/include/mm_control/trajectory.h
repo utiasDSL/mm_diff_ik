@@ -15,7 +15,7 @@ class Trajectory {
     if (!initialized()) {
       return false;
     }
-    start_time = time.toSec();
+    start_time = now.toSec();
     is_started = true;
     return true;
   }
@@ -26,7 +26,7 @@ class Trajectory {
       return false;
     }
     // Other trajectories end once their duration is expired
-    return time.toSec() > start_time + duration;
+    return now.toSec() > start_time + duration;
   }
 
   bool initialized() { return is_initialized; }

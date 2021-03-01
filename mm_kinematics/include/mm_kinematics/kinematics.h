@@ -87,6 +87,11 @@ class Kinematics {
         static void calc_joint_input_map_inv(const JointVector& q,
                                              JointMatrix& Binv);
 
+        // Derivative of joint input map w.r.t. the generalized positions q.
+        // Since B is only a function of yaw (q(2)), we only calculate this
+        // matrix.
+        static void calc_joint_input_map_dq(const JointVector& q, JointMatrix& dBdq);
+
         // Manipulability index.
         static double manipulability(const JointVector& q);
 

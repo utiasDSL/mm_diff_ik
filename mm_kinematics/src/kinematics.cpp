@@ -147,5 +147,10 @@ void Kinematics::calc_joint_input_map_inv(const JointVector& q,
     Binv.topLeftCorner<2, 2>() = R_wb.transpose();
 }
 
+void Kinematics::calc_joint_input_map_dq(const JointVector& q, JointMatrix& dBdq) {
+    dBdq = JointMatrix::Identity();
+    dBdq.topLeftCorner<2, 2>() = rotation2d_derivative(q(2));
+}
+
 } // namespace mm
 

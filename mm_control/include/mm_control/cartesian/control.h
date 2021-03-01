@@ -49,8 +49,6 @@ class CartesianController : public MMController {
 };  // class CartesianController
 
 // Calculate the 6D pose error for control.
-void calc_cartesian_control_error(const Pose& Pd,
-                                  const JointVector& q,
-                                  Vector6d& e);
+Vector6d calc_cartesian_control_error(const Pose& Pd, const JointVector& q);
 
 }  // namespace mm

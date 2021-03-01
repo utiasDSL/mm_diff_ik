@@ -165,8 +165,7 @@ void DiffIKController::calc_primary_objective(const ros::Time& now,
     Kinematics::calc_joint_input_map(q, B);
 
     // Calculate pose error.
-    Vector6d P_err;
-    calc_cartesian_control_error(Xd.pose, q, P_err);
+    Vector6d P_err = calc_cartesian_control_error(Xd.pose, q);
 
     // Calculate Jacobian.
     JacobianMatrix J;

@@ -121,9 +121,7 @@ void CartesianController::publish_state(const ros::Time& now) {
   state_pub.publish(msg);
 }
 
-void calc_cartesian_control_error(const Pose& Pd,
-                                  const JointVector& q,
-                                  Vector6d& e) {
+Vector6d calc_cartesian_control_error(const Pose& Pd, const JointVector& q) {
   // Current EE pose.
   Eigen::Affine3d w_T_tool;
   Kinematics::calc_w_T_tool(q, w_T_tool);
@@ -137,7 +135,9 @@ void calc_cartesian_control_error(const Pose& Pd,
   Eigen::Vector3d p_err = Pd.position - w_T_tool.translation();
   Eigen::Vector3d rot_err(Q_err.x(), Q_err.y(), Q_err.z());
 
+  Vector6d e;
   e << p_err, rot_err;
+  return e;
 }
 
 }  // namespace mm
