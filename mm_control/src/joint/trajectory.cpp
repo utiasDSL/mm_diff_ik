@@ -61,7 +61,7 @@ bool JointTrajectory::sample(const ros::Time& now,
   }
 
   // Finite, active trajectory: update current segment
-  while (t > start_time + segments[index].time + segments[index].duration) {
+  while (t > start_time + segments[index].start_time + segments[index].duration) {
     index++;
   }
   return segments[index].sample(t - start_time, point);
@@ -76,7 +76,7 @@ bool JointTrajectory::sample(const ros::Time& now,
 
   // Update the current index based on the provided current time.
   double t = now.toSec();
-  while (t > start_time + segments[index].time + segments[index].duration) {
+  while (t > start_time + segments[index].start_time + segments[index].duration) {
     index++;
   }
 
@@ -95,7 +95,7 @@ bool JointTrajectory::sample(const ros::Time& now,
       continue;
     }
 
-    while (t > start_time + segments[i].time + segments[i].duration) {
+    while (t > start_time + segments[i].start_time + segments[i].duration) {
       i++;
     }
 

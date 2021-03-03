@@ -36,12 +36,12 @@ def waypoint_msg(t, p, v, a, q, w, alpha):
     waypoint = CartesianTrajectoryPoint()
     waypoint.time = rospy.Duration(t)
 
-    waypoint.state.pose = pose_msg(p, q)
+    waypoint.pose = pose_msg(p, q)
 
-    waypoint.state.twist.linear = vec3_msg(v)
-    waypoint.state.twist.angular = vec3_msg(w)
+    waypoint.twist.linear = vec3_msg(v)
+    waypoint.twist.angular = vec3_msg(w)
 
-    waypoint.state.acceleration.linear = vec3_msg(a)
-    waypoint.state.acceleration.angular = vec3_msg(alpha)
+    waypoint.acceleration.linear = vec3_msg(a)
+    waypoint.acceleration.angular = vec3_msg(alpha)
 
     return waypoint

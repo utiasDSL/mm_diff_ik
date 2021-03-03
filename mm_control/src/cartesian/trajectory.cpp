@@ -68,7 +68,7 @@ bool CartesianTrajectory::sample(const ros::Time& now,
   }
 
   // Finite, active trajectory: update current segment
-  while (t > start_time + segments[index].time + segments[index].duration) {
+  while (t > start_time + segments[index].start_time + segments[index].duration) {
     index++;
   }
   point.time = t;
@@ -85,7 +85,7 @@ bool CartesianTrajectory::sample(
 
   // Update the current index based on the provided current time.
   double t = now.toSec();
-  while (t > start_time + segments[index].time + segments[index].duration) {
+  while (t > start_time + segments[index].start_time + segments[index].duration) {
     index++;
   }
 
@@ -104,7 +104,7 @@ bool CartesianTrajectory::sample(
       continue;
     }
 
-    while (t > start_time + segments[i].time + segments[i].duration) {
+    while (t > start_time + segments[i].start_time + segments[i].duration) {
       i++;
     }
 

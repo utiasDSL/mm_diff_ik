@@ -19,7 +19,7 @@ class CartesianSplineSegment {
   bool sample(double time, CartesianTrajectoryPoint& point);
 
   // time is relative to the start of the trajectory
-  double time;
+  double start_time;
   double duration;
 
  private:

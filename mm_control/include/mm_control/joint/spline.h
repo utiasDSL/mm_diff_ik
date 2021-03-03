@@ -16,10 +16,10 @@ class JointSplineSegment {
 
   // Sample the spline. The given time is relative to the start of the
   // trajectory.
-  bool sample(double time, JointTrajectoryPoint& state);
+  bool sample(double time, JointTrajectoryPoint& point);
 
   // time is relative to the start of the trajectory
-  double time;
+  double start_time;
   double duration;
 
  private:

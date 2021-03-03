@@ -7,15 +7,15 @@ namespace mm {
 
 JointSplineSegment::JointSplineSegment(const JointTrajectoryPoint& a,
                                        const JointTrajectoryPoint& b) {
-  time = a.time;
+  start_time = a.time;
   duration = b.time - a.time;
 
-  interp.interpolate(a.time, b.time, a.positions, b.positions, a.velocities,
+  interp.interpolate(duration, a.positions, b.positions, a.velocities,
                      b.velocities, a.accelerations, b.accelerations);
 }
 
 bool JointSplineSegment::sample(double time, JointTrajectoryPoint& point) {
-  interp.sample(time, point.positions, point.velocities, point.accelerations);
+  interp.sample(time - start_time, point.positions, point.velocities, point.accelerations);
   return true;
 }
 

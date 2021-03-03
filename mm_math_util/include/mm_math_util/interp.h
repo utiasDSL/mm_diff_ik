@@ -97,21 +97,17 @@ class QuinticInterp {
 
   QuinticInterp() {
     C = Matrix6Nd::Zero();
-    t1 = 0;
-    t2 = 0;
+    dt = 0;
   }
 
-  void interpolate(double t1,
-                   double t2,
+  void interpolate(double dt,
                    const VectorNd& x1,
                    const VectorNd& x2,
                    const VectorNd& dx1,
                    const VectorNd& dx2,
                    const VectorNd& ddx1,
                    const VectorNd& ddx2) {
-    this->t1 = t1;
-    this->t2 = t2;
-    double dt = t2 - t1;
+    this->dt = dt;
 
     double dt2 = dt * dt;
     double dt3 = dt2 * dt;
@@ -135,17 +131,15 @@ class QuinticInterp {
 
   // Sample the interpolated trajectory at time t.
   bool sample(const double t, VectorNd& x, VectorNd& dx, VectorNd& ddx) {
-    double ta = t - t1;
-
-    double ta2 = ta * ta;
-    double ta3 = ta2 * ta;
-    double ta4 = ta3 * ta;
-    double ta5 = ta4 * ta;
+    double t2 = t * t;
+    double t3 = t2 * t;
+    double t4 = t3 * t;
+    double t5 = t4 * t;
 
     Vector6d T, dT, ddT;
-    T << ta5, ta4, ta3, ta2, ta, 1;
-    dT << 5 * ta4, 4 * ta3, 3 * ta2, 2 * ta, 1, 0;
-    ddT << 20 * ta3, 12 * ta2, 6 * ta, 2, 0, 0;
+    T << t5, t4, t3, t2, t, 1;
+    dT << 5 * t4, 4 * t3, 3 * t2, 2 * t, 1, 0;
+    ddT << 20 * t3, 12 * t2, 6 * t, 2, 0, 0;
 
     x = C.transpose() * T;
     dx = C.transpose() * dT;
@@ -154,50 +148,40 @@ class QuinticInterp {
     return inrange(t);
   }
 
-  // Last point in the range.
-  // void last(VectorNd& x, VectorNd& dx, VectorNd& ddx) {
-  //   x = x2;
-  //   dx = dx2;
-  //   ddx = ddx2;
-  // }
-
   // True if t falls within the interpolation range, false otherwise
-  bool inrange(const double t) { return t >= t1 && t <= t2; }
+  bool inrange(const double t) { return t >= 0 && t <= dt; }
 
  private:
   // Coefficients of interpolated 3rd-order polynomials.
   Matrix6Nd C;
 
-  // Start and end times
-  double t1, t2;
-};  // class CubicInterp
+  // Duration
+  double dt;
+};  // class QuinticInterp
 
 // Linear spherical interpolation between quaternions.
 class QuaternionInterp {
  public:
   QuaternionInterp() {}
 
-  void interpolate(double t1,
-                   double t2,
+  void interpolate(double dt,
                    const Eigen::Quaterniond& q1,
                    const Eigen::Quaterniond& q2) {
-    this->t1 = t1;
-    this->t2 = t2;
-
+    this->dt = dt;
     this->q1 = q1;
     this->q2 = q2;
   }
 
   bool sample(const double t, Eigen::Quaterniond& q) {
-    double a = (t - t1) / (t2 - t1);
-    q = q1.slerp(a, q2);
-    return t >= t1 && t <= t2;
+    double s = t / dt;
+    q = q1.slerp(s, q2);
+    return t >= 0 && t <= dt;
   }
 
  private:
   Eigen::Quaterniond q1, q2;
 
-  double t1, t2;
+  double dt;
 
 };  // class QuaternionInterp
 

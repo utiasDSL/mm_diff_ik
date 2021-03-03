@@ -90,9 +90,9 @@ class RobotPlotter(object):
         self.obstacles = msg.obstacles
 
     def _traj_cb(self, msg):
-        self.x_traj = [point.state.pose.position.x for point in msg.points]
-        self.y_traj = [point.state.pose.position.y for point in msg.points]
-        self.z_traj = [point.state.pose.position.z for point in msg.points]
+        self.x_traj = [point.pose.position.x for point in msg.points]
+        self.y_traj = [point.pose.position.y for point in msg.points]
+        self.z_traj = [point.pose.position.z for point in msg.points]
         self.traj_changed = True
 
     def _calc_arm_positions(self):
