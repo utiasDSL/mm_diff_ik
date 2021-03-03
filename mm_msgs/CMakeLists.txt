@@ -20,10 +20,9 @@ add_message_files(
   WrenchInfo.msg
   Obstacle.msg
   Obstacles.msg
-  CartesianState.msg
-  CartesianControllerState.msg
   CartesianTrajectory.msg
   CartesianTrajectoryPoint.msg
+  CartesianControllerInfo.msg
   JointControllerInfo.msg
 
   ForceControlState.msg

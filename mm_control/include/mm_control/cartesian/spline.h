@@ -1,11 +1,10 @@
 #pragma once
 
-#include <ros/ros.h>
 #include <Eigen/Eigen>
 
-#include <mm_control/cartesian/types.h>
-#include <mm_kinematics/spatial.h>
 #include <mm_math_util/interp.h>
+
+#include <mm_control/cartesian/point.h>
 
 namespace mm {
 
@@ -17,7 +16,7 @@ class CartesianSplineSegment {
 
   // Sample the spline. The given time is relative to the start of the
   // trajectory.
-  bool sample(double time, CartesianTrajectoryState& state);
+  bool sample(double time, CartesianTrajectoryPoint& point);
 
   // time is relative to the start of the trajectory
   double time;

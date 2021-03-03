@@ -8,6 +8,8 @@
 #include <mm_math_util/rotation.h>
 #include <mm_optimization/qpoases.h>
 
+#include <mm_control/cartesian/point.h>
+
 namespace mm {
 
 bool MPController::init(ros::NodeHandle& nh, const double hz) {
@@ -73,7 +75,7 @@ int MPController::update(const ros::Time& now) {
   for (int k = 1; k <= NUM_HORIZON; ++k) {
     sample_times.push_back(now + ros::Duration(k * LOOKAHEAD_TIMESTEP));
   }
-  std::vector<CartesianTrajectoryState> Xds;
+  std::vector<CartesianTrajectoryPoint> Xds;
   trajectory.sample(now, sample_times, Xds);
 
   int status = 0;

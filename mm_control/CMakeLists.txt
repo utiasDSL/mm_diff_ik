@@ -45,13 +45,14 @@ include_directories(
 # Library
 add_library(${PROJECT_NAME}
   src/control.cpp
-  src/cartesian/control.cpp
-  src/cartesian/trajectory.cpp
+  src/cartesian/point.cpp
   src/cartesian/spline.cpp
-  src/joint/control.cpp
-  src/joint/trajectory.cpp
-  src/joint/spline.cpp
+  src/cartesian/trajectory.cpp
+  src/cartesian/control.cpp
   src/joint/point.cpp
+  src/joint/spline.cpp
+  src/joint/trajectory.cpp
+  src/joint/control.cpp
   src/joint/pd.cpp
 )
 target_link_libraries(${PROJECT_NAME}

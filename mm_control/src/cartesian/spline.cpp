@@ -1,7 +1,6 @@
 #include "mm_control/cartesian/spline.h"
 
-#include <ros/ros.h>
-#include <Eigen/Eigen>
+#include <mm_control/cartesian/point.h>
 
 namespace mm {
 
@@ -12,26 +11,28 @@ CartesianSplineSegment::CartesianSplineSegment(
 
   // TODO I would prefer these APIs to just take a duration
   // interpolation translation
-  pos_interp.interpolate(a.time, b.time, a.state.pose.position,
-                         b.state.pose.position, a.state.twist.linear,
-                         b.state.twist.linear, a.state.acceleration.linear,
-                         b.state.acceleration.linear);
+  pos_interp.interpolate(a.time, b.time, a.pose.position, b.pose.position,
+                         a.twist.linear, b.twist.linear, a.acceleration.linear,
+                         b.acceleration.linear);
 
   // interpolate orientation
-  quat_interp.interpolate(a.time, b.time, a.state.pose.orientation,
-                          b.state.pose.orientation);
-  angular_vel = a.state.twist.angular;
-  angular_acc = a.state.acceleration.angular;
+  quat_interp.interpolate(a.time, b.time, a.pose.orientation,
+                          b.pose.orientation);
+  angular_vel = a.twist.angular;
+  angular_acc = a.acceleration.angular;
 }
 
 bool CartesianSplineSegment::sample(double time,
-                                    CartesianTrajectoryState& state) {
-  pos_interp.sample(time, state.pose.position, state.twist.linear,
-                    state.acceleration.linear);
+                                    CartesianTrajectoryPoint& point) {
+  pos_interp.sample(time, point.pose.position, point.twist.linear,
+                    point.acceleration.linear);
 
-  quat_interp.sample(time, state.pose.orientation);
-  state.twist.angular = angular_vel;
-  state.acceleration.angular = angular_acc;
+  quat_interp.sample(time, point.pose.orientation);
+  point.twist.angular = angular_vel;
+  point.acceleration.angular = angular_acc;
+
+  point.time = time;
+
   return true;
 }
 

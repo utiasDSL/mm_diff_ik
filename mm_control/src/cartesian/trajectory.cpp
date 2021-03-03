@@ -3,10 +3,12 @@
 #include <ros/ros.h>
 
 #include <mm_kinematics/spatial.h>
-#include <mm_msgs/CartesianState.h>
 #include <mm_msgs/CartesianTrajectory.h>
 #include <mm_msgs/CartesianTrajectoryPoint.h>
 #include <mm_msgs/conversions.h>
+
+#include <mm_control/cartesian/point.h>
+#include <mm_control/cartesian/spline.h>
 
 namespace mm {
 
@@ -14,10 +16,7 @@ bool CartesianTrajectory::init(const mm_msgs::CartesianTrajectory& msg) {
   std::vector<CartesianTrajectoryPoint> waypoints;
 
   for (auto point : msg.points) {
-    CartesianTrajectoryPoint waypoint;
-    waypoint.time = point.time.toSec();
-    waypoint.state = cartesian_state_to_eigen(point.state);
-    waypoints.push_back(waypoint);
+    waypoints.push_back(CartesianTrajectoryPoint(point));
   }
 
   return init(waypoints);
@@ -30,10 +29,10 @@ bool CartesianTrajectory::init(
     segments.push_back(segment);
   }
 
-  first = points[0].state;
-  last = points.back().state;
+  first = points[0];
+  last = points.back();
 
-  duration = points.back().time - points[0].time;
+  duration = last.time - first.time;
   is_finite = true;
   is_initialized = true;
   return true;
@@ -51,11 +50,11 @@ bool CartesianTrajectory::init(const Pose& pose) {
 }
 
 bool CartesianTrajectory::sample(const ros::Time& now,
-                                 CartesianTrajectoryState& state) {
+                                 CartesianTrajectoryPoint& point) {
   if (!started() || finished(now)) {
     // TODO should this be here? It is undefined behaviour, but am I relying on
     // it?
-    state = last;
+    point = last;
     return false;
   }
 
@@ -64,7 +63,7 @@ bool CartesianTrajectory::sample(const ros::Time& now,
   // If the trajectory is past its end time but infinite, return the last
   // point.
   if (!is_finite && t >= start_time + duration) {
-    state = last;
+    point = last;
     return true;
   }
 
@@ -72,13 +71,14 @@ bool CartesianTrajectory::sample(const ros::Time& now,
   while (t > start_time + segments[index].time + segments[index].duration) {
     index++;
   }
-  return segments[index].sample(t - start_time, state);
+  point.time = t;
+  return segments[index].sample(t - start_time, point);
 }
 
 bool CartesianTrajectory::sample(
     const ros::Time& now,
     const std::vector<ros::Time>& times,
-    std::vector<CartesianTrajectoryState>& states) {
+    std::vector<CartesianTrajectoryPoint>& points) {
   if (!started() || finished(now)) {
     return false;
   }
@@ -94,13 +94,13 @@ bool CartesianTrajectory::sample(
   size_t i = index;
   for (auto time : times) {
     if (finished(time)) {
-      states.push_back(last);
+      points.push_back(last);
       continue;
     }
 
     t = time.toSec();
     if (!is_finite && t >= start_time + duration) {
-      states.push_back(last);
+      points.push_back(last);
       continue;
     }
 
@@ -108,9 +108,9 @@ bool CartesianTrajectory::sample(
       i++;
     }
 
-    CartesianTrajectoryState state;
-    segments[i].sample(t - start_time, state);
-    states.push_back(state);
+    CartesianTrajectoryPoint point;
+    segments[i].sample(t - start_time, point);
+    points.push_back(point);
   }
   return true;
 }

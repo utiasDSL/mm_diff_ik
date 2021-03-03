@@ -3,12 +3,14 @@
 #include <ros/ros.h>
 #include <Eigen/Eigen>
 
-#include <mm_kinematics/spatial.h>
-#include <mm_kinematics/conversion.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <mm_msgs/CartesianControllerState.h>
+
+#include <mm_kinematics/conversion.h>
+#include <mm_kinematics/spatial.h>
+#include <mm_msgs/CartesianControllerInfo.h>
 #include <mm_msgs/CartesianTrajectory.h>
 
+#include <mm_control/cartesian/point.h>
 #include <mm_control/cartesian/trajectory.h>
 #include <mm_control/control.h>
 
@@ -18,7 +20,7 @@ bool CartesianController::init(ros::NodeHandle& nh, const double hz) {
   mm::MMController::init(nh, hz);
 
   state_pub =
-      nh.advertise<mm_msgs::CartesianControllerState>("/mm_control_state", 1);
+      nh.advertise<mm_msgs::CartesianControllerInfo>("/mm_control_state", 1);
 
   pose_traj_sub = nh.subscribe("/trajectory/poses", 1,
                                &CartesianController::pose_traj_cb, this);
@@ -96,19 +98,19 @@ void CartesianController::publish_state(const ros::Time& now) {
   Kinematics::calc_w_T_tool(q, w_T_tool);
 
   // Sample desired trajectory.
-  CartesianTrajectoryState X_des;
+  CartesianTrajectoryPoint X_des;
   trajectory.sample(now, X_des);
 
   Pose P_des = X_des.pose;
   Pose P_act(w_T_tool);
   Pose P_err = P_des.error(P_act);
 
-  mm_msgs::CartesianControllerState msg;
+  mm_msgs::CartesianControllerInfo msg;
 
   // Cartesian space
   pose_msg_from_eigen(P_act, msg.actual.pose);
   pose_msg_from_eigen(P_err, msg.error.pose);
-  cartesian_state_from_eigen(X_des, msg.desired);
+  X_des.message(msg.desired);
 
   // Joint space
   msg.joints.position = std::vector<double>(q.data(), q.data() + q.size());

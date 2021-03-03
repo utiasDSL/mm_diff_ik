@@ -1,9 +1,9 @@
 Header header
 
 # End effector pose
-mm_msgs/CartesianState actual
-mm_msgs/CartesianState desired
-mm_msgs/CartesianState error
+mm_msgs/CartesianTrajectoryPoint actual
+mm_msgs/CartesianTrajectoryPoint desired
+mm_msgs/CartesianTrajectoryPoint error
 
 # Joint position, actual velocity, and commanded velocity
 sensor_msgs/JointState joints

@@ -12,6 +12,8 @@
 #include <mm_kinematics/spatial.h>
 #include <mm_kinematics/kinematics.h>
 #include <mm_math_util/interp.h>
+
+#include <mm_control/cartesian/point.h>
 #include <mm_motion_control/pose_control/obstacle.h>
 
 
@@ -153,7 +155,7 @@ void DiffIKController::calc_primary_objective(const ros::Time& now,
                                               JointMatrix& H,
                                               JointVector& g) {
     // Sample the trajectory.
-    CartesianTrajectoryState Xd;
+    CartesianTrajectoryPoint Xd;
     trajectory.sample(now, Xd);
 
     Vector6d Vd;
