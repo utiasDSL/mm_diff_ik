@@ -1,6 +1,8 @@
 #!/usr/bin/env python2
 """Send the robot to a home configuration.
 
+The joint control node must be running.
+
 Configuation is specified by name from the list in config/home.yaml
 """
 import os
@@ -10,53 +12,29 @@ import rospkg
 import numpy as np
 import yaml
 
-from mm_kinematics import KinematicModel
-from mm_math_util import bound_array
-from mm_control.control import MMController
+from mm_msgs.msg import JointControllerInfo
+from trajectory_msgs.msg import JointTrajectoryPoint
 
 HZ = 125
-
-# Proportional gain matrix.
-K = 0.5 * np.eye(9)
-
-# Maximum joint speed.
-MAX_U = 0.2
 
 CONFIG_FILE = os.path.join("config", "home.yaml")
 
 
-class JointController(MMController):
-    """Simple joint-space controller.
-
-    Takes a desired joint configuration and moves toward it using proportional
-    control.
-    """
+class HomeMonitor(object):
     def __init__(self, qd):
-        self.qd = qd
-        self.model = KinematicModel()
-        super(JointController, self).__init__()
+        self.error = np.ones(9)
+        self.info_sub = rospy.Subscriber(
+            "/mm/control/joint/info", JointControllerInfo, self.info_cb
+        )
+
+    def info_cb(self, msg):
+        self.error = np.array(msg.error.positions)
 
     def loop(self, hz):
-        """Control loop."""
         rate = rospy.Rate(hz)
-
-        # wait until a joint message is received
-        while not rospy.is_shutdown() and not self.joint_state_rec:
-            rate.sleep()
-
         while not rospy.is_shutdown():
-            now = rospy.Time.now()
-
-            e = self.qd - self.q
-            if (np.abs(e) < 1e-3).all():
+            if (np.abs(self.error) < 1e-3).all():
                 break
-
-            Binv = self.model.calc_joint_input_map_inv(self.q)
-            u = Binv.dot(K).dot(e)
-            self.u = bound_array(u, -MAX_U, MAX_U)
-
-            self.publish_joint_speeds(now)
-
             rate.sleep()
 
 
@@ -69,7 +47,11 @@ def main():
     try:
         config_name = sys.argv[1]
     except IndexError:
-        print("Name of desired home configuration is required. Options can be found in {}".format(config_path))
+        print(
+            "Name of desired home configuration is required. Options can be found in {}".format(
+                config_path
+            )
+        )
         return
 
     with open(config_path) as f:
@@ -78,15 +60,24 @@ def main():
     qdb = np.array(config["base"])
     qda = np.array(config["arm"][config_name])
 
-    assert(qdb.shape == (3,))
-    assert(qda.shape == (6,))
+    # make sure configs are the right shape
+    assert qdb.shape == (3,)
+    assert qda.shape == (6,)
 
     qd = np.concatenate((qdb, qda))
 
     rospy.loginfo("Going home...")
 
-    controller = JointController(qd)
-    controller.loop(HZ)
+    point_pub = rospy.Publisher(
+        "/mm/control/joint/point", JointTrajectoryPoint, queue_size=1
+    )
+    rospy.sleep(1.0)
+    msg = JointTrajectoryPoint()
+    msg.positions = list(qd)
+    point_pub.publish(msg)
+
+    monitor = HomeMonitor(qd)
+    monitor.loop(HZ)
 
     rospy.loginfo("Done")
 

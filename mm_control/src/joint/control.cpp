@@ -86,15 +86,23 @@ void JointController::point_cb(
 
 void JointController::publish_state(const ros::Time& now) {
   mm_msgs::JointControllerInfo msg;
+
+  // Actual
   msg.actual.positions = std::vector<double>(q.data(), q.data() + q.size());
   msg.actual.velocities = std::vector<double>(dq.data(), dq.data() + dq.size());
 
+  // Desired
   JointTrajectoryPoint X_des;
   trajectory.sample(now, X_des);
   X_des.message(msg.desired);
 
-  // TODO error
+  // Error
+  JointVector e = X_des.positions - q;
+  JointVector de = X_des.velocities - dq;
+  msg.error.positions = std::vector<double>(e.data(), e.data() + e.size());
+  msg.error.velocities = std::vector<double>(de.data(), de.data() + de.size());
 
+  // Command
   msg.command = std::vector<double>(u.data(), u.data() + u.size());
 
   msg.header.frame_id = "world";
