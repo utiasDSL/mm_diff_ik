@@ -24,10 +24,10 @@ class JointController : public MMController {
  protected:
   /** VARIABLES **/
 
-  ros::Publisher state_pub;
+  ros::Publisher info_pub;
 
-  ros::Subscriber joint_trajectory_sub;
-  ros::Subscriber joint_setpoint_sub;
+  ros::Subscriber trajectory_sub;
+  ros::Subscriber point_sub;
 
   // Trajectory interpolator.
   JointTrajectory trajectory;
@@ -35,10 +35,10 @@ class JointController : public MMController {
   /** FUNCTIONS **/
 
   // Receive a trajectory of waypoints to follow.
-  void joint_trajectory_cb(const trajectory_msgs::JointTrajectory& msg);
+  void trajectory_cb(const trajectory_msgs::JointTrajectory& msg);
 
   // Receive a desired set point.
-  void joint_setpoint_cb(const trajectory_msgs::JointTrajectoryPoint& msg);
+  void point_cb(const trajectory_msgs::JointTrajectoryPoint& msg);
 
   void publish_state(const ros::Time& now);
 };  // class JointController

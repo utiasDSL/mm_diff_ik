@@ -13,6 +13,7 @@
   <depend>mm_kinematics</depend>
   <depend>mm_msgs</depend>
   <depend>mm_math_util</depend>
+  <depend>trajectory_msgs</depend>
 
   <buildtool_depend>catkin</buildtool_depend>
 </package>

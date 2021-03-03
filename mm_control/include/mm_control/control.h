@@ -17,7 +17,7 @@ class MMController {
   ~MMController();
 
   // Initialize the node: setup subscribers and publishers, etc.
-  bool init(ros::NodeHandle& nh, const double hz);
+  virtual bool init(ros::NodeHandle& nh, const double hz);
 
   // Enter control loop.
   virtual void loop() = 0;

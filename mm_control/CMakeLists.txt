@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   mm_kinematics
   mm_msgs
   mm_math_util
+  trajectory_msgs
 )
 
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
@@ -33,7 +34,7 @@ catkin_python_setup()
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS mm_kinematics mm_msgs mm_math_util
+  CATKIN_DEPENDS mm_kinematics mm_msgs mm_math_util trajectory_msgs
 )
 
 # Headers
@@ -50,6 +51,11 @@ add_library(${PROJECT_NAME}
   src/cartesian/control.cpp
   src/cartesian/trajectory.cpp
   src/cartesian/spline.cpp
+  src/joint/control.cpp
+  src/joint/trajectory.cpp
+  src/joint/spline.cpp
+  src/joint/point.cpp
+  src/joint/pid.cpp
 )
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
@@ -57,11 +63,11 @@ target_link_libraries(${PROJECT_NAME}
 
 # Executables
 
-## home
-add_executable(home
-  src/nodes/home.cpp
+## joint control
+add_executable(joint_control
+  src/nodes/joint_control.cpp
 )
-target_link_libraries(home
+target_link_libraries(joint_control
   ${catkin_LIBRARIES}
   ${PROJECT_NAME}
 )

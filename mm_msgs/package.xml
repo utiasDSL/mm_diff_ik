@@ -6,7 +6,9 @@
   <maintainer email="adam.heins@robotics.utias.utoronto.ca">Adam Heins</maintainer>
   <license>TODO</license>
 
+  <depend>sensor_msgs</depend>
   <depend>geometry_msgs</depend>
+  <depend>trajectory_msgs</depend>
   <depend>message_generation</depend>
 
   <exec_depend>rospy</exec_depend>
