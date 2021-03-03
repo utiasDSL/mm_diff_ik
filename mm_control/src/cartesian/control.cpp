@@ -96,7 +96,7 @@ void CartesianController::publish_state(const ros::Time& now) {
   Kinematics::calc_w_T_tool(q, w_T_tool);
 
   // Sample desired trajectory.
-  CartesianPosVelAcc X_des;
+  CartesianTrajectoryState X_des;
   trajectory.sample(now, X_des);
 
   Pose P_des = X_des.pose;

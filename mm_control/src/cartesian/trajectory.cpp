@@ -51,7 +51,7 @@ bool CartesianTrajectory::init(const Pose& pose) {
 }
 
 bool CartesianTrajectory::sample(const ros::Time& now,
-                                 CartesianPosVelAcc& state) {
+                                 CartesianTrajectoryState& state) {
   if (!started() || finished(now)) {
     // TODO should this be here? It is undefined behaviour, but am I relying on
     // it?
@@ -75,9 +75,10 @@ bool CartesianTrajectory::sample(const ros::Time& now,
   return segments[index].sample(t - start_time, state);
 }
 
-bool CartesianTrajectory::sample(const ros::Time& now,
-                                 const std::vector<ros::Time>& times,
-                                 std::vector<CartesianPosVelAcc>& states) {
+bool CartesianTrajectory::sample(
+    const ros::Time& now,
+    const std::vector<ros::Time>& times,
+    std::vector<CartesianTrajectoryState>& states) {
   if (!started() || finished(now)) {
     return false;
   }
@@ -107,7 +108,7 @@ bool CartesianTrajectory::sample(const ros::Time& now,
       i++;
     }
 
-    CartesianPosVelAcc state;
+    CartesianTrajectoryState state;
     segments[i].sample(t - start_time, state);
     states.push_back(state);
   }

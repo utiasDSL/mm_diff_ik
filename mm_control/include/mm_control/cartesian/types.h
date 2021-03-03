@@ -10,7 +10,7 @@
 
 namespace mm {
 
-struct CartesianPosVelAcc {
+struct CartesianTrajectoryState {
   Pose pose;
   Twist twist;
   Twist acceleration;
@@ -18,19 +18,19 @@ struct CartesianPosVelAcc {
 
 struct CartesianTrajectoryPoint {
   double time;
-  CartesianPosVelAcc state;
+  CartesianTrajectoryState state;
 };
 
-inline CartesianPosVelAcc cartesian_state_to_eigen(
+inline CartesianTrajectoryState cartesian_state_to_eigen(
     const mm_msgs::CartesianState& msg) {
-  CartesianPosVelAcc state;
+  CartesianTrajectoryState state;
   state.pose = pose_msg_to_eigen(msg.pose);
   state.twist = twist_msg_to_eigen(msg.twist);
   state.acceleration = twist_msg_to_eigen(msg.acceleration);
   return state;
 }
 
-inline void cartesian_state_from_eigen(const CartesianPosVelAcc& state,
+inline void cartesian_state_from_eigen(const CartesianTrajectoryState& state,
                                        mm_msgs::CartesianState& msg) {
   pose_msg_from_eigen(state.pose, msg.pose);
   twist_msg_from_eigen(state.twist, msg.twist);

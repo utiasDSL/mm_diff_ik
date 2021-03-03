@@ -24,7 +24,8 @@ CartesianSplineSegment::CartesianSplineSegment(
   angular_acc = a.state.acceleration.angular;
 }
 
-bool CartesianSplineSegment::sample(double time, CartesianPosVelAcc& state) {
+bool CartesianSplineSegment::sample(double time,
+                                    CartesianTrajectoryState& state) {
   pos_interp.sample(time, state.pose.position, state.twist.linear,
                     state.acceleration.linear);
 

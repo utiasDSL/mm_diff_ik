@@ -29,6 +29,12 @@ class MMController {
   // stopped.
   bool did_become_unsafe;
 
+  // True if we currently have a trajectory to follow, false otherwise.
+  bool traj_active;
+
+  // True if a joint state message has been received, false until then.
+  bool joint_state_rec;
+
   // Controller timestep and rate. dt = 1 / hz
   double dt, hz;
 
@@ -42,9 +48,6 @@ class MMController {
   JointVector q;
   JointVector dq;
   JointVector u;
-
-  // True if a joint state message has been received.
-  bool joint_state_rec;
 
   // Time when the last joint state message was received.
   double last_joint_state_time;

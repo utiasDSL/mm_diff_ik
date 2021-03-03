@@ -153,7 +153,7 @@ void DiffIKController::calc_primary_objective(const ros::Time& now,
                                               JointMatrix& H,
                                               JointVector& g) {
     // Sample the trajectory.
-    CartesianPosVelAcc Xd;
+    CartesianTrajectoryState Xd;
     trajectory.sample(now, Xd);
 
     Vector6d Vd;

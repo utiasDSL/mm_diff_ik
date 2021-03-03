@@ -33,9 +33,6 @@ class CartesianController : public MMController {
   // Trajectory interpolator.
   CartesianTrajectory trajectory;
 
-  // True if we currently have a trajectory to follow, false otherwise.
-  bool traj_active;
-
   /** FUNCTIONS **/
 
   // Receive a trajectory of waypoints to follow.

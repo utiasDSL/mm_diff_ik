@@ -17,7 +17,7 @@ class CartesianSplineSegment {
 
   // Sample the spline. The given time is relative to the start of the
   // trajectory.
-  bool sample(double time, CartesianPosVelAcc& state);
+  bool sample(double time, CartesianTrajectoryState& state);
 
   // time is relative to the start of the trajectory
   double time;

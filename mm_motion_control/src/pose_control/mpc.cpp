@@ -73,7 +73,7 @@ int MPController::update(const ros::Time& now) {
   for (int k = 1; k <= NUM_HORIZON; ++k) {
     sample_times.push_back(now + ros::Duration(k * LOOKAHEAD_TIMESTEP));
   }
-  std::vector<CartesianPosVelAcc> Xds;
+  std::vector<CartesianTrajectoryState> Xds;
   trajectory.sample(now, sample_times, Xds);
 
   int status = 0;
