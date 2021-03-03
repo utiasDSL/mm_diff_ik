@@ -9,21 +9,20 @@
 
 namespace mm {
 
-class PIDJointController : public JointController {
+class PDJointController : public JointController {
  public:
-  PIDJointController() {}
+  PDJointController() {}
 
   bool init(ros::NodeHandle& nh,
             const double hz,
-            const JointMatrix& Kp,
-            const JointMatrix& Ki);
+            const JointMatrix& Kp);
 
   int update(const ros::Time& now);
 
  protected:
-  // Controller gains
-  JointMatrix Kp, Ki;
+  // Proportional gain
+  JointMatrix Kp;
 
-};  // class PIDJointController
+};  // class PDJointController
 
 }  // namespace mm

@@ -52,7 +52,7 @@ add_library(${PROJECT_NAME}
   src/joint/trajectory.cpp
   src/joint/spline.cpp
   src/joint/point.cpp
-  src/joint/pid.cpp
+  src/joint/pd.cpp
 )
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}

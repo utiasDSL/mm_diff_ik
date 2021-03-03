@@ -1,4 +1,4 @@
-#include "mm_control/joint/pid.h"
+#include "mm_control/joint/pd.h"
 
 #include <ros/ros.h>
 #include <Eigen/Eigen>
@@ -13,16 +13,14 @@ namespace mm {
 // Maximum joint speed.
 const static double MAX_U = 0.2;
 
-bool PIDJointController::init(ros::NodeHandle& nh,
+bool PDJointController::init(ros::NodeHandle& nh,
                               const double hz,
-                              const JointMatrix& Kp,
-                              const JointMatrix& Ki) {
+                              const JointMatrix& Kp) {
   mm::JointController::init(nh, hz);
   this->Kp = Kp;
-  this->Ki = Ki;
 }
 
-int PIDJointController::update(const ros::Time& now) {
+int PDJointController::update(const ros::Time& now) {
   mm::JointTrajectoryPoint Xd;
   trajectory.sample(now, Xd);
 

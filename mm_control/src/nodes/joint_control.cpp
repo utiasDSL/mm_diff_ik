@@ -2,7 +2,7 @@
 
 #include <mm_kinematics/kinematics.h>
 
-#include <mm_control/joint/pid.h>
+#include <mm_control/joint/pd.h>
 
 static const double HZ = 125;
 
@@ -15,8 +15,8 @@ int main(int argc, char** argv) {
 
   ROS_INFO_STREAM("Joint controller started.");
 
-  mm::PIDJointController controller;
-  controller.init(nh, HZ, Kp, mm::JointMatrix::Zero());
+  mm::PDJointController controller;
+  controller.init(nh, HZ, Kp);
   controller.loop();
 
   return 0;
