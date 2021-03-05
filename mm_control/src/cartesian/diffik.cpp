@@ -1,4 +1,4 @@
-#include "mm_motion_control/pose_control/diffik.h"
+#include "mm_control/cartesian/diffik.h"
 
 #include <ros/ros.h>
 #include <Eigen/Eigen>
@@ -14,7 +14,7 @@
 #include <mm_optimization/qpoases.h>
 
 #include <mm_control/cartesian/point.h>
-#include <mm_motion_control/pose_control/obstacle.h>
+#include <mm_control/cartesian/obstacle.h>
 
 namespace mm {
 

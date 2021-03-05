@@ -4,13 +4,14 @@
 #include <ros/ros.h>
 
 #include <std_msgs/Float64.h>
+
 #include <mm_msgs/WrenchInfo.h>
 #include <mm_msgs/Obstacles.h>
-
 #include <mm_kinematics/kinematics.h>
 #include <mm_optimization/qpoases.h>
+
 #include <mm_control/cartesian/control.h>
-#include <mm_motion_control/pose_control/obstacle.h>
+#include <mm_control/cartesian/obstacle.h>
 
 
 namespace mm {

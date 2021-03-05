@@ -2,7 +2,7 @@
 <package format="2">
   <name>mm_control</name>
   <version>0.0.0</version>
-  <description>The mm_control package</description>
+  <description>Control for the UTIAS mobile manipulator.</description>
 
   <maintainer email="adam.heins@robotics.utias.utoronto.ca">Adam Heins</maintainer>
   <author>Adam Heins</author>
@@ -14,6 +14,9 @@
   <depend>mm_msgs</depend>
   <depend>mm_math_util</depend>
   <depend>trajectory_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
 
   <buildtool_depend>catkin</buildtool_depend>
 </package>

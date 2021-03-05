@@ -3,9 +3,10 @@
 #include <ros/ros.h>
 #include <Eigen/Eigen>
 
-#include <mm_control/cartesian/control.h>
 #include <mm_kinematics/kinematics.h>
 #include <mm_optimization/qpoases.h>
+
+#include <mm_control/cartesian/control.h>
 
 namespace mm {
 

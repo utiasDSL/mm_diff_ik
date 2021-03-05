@@ -3,18 +3,27 @@ project(mm_control)
 
 add_compile_options(-std=c++11)
 
+# Required for qpOASES
+add_compile_options(
+  -D__USE_LONG_INTEGERS__
+  -D__USE_LONG_FINTS__
+)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  trajectory_msgs
+  geometry_msgs
+  sensor_msgs
   message_runtime
   cmake_modules
   mm_kinematics
   mm_msgs
   mm_math_util
-  trajectory_msgs
+  mm_optimization
 )
 
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
@@ -39,7 +48,10 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${mm_kinematics_INCLUDE_DIRS}
+  ${mm_math_util_INCLUDE_DIRS}
+  ${mm_optimization_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
+  /usr/local/include/qpOASES
 )
 
 # Library
@@ -49,6 +61,8 @@ add_library(${PROJECT_NAME}
   src/cartesian/spline.cpp
   src/cartesian/trajectory.cpp
   src/cartesian/control.cpp
+  src/cartesian/diffik.cpp
+  src/cartesian/mpc.cpp
   src/joint/point.cpp
   src/joint/spline.cpp
   src/joint/trajectory.cpp
@@ -57,9 +71,28 @@ add_library(${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
+  /usr/local/lib/libqpOASES.so
 )
 
 # Executables
+
+# Differential IK
+add_executable(diff_ik
+  src/nodes/diff_ik.cpp
+)
+target_link_libraries(diff_ik
+  ${catkin_LIBRARIES}
+  ${PROJECT_NAME}
+)
+
+## Cartesian MPC
+add_executable(mpc
+  src/nodes/mpc.cpp
+)
+target_link_libraries(mpc
+  ${catkin_LIBRARIES}
+  ${PROJECT_NAME}
+)
 
 ## joint control
 add_executable(joint_control
@@ -72,7 +105,7 @@ target_link_libraries(joint_control
 
 ## joint_state_mux
 add_executable(joint_state_mux
-  src/nodes/joint_state_mux_node.cpp
+  src/nodes/joint_state_mux.cpp
 )
 target_link_libraries(joint_state_mux
   ${catkin_LIBRARIES}

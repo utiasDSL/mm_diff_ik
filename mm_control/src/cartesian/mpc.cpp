@@ -1,4 +1,4 @@
-#include "mm_motion_control/pose_control/mpc.h"
+#include "mm_control/cartesian/mpc.h"
 
 #include <ros/ros.h>
 #include <Eigen/Eigen>
