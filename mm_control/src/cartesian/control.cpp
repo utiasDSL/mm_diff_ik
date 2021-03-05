@@ -19,14 +19,14 @@ namespace mm {
 bool CartesianController::init(ros::NodeHandle& nh, const double hz) {
   mm::MMController::init(nh, hz);
 
-  state_pub =
-      nh.advertise<mm_msgs::CartesianControllerInfo>("/mm_control_state", 1);
+  info_pub = nh.advertise<mm_msgs::CartesianControllerInfo>(
+      "/mm/control/cartesian/info", 1);
 
-  pose_traj_sub = nh.subscribe("/trajectory/poses", 1,
-                               &CartesianController::pose_traj_cb, this);
+  trajectory_sub = nh.subscribe("/mm/control/cartesian/trajectory", 1,
+                                &CartesianController::trajectory_cb, this);
 
-  point_traj_sub = nh.subscribe("/trajectory/point", 1,
-                                &CartesianController::point_traj_cb, this);
+  point_sub = nh.subscribe("/mm/control/cartesian/point", 1,
+                           &CartesianController::point_cb, this);
 
   traj_active = false;
 }
@@ -81,12 +81,12 @@ void CartesianController::loop() {
   }
 }
 
-void CartesianController::pose_traj_cb(
+void CartesianController::trajectory_cb(
     const mm_msgs::CartesianTrajectory& msg) {
   trajectory.init(msg);
 }
 
-void CartesianController::point_traj_cb(const geometry_msgs::PoseStamped& msg) {
+void CartesianController::point_cb(const geometry_msgs::PoseStamped& msg) {
   Pose pose = pose_msg_to_eigen(msg.pose);
   trajectory.init(pose);
   ROS_INFO("Maintaining current pose.");
@@ -120,7 +120,7 @@ void CartesianController::publish_state(const ros::Time& now) {
   msg.header.frame_id = "world";
   msg.header.stamp = now;
 
-  state_pub.publish(msg);
+  info_pub.publish(msg);
 }
 
 Vector6d calc_cartesian_control_error(const Pose& Pd, const JointVector& q) {

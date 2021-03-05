@@ -15,17 +15,19 @@ SIM_DT = 1.0 / SIM_RATE
 PUB_RATE = 125.0
 PUB_DT = 1.0 / PUB_RATE
 
-HOME_CONFIG = np.array([
-    0,
-    0,
-    0,
-    0,
-    -0.75 * np.pi,
-    -0.5 * np.pi,
-    -0.75 * np.pi,
-    -0.5 * np.pi,
-    0.5 * np.pi,
-])
+HOME_CONFIG = np.array(
+    [
+        0,
+        0,
+        0,
+        0,
+        -0.75 * np.pi,
+        -0.5 * np.pi,
+        -0.75 * np.pi,
+        -0.5 * np.pi,
+        0.5 * np.pi,
+    ]
+)
 
 BASE_VEL_LIM = np.array([1.0, 1.0, 2.0])
 ARM_VEL_LIM = np.array([2.16, 2.16, 3.15, 3.2, 3.2, 3.2])
@@ -60,7 +62,7 @@ class RobotSim(object):
         self.ur10_state_pub = rospy.Publisher(
             "/ur10_joint_states", JointState, queue_size=10
         )
-        self.state_pub = rospy.Publisher("/mm_joint_states", JointState, queue_size=10)
+        self.state_pub = rospy.Publisher("/mm/joint_states", JointState, queue_size=10)
 
         # subscribe to joint speed commands
         self.rb_joint_speed_sub = rospy.Subscriber(
@@ -72,9 +74,8 @@ class RobotSim(object):
 
     def _calc_dqb(self, qb, ub):
         R_wb = rotation2d(qb[2])
-        skew = np.array([[0, -ub[2]], [ub[2], 0]])
         dqb = np.zeros(3)
-        dqb[:2] = R_wb.dot(self.ub[:2])  # + skew.dot(qb[:2])
+        dqb[:2] = R_wb.dot(self.ub[:2])
         dqb[2] = ub[2]
         return dqb
 

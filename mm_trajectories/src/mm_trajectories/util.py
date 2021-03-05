@@ -35,7 +35,9 @@ def create_waypoints(traj, duration, dt):
 
 def publish(waypoints, dt):
     """Publish the waypoints."""
-    traj_pub = rospy.Publisher("/trajectory/poses", CartesianTrajectory, queue_size=10)
+    traj_pub = rospy.Publisher(
+        "/mm/control/cartesian/trajectory", CartesianTrajectory, queue_size=10
+    )
 
     # Need to wait a second between setting up the publisher and actually using
     # it to publish a message.
@@ -68,7 +70,7 @@ class JointInitializer(object):
 
     def __init__(self):
         self.joint_state_sub = rospy.Subscriber(
-            "/mm_joint_states", JointState, self.joint_state_cb
+            "/mm/joint_states", JointState, self.joint_state_cb
         )
         self.initialized = False
 

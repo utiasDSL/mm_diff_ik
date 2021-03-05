@@ -29,8 +29,10 @@ class LidarDetector(object):
 
         self._init_plot()
 
-        self.state_sub = rospy.Subscriber('/mm_joint_states', JointState, self.joint_state_cb)
-        self.scan_sub = rospy.Subscriber('/front/scan', LaserScan, self.scan_cb)
+        self.state_sub = rospy.Subscriber(
+            "/mm/joint_states", JointState, self.joint_state_cb
+        )
+        self.scan_sub = rospy.Subscriber("/front/scan", LaserScan, self.scan_cb)
 
     def _init_plot(self):
         plt.ion()
@@ -40,10 +42,10 @@ class LidarDetector(object):
         self.ax.set_ylim(-3, 1)
         self.ax.grid()
 
-        self.detection_plot, = self.ax.plot([], [], 'o', color='k')
-        self.base_origin_plot, = self.ax.plot([], [], 'o', color='r')
-        self.lidar_plot, = self.ax.plot([], [], 'o', color='r')
-        self.filtered_plot, = self.ax.plot([], [], 'o', color='g')
+        (self.detection_plot,) = self.ax.plot([], [], "o", color="k")
+        (self.base_origin_plot,) = self.ax.plot([], [], "o", color="r")
+        (self.lidar_plot,) = self.ax.plot([], [], "o", color="r")
+        (self.filtered_plot,) = self.ax.plot([], [], "o", color="g")
 
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
@@ -67,7 +69,9 @@ class LidarDetector(object):
         p_ow_ws = p_bw_w[:, None] + R_wb.dot(p_ob_bs)
         p_ow_ws_valid = p_ow_ws[:, valid_mask]
 
-        p_ow_ws_closest = mm_lidar.filter_points_by_distance(p_ob_bs, p_ow_ws, valid_mask)
+        p_ow_ws_closest = mm_lidar.filter_points_by_distance(
+            p_ob_bs, p_ow_ws, valid_mask
+        )
 
         # we can try additional filtering if desired
         # closest_filtered = []
@@ -105,7 +109,7 @@ class LidarDetector(object):
 
 
 def main():
-    rospy.init_node('mm_lidar_viewer')
+    rospy.init_node("mm_lidar_viewer")
 
     rate = rospy.Rate(10)
     detector = LidarDetector()
@@ -115,5 +119,5 @@ def main():
         rate.sleep()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

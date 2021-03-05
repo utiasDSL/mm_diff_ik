@@ -24,11 +24,11 @@ class CartesianController : public MMController {
  protected:
   /** VARIABLES **/
 
-  ros::Publisher state_pub;
+  ros::Publisher info_pub;
 
   // Subscribe to desired end effector pose trajectories.
-  ros::Subscriber pose_traj_sub;
-  ros::Subscriber point_traj_sub;
+  ros::Subscriber trajectory_sub;
+  ros::Subscriber point_sub;
 
   // Trajectory interpolator.
   CartesianTrajectory trajectory;
@@ -36,11 +36,11 @@ class CartesianController : public MMController {
   /** FUNCTIONS **/
 
   // Receive a trajectory of waypoints to follow.
-  void pose_traj_cb(const mm_msgs::CartesianTrajectory& msg);
+  void trajectory_cb(const mm_msgs::CartesianTrajectory& msg);
 
   // Receive a command to keep the EE in place (but the motion control
   // loop is still running so it can respond to e.g. applied forces).
-  void point_traj_cb(const geometry_msgs::PoseStamped& msg);
+  void point_cb(const geometry_msgs::PoseStamped& msg);
 
   void publish_state(const ros::Time& now);
 };  // class CartesianController

@@ -26,10 +26,10 @@ TORQUE_FILTER_TAU = 0.05
 class MMWrenchNode(object):
     def __init__(self, bias=np.zeros(6)):
         self.model = KinematicModel()
-        self.force_smoother = ExponentialSmoother(tau=FORCE_FILTER_TAU,
-                                                  x0=np.zeros(3))
-        self.torque_smoother = ExponentialSmoother(tau=TORQUE_FILTER_TAU,
-                                                   x0=np.zeros(3))
+        self.force_smoother = ExponentialSmoother(tau=FORCE_FILTER_TAU, x0=np.zeros(3))
+        self.torque_smoother = ExponentialSmoother(
+            tau=TORQUE_FILTER_TAU, x0=np.zeros(3)
+        )
         self.bias = bias
 
         self.force_raw = np.zeros(3)
@@ -47,18 +47,22 @@ class MMWrenchNode(object):
         # subs/pubs are initialized last since callbacks are multithreaded and
         # can actually be called before other variables in __init__ have been
         # declared
-        self.joint_states_sub = rospy.Subscriber('/mm_joint_states',
-                                                 JointState,
-                                                 self.joint_states_cb)
+        self.joint_states_sub = rospy.Subscriber(
+            "/mm/joint_states", JointState, self.joint_states_cb
+        )
 
-        self.wrench_sub = rospy.Subscriber('/robotiq_force_torque_wrench',
-                                           WrenchStamped, self.force_cb)
+        self.wrench_sub = rospy.Subscriber(
+            "/robotiq_force_torque_wrench", WrenchStamped, self.force_cb
+        )
 
-        self.force_des_sub = rospy.Subscriber('/force/desired',
-                                              Float64, self.force_des_cb)
+        self.force_des_sub = rospy.Subscriber(
+            "/mm/force_torque/desired", Float64, self.force_des_cb
+        )
 
         # more information about the force processing
-        self.info_pub = rospy.Publisher('/mm_wrench/info', WrenchInfo, queue_size=10)
+        self.info_pub = rospy.Publisher(
+            "/mm/force_torque/info", WrenchInfo, queue_size=10
+        )
 
     def force_cb(self, msg):
         f = msg.wrench.force
@@ -121,7 +125,7 @@ class MMWrenchNode(object):
 
     def loop(self, hz):
         rate = rospy.Rate(hz)
-        rospy.loginfo('Force processing loop started.')
+        rospy.loginfo("Force processing loop started.")
 
         while not rospy.is_shutdown():
             # Transform force to the world frame
@@ -139,7 +143,7 @@ class MMWrenchNode(object):
             f_norm = np.linalg.norm(force_world)
             if f_norm > CONTACT_THRESHOLD:
                 if not self.first_contact:
-                    rospy.loginfo('First contact made.')
+                    rospy.loginfo("First contact made.")
                 self.first_contact = True
                 self.contact = True
             else:
@@ -151,8 +155,8 @@ class MMWrenchNode(object):
             rate.sleep()
 
 
-if __name__ == '__main__':
-    rospy.init_node('mm_wrench_node')
+if __name__ == "__main__":
+    rospy.init_node("mm_wrench_node")
 
     # Listen to initial force measurements to estimate sensor bias.
     bias_estimator = FTBiasEstimator(N_BIAS)

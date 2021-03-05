@@ -70,8 +70,8 @@ def main():
     print(bagname)
     bag = rosbag.Bag(bagname)
 
-    control_msgs = [msg for _, msg, _ in bag.read_messages('/mm_control_state')]
-    joint_msgs = [msg for _, msg, _ in bag.read_messages('/mm_joint_states')]
+    control_msgs = [msg for _, msg, _ in bag.read_messages('/mm/control/cartesian/info')]
+    joint_msgs = [msg for _, msg, _ in bag.read_messages('/mm/joint_states')]
 
     p_rmse1, angle_rmse1 = rmse_from_control_state(control_msgs)
     print('Position RMSE 1 = {} mm'.format(p_rmse1))

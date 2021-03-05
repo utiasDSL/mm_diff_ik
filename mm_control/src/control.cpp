@@ -28,7 +28,7 @@ bool MMController::init(ros::NodeHandle& nh, const double hz) {
     joint_state_rec = false;
     last_joint_state_time = ros::Time::now().toSec();
 
-    mm_joint_states_sub = nh.subscribe("/mm_joint_states", 1,
+    mm_joint_states_sub = nh.subscribe("/mm/joint_states", 1,
             &MMController::mm_joint_states_cb, this);
 
     ur10_joint_vel_pub = nh.advertise<trajectory_msgs::JointTrajectory>(

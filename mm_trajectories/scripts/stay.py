@@ -17,8 +17,8 @@ OFFSET = np.array([0, 0, 0])  # offset from current position
 
 
 def main():
-    rospy.init_node('trajectory_generator')
-    pub = rospy.Publisher('/trajectory/point', PoseStamped, queue_size=10)
+    rospy.init_node("trajectory_generator")
+    pub = rospy.Publisher("/mm/control/cartesian/point", PoseStamped, queue_size=10)
     rospy.sleep(1.0)
 
     p0, quat0 = util.wait_for_initial_pose(DT)
@@ -31,9 +31,8 @@ def main():
 
     pub.publish(msg)
 
-    print('Launched stationary trajectory.')
+    print("Launched stationary trajectory.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-

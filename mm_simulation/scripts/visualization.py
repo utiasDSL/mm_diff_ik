@@ -13,27 +13,28 @@ from mm_kinematics import KinematicModel
 
 class RobotPlotter(object):
     def __init__(self):
-        self.joint_state_sub = rospy.Subscriber('/mm_joint_states', JointState,
-                                                self._joint_state_cb)
+        self.joint_state_sub = rospy.Subscriber(
+            "/mm/joint_states", JointState, self._joint_state_cb
+        )
 
-        self.obstacle_sub = rospy.Subscriber('/obstacles', Obstacles,
-                                             self._obstacle_cb)
+        self.obstacle_sub = rospy.Subscriber("/mm/obstacles", Obstacles, self._obstacle_cb)
 
-        self.traj_sub = rospy.Subscriber('/trajectory/poses', CartesianTrajectory,
-                                         self._traj_cb)
+        self.traj_sub = rospy.Subscriber(
+            "/mm/control/cartesian/trajectory", CartesianTrajectory, self._traj_cb
+        )
 
         self.model = KinematicModel()
 
     def start(self, q0):
-        ''' Launch the plot. '''
+        """Launch the plot."""
         plt.ion()
 
         self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111, projection='3d')
+        self.ax = self.fig.add_subplot(111, projection="3d")
 
-        self.ax.set_xlabel('X')
-        self.ax.set_ylabel('Y')
-        self.ax.set_zlabel('Z')
+        self.ax.set_xlabel("X")
+        self.ax.set_ylabel("Y")
+        self.ax.set_zlabel("Z")
         self.ax.set_xlim([-2, 2])
         self.ax.set_ylim([-2, 2])
         self.ax.set_zlim([0, 2])
@@ -48,13 +49,19 @@ class RobotPlotter(object):
         w_p_b, w_p_e, w_p_t, xs, ys, zs = self._calc_arm_positions()
         x_obs, y_obs, z_obs = self._calc_obs_positions()
 
-        self.line, = self.ax.plot(xs, ys, zs=zs, marker='o')
-        self.ax.plot([0], [0], zs=[0], c='k', marker='o', label='Origin')
-        self.base_pt, = self.ax.plot([w_p_b[0]], [w_p_b[1]], zs=[w_p_b[2]],
-                                     c='g', marker='o', label='Base')
-        self.ee_pt, = self.ax.plot([w_p_e[0], w_p_t[0]], [w_p_e[1], w_p_t[1]],
-                                   zs=[w_p_e[2], w_p_t[2]], c='r', marker='o',
-                                   label='EE/Tool')
+        (self.line,) = self.ax.plot(xs, ys, zs=zs, marker="o")
+        self.ax.plot([0], [0], zs=[0], c="k", marker="o", label="Origin")
+        (self.base_pt,) = self.ax.plot(
+            [w_p_b[0]], [w_p_b[1]], zs=[w_p_b[2]], c="g", marker="o", label="Base"
+        )
+        (self.ee_pt,) = self.ax.plot(
+            [w_p_e[0], w_p_t[0]],
+            [w_p_e[1], w_p_t[1]],
+            zs=[w_p_e[2], w_p_t[2]],
+            c="r",
+            marker="o",
+            label="EE/Tool",
+        )
 
         # draws a plane that was used as an obstacle for force control
         # xp = 1.5
@@ -76,9 +83,11 @@ class RobotPlotter(object):
         #
         # self.plane, = self.ax.plot(xs, ys, zs=zs, color='k')
 
-        self.obs_plot, = self.ax.plot(x_obs, y_obs, zs=z_obs, marker='o', c='k')
+        (self.obs_plot,) = self.ax.plot(x_obs, y_obs, zs=z_obs, marker="o", c="k")
 
-        self.traj_plot, = self.ax.plot(self.x_traj, self.y_traj, zs=self.z_traj, c='k')
+        (self.traj_plot,) = self.ax.plot(
+            self.x_traj, self.y_traj, zs=self.z_traj, c="k"
+        )
 
         self.ax.legend()
 
@@ -120,7 +129,7 @@ class RobotPlotter(object):
         return x_obs, y_obs, z_obs
 
     def refresh(self):
-        ''' Update plot based on current transforms. '''
+        """Update plot based on current transforms."""
         w_p_b, w_p_e, w_p_t, xs, ys, zs = self._calc_arm_positions()
         x_obs, y_obs, z_obs = self._calc_obs_positions()
 
@@ -151,7 +160,7 @@ class RobotPlotter(object):
 
 
 def main():
-    rospy.init_node('mm_visualization')
+    rospy.init_node("mm_visualization")
 
     plot = RobotPlotter()
     plot.start(q0=np.zeros(9))
@@ -161,5 +170,5 @@ def main():
         rospy.sleep(0.05)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

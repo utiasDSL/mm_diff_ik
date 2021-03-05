@@ -27,7 +27,7 @@ class JointStateMux {
                     &JointStateMux::rb_joint_states_cb, this);
 
             mm_joint_states_pub = nh.advertise<sensor_msgs::JointState>(
-                    "/mm_joint_states", 1);
+                    "/mm/joint_states", 1);
 
             rb_rec = false;
             ur10_rec = false;

@@ -27,9 +27,11 @@ class ObstacleDetector(object):
         self.q = np.zeros(9)
         self.scan = None
 
-        self.state_sub = rospy.Subscriber('/mm_joint_states', JointState, self.joint_state_cb)
-        self.scan_sub = rospy.Subscriber('/front/scan', LaserScan, self.scan_cb)
-        self.obstacle_pub = rospy.Publisher('/obstacles', Obstacles, queue_size=10)
+        self.state_sub = rospy.Subscriber(
+            "/mm/joint_states", JointState, self.joint_state_cb
+        )
+        self.scan_sub = rospy.Subscriber("/front/scan", LaserScan, self.scan_cb)
+        self.obstacle_pub = rospy.Publisher("/mm/obstacles", Obstacles, queue_size=10)
 
     def publish(self):
         if not self.scan:
@@ -43,7 +45,9 @@ class ObstacleDetector(object):
         p_ob_bs = p_lb_b[:, None] + R_bl.dot(p_ol_ls)
         p_ow_ws = p_bw_w[:, None] + R_wb.dot(p_ob_bs)
 
-        p_ow_ws_closest = mm_lidar.filter_points_by_distance(p_ob_bs, p_ow_ws, valid_mask)
+        p_ow_ws_closest = mm_lidar.filter_points_by_distance(
+            p_ob_bs, p_ow_ws, valid_mask
+        )
 
         # we can try additional filtering if desired
         # p_ow_ws_valid = p_ow_ws[:, valid_mask]
@@ -77,7 +81,7 @@ class ObstacleDetector(object):
 
 
 def main():
-    rospy.init_node('mm_lidar_publisher')
+    rospy.init_node("mm_lidar_publisher")
 
     rate = rospy.Rate(HZ)
     detector = ObstacleDetector()
@@ -87,5 +91,5 @@ def main():
         rate.sleep()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
