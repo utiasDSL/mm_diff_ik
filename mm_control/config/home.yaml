@@ -1,5 +1,5 @@
 # specify base position once; can be easily changed
-base: [-1.0, 0, 0]
+base: [-1.0, -1.0, 0]
 
 # positions for the arm are independent of the base
 arm:

@@ -5,7 +5,7 @@
 static const double HZ = 125;
 
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "mm_diff_ik_control_node");
+  ros::init(argc, argv, "mm_control_node");
   ros::NodeHandle nh;
 
   ROS_INFO_STREAM("Differential IK controller started.");

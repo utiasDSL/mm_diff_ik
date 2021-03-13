@@ -13,8 +13,8 @@
 #include <mm_math_util/interp.h>
 #include <mm_optimization/qpoases.h>
 
-#include <mm_control/cartesian/point.h>
 #include <mm_control/cartesian/obstacle.h>
+#include <mm_control/cartesian/point.h>
 
 namespace mm {
 
@@ -77,8 +77,8 @@ int DiffIKController::update(const ros::Time& now) {
   // Second QP can optimize manipulability.
   Eigen::VectorXd u1, u2;
   int status1 = qp.solve(u1);
-  int status2 = nullspace_manipulability(qp.data, u1, u2);
-  u = u2;
+  // int status2 = nullspace_manipulability(qp.data, u1, u2);
+  u = u1;
 
   // TODO combine both statuses
   return status1;

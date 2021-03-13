@@ -60,6 +60,7 @@ int QProblem::solve(Eigen::VectorXd &x) {
   if (isnan(state.objective) || isinf(state.objective)) {
     ROS_WARN_STREAM("Objective value = " << state.objective);
     x.setZero(nv, 1);
+    status = 1;  // non-zero status to inform the controller
   }
 
   // Set to zero if the QP is infeasible.
@@ -125,6 +126,7 @@ int SQProblem::solve(Eigen::VectorXd &x) {
   if (isnan(state.objective) || isinf(state.objective)) {
     ROS_WARN_STREAM("Objective value = " << state.objective);
     x.setZero(nv, 1);
+    status = 1;  // non-zero status to inform the controller
   }
 
   // Set to zero if the QP is infeasible.

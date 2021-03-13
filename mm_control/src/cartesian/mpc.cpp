@@ -23,8 +23,8 @@ bool MPController::init(ros::NodeHandle& nh, const double hz) {
   // objectives. This seems to be become more apparent as the horizon grows
   // (so the optimization problem becomes larger).
   Matrix6d Q = Matrix6d::Identity();
-  Q.topLeftCorner<3, 3>() = 100 * Eigen::Matrix3d::Identity();
-  Q.bottomRightCorner<3, 3>() = 100 * Eigen::Matrix3d::Identity();
+  Q.topLeftCorner<3, 3>() = 30 * Eigen::Matrix3d::Identity();
+  Q.bottomRightCorner<3, 3>() = 30 * Eigen::Matrix3d::Identity();
 
   // Effort weight matrix.
   JointMatrix R = JointMatrix::Identity();
@@ -136,6 +136,8 @@ int MPController::update(const ros::Time& now) {
     OptVector ub = dq_max - ubar;
 
     // Acceleration constraints
+    // TODO: using dq here probably results in significant noise: better to use
+    // the last u
     OptVector ubar_1;
     ubar_1 << dq, ubar.head<NUM_OPT - NUM_JOINTS>();
     OptVector nu = ubar - ubar_1;

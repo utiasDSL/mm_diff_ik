@@ -10,7 +10,7 @@ static const double HZ = 125;
 const static mm::JointMatrix Kp = 0.5 * mm::JointMatrix::Identity();
 
 int main(int argc, char** argv) {
-  ros::init(argc, argv, "control_node");
+  ros::init(argc, argv, "mm_control_node");
   ros::NodeHandle nh;
 
   ROS_INFO_STREAM("Joint controller started.");

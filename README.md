@@ -172,8 +172,6 @@ this, run:
 ```bash
 > roscore
 > roslaunch mm_simulation simulation.launch
-> rosrun mm_motion_control mm_control_node
-> rosrun mm_trajectories [trajectory].py
 ```
 where `[trajectory]` is replaced the desired trajectory.
 
@@ -216,10 +214,10 @@ Steps for experiments on the real robot:
    # NOTE: this does usually run fine on the laptop, but can occasionally
    # generate garbage values for joint position or velocity. On the other hand,
    # running on the Thing may have time sync issues between the two computers.
-   laptop > roslaunch mm_motion_control bringup.launch
+   laptop > roslaunch mm_control bringup.launch
 
-   # start the motion control node
-   laptop > rosrun mm_motion_control mm_control_node
+   # start the controller, e.g. differential inverse kinematics
+   laptop > rosrun mm_control diff_ik
 
    # if using force control
    robot > roslaunch mm_force_control force.launch
@@ -231,11 +229,13 @@ Steps for experiments on the real robot:
    ```
 
 ### Go Home
-Go to home position defined in `mm_control/config/home.yaml`. Requires
-bringup.launch to already be launched and running.
+ Requires `bringup.launch` to already be launched and running. Run:
 ```bash
-laptop > roslaunch mm_control home.py <config_name>
+laptop > roslaunch mm_control home.launch config:=<config>
 ```
+where `<config>` the name of one of the home configurations defined in
+`mm_control/config/home.yaml`. If the `config` argument is omitted, it defaults
+to the `standard` home position.
 
 ### Gripper
 Open or close the gripper (experiment only). Run on the laptop:
