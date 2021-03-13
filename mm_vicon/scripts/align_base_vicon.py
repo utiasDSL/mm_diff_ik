@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
-# Align the desired Vicon marker constellation origin with the Vicon room
-# origin. To be done before calibrating the zero pose using the Vicon bridge
-# package.
+"""Align the desired Vicon marker constellation origin with the Vicon room
+origin. To be done before calibrating the zero pose using the Vicon bridge
+package."""
 import rospy
 import numpy as np
 
@@ -14,8 +14,8 @@ K = 0.5 * np.eye(3)  # proportional gain
 MAX_V = 0.2
 EPS = 0.001  # break when error norm smaller than this
 
-ORIGIN_MARKER = 'ThingBase21'
-ORIENTATION_MARKER = 'ThingBase22'
+ORIGIN_MARKER = "ThingBase21"
+ORIENTATION_MARKER = "ThingBase22"
 
 
 def find_marker(name, markers):
@@ -26,13 +26,14 @@ def find_marker(name, markers):
 
 
 class BaseViconCalibrationNode(object):
-    ''' Detect non-constellation vicon markers and republish as obstacles. '''
+    """ Detect non-constellation vicon markers and republish as obstacles. """
+
     def __init__(self):
         self.obstacles = []
-        self.marker_sub = rospy.Subscriber('/vicon/markers', Markers,
-                                           self.marker_cb)
-        self.base_vel_pub = rospy.Publisher('/ridgeback_velocity_controller/cmd_vel',
-                                            Twist, queue_size=10)
+        self.marker_sub = rospy.Subscriber("/vicon/markers", Markers, self.marker_cb)
+        self.base_vel_pub = rospy.Publisher(
+            "/ridgeback_velocity_controller/cmd_vel", Twist, queue_size=10
+        )
         self.initialized = False
         self.markers = []
 
@@ -45,18 +46,19 @@ class BaseViconCalibrationNode(object):
         marker2 = find_marker(ORIENTATION_MARKER, self.markers)
 
         # first marker should be aligned with the origin
-        xe = marker1.translation.x * 0.001
-        ye = marker1.translation.y * 0.001
+        x = marker1.translation.x * 0.001
+        y = marker1.translation.y * 0.001
 
         # vector between the two markers should be aligned with the x-axis
         dx = marker2.translation.x - marker1.translation.x
         dy = marker2.translation.y - marker1.translation.y
-        te = np.arctan2(dy, dx)
+        theta = np.arctan2(dy, dx)
 
-        err = np.array([xe, ye, te])  # error vector
+        desired = np.zeros(3)
+        err = desired - np.array([x, y, theta])
 
         # calculate velocity command, bounding the result
-        cmd = np.minimum(np.maximum(K * err, -MAX_V), MAX_V)
+        cmd = np.minimum(np.maximum(K.dot(err), -MAX_V), MAX_V)
 
         return cmd, err
 
@@ -67,22 +69,22 @@ class BaseViconCalibrationNode(object):
             if self.initialized:
                 cmd, err = self.calc_cmd()
                 if np.linalg.norm(err) < EPS:
-                    rospy.loginfo('Set point reached.')
+                    rospy.loginfo("Set point reached.")
                     break
                 msg = Twist()
-                msg.linear.x = self.cmd[0]
-                msg.linear.y = self.cmd[1]
-                msg.angular.z = self.cmd[2]
+                msg.linear.x = cmd[0]
+                msg.linear.y = cmd[1]
+                msg.angular.z = cmd[2]
                 self.base_vel_pub.publish(msg)
 
             rate.sleep()
 
 
 def main():
-    rospy.init_node('base_vicon_calibration_node')
+    rospy.init_node("base_vicon_calibration_node")
     node = BaseViconCalibrationNode()
     node.loop(HZ)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
