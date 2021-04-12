@@ -72,6 +72,16 @@ catkin build
 catkin build -DCMAKE_BUILD_TYPE=Release
 ```
 
+You'll need some Python packages:
+```
+pip2 install --user numpy sympy dill
+```
+
+Generate additional kinematic functions (these are computed using symbolic math
+in Python and then fast Python and C++ code is generated for them). Run all of
+the scripts starting with `generate_` in `mm_kinematics/scripts`. You'll need
+to compile again afterward: go ahead and run `catkin build` again.
+
 ## Packages
 
 Within this metapackage, we have:
@@ -173,7 +183,6 @@ this, run:
 > roscore
 > roslaunch mm_simulation simulation.launch
 ```
-where `[trajectory]` is replaced the desired trajectory.
 
 Alternatively, there is a separate
 [respository](https://github.com/utiasDSL/dsl__projects__mobile_manipulator_gazebo)

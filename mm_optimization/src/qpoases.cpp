@@ -57,7 +57,7 @@ int QProblem::solve(Eigen::VectorXd &x) {
 
   // If the objective is NaN or inf, then something went wrong. Warn and set
   // the returned solution to zero to avoid mishaps.
-  if (isnan(state.objective) || isinf(state.objective)) {
+  if (std::isnan(state.objective) || std::isinf(state.objective)) {
     ROS_WARN_STREAM("Objective value = " << state.objective);
     x.setZero(nv, 1);
     status = 1;  // non-zero status to inform the controller
@@ -123,7 +123,7 @@ int SQProblem::solve(Eigen::VectorXd &x) {
 
   // If the objective is NaN or inf, then something went wrong. Warn and set
   // the returned solution to zero to avoid mishaps.
-  if (isnan(state.objective) || isinf(state.objective)) {
+  if (std::isnan(state.objective) || std::isinf(state.objective)) {
     ROS_WARN_STREAM("Objective value = " << state.objective);
     x.setZero(nv, 1);
     status = 1;  // non-zero status to inform the controller
