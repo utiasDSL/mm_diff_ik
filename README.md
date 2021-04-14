@@ -48,12 +48,12 @@ sudo apt install libeigen3-dev
 
 The robotiq packages for the gripper (more on this below) require:
 ```
-ros-<distro>-soem ros-<distro>-socketcan-interface
+sudo apt install ros-<distro>-soem ros-<distro>-socketcan-interface
 ```
 
 Running the UR10 driver onboard the laptop requires:
 ```
-ros-<distro>-ur-modern-driver
+sudo apt install ros-<distro>-ur-modern-driver
 ```
 
 DEPRECATED (only do this if things don't work): Symlink to Eigen:
