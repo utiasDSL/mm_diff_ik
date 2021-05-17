@@ -6,6 +6,7 @@ code, and generates the differential kinematics (i.e., Jacobians) for C++.
 """
 import numpy as np
 import sympy as sym
+from sympy.algebras.quaternion import Quaternion
 
 from util import R_t_from_T
 
@@ -58,6 +59,7 @@ class SymbolicKinematicModel(object):
     def __init__(self):
         self._calc_forward_transforms()
         self._calc_geometric_jacobian()
+        self._calc_analytic_jacobian_quat()
         self._lambdify_functions()
 
     def _calc_forward_transforms(self):
@@ -156,10 +158,33 @@ class SymbolicKinematicModel(object):
         # Full Jacobian
         self.J = sym.Matrix.vstack(Jv, Jw)
 
+    def _calc_analytic_jacobian_quat(self):
+        """Calculate analytic Jacobian with rotation parameterized as quaternion."""
+        T = self.T0[13]
+
+        # TODO probably have to rotate the quaternion here too to get out of DH
+        # convention
+        Q = Quaternion.from_rotation_matrix(T[:3, :3])
+        r = T[:3, 3]
+
+        Jps = [sym.diff(r, q) for q in self.q]
+        Jp = sym.Matrix.hstack(*Jps)
+
+        # TODO maybe diff the quaternions then construct afterward
+        Qvec = sym.Matrix([Q.b, Q.c, Q.d, Q.a])  # xyzw
+        # import IPython; IPython.embed()
+        Jos = [sym.diff(Qvec, q) for q in self.q]
+        Jo = sym.Matrix.hstack(*Jos)
+
+        self.Ja = sym.Matrix.vstack(Jp, Jo)
+
     def _lambdify_functions(self):
         """Create lamdified kinematic functions."""
         # Geometric Jacobian
         self.jacobian = sym.lambdify([self.q], self.J.subs(PARAM_SUB_DICT))
+
+        # Analytic Jacobian
+        self.analytic_jacobian = sym.lambdify([self.q], self.Ja.subs(PARAM_SUB_DICT))
 
         T_w_base = self.T0[4].subs(PARAM_SUB_DICT)
         T_w_ee = self.T0[-2].subs(PARAM_SUB_DICT)
