@@ -39,11 +39,24 @@ the future.
 
 ## Software Installation
 
-First, install required dependencies we can get from `apt`:
+First, install required dependencies we can get from `apt` (in the following,
+`<distro>` can be one of `indigo`, `kinetic`, or `melodic`). We always need
+Eigen:
 ```
-sudo apt install ros-indigo-soem ros-indigo-ur-modern-driver libeigen3-dev
+sudo apt install libeigen3-dev
 ```
-Symlink to Eigen:
+
+The robotiq packages for the gripper (more on this below) require:
+```
+sudo apt install ros-<distro>-soem ros-<distro>-socketcan-interface
+```
+
+Running the UR10 driver onboard the laptop requires:
+```
+sudo apt install ros-<distro>-ur-modern-driver
+```
+
+DEPRECATED (only do this if things don't work): Symlink to Eigen:
 ```
 sudo ln -s /usr/include/eigen3/Eigen /usr/include/Eigen
 ```
@@ -52,10 +65,12 @@ Next, clone [vicon_bridge](https://github.com/ethz-asl/vicon_bridge) and
 [robotiq](https://github.com/ros-industrial/robotiq) into the `src` directory
 of your catkin workspace. 
 
-Finally, you'll also need to install [qpOASES](https://github.com/coin-or/qpOASES).
-Clone the repository somewhere convenient (not your catkin workspace; it's not
-a ROS package). Then, to compile, simply enter the cloned repo and type `make`.
-To get ROS to find the qpOASES headers, you'll need to make some symlinks:
+Finally, you'll also need to install
+[qpOASES](https://github.com/coin-or/qpOASES), which is the current QP solver
+of choice for this project. Clone the repository somewhere convenient (not your
+catkin workspace; it's not a ROS package). Then, to compile, simply enter the
+cloned repo and type `make`. To get ROS to find the qpOASES headers, you'll
+need to make some symlinks:
 ```
 sudo ln -s <path/to/qpOASES>/include/qpOASES.hpp /usr/local/include/qpOASES.hpp
 sudo ln -s <path/to/qpOASES>/include/qpOASES     /usr/local/include/qpOASES
@@ -63,7 +78,26 @@ sudo ln -s <path/to/qpOASES>/bin/libqpOASES.so   /usr/local/lib/libqpOASES.so
 ```
 
 Now, clone this repository into the `src` directory of your catkin workspace.
-Then you should be able to build with `catkin`:
+
+### Generate kinematics code
+
+Some of the kinematics code is automatically generated (from symbolic math in
+Python). To generate it, you'll need some Python packages:
+```
+pip2 install --user numpy sympy dill
+```
+
+Now generate the functions:
+```
+cd mm_kinematics/scripts
+./generate_all.sh
+```
+
+### Build
+
+You should now be able to build with `catkin` (if you do not have
+`catkin_tools` installed, see
+[here](https://catkin-tools.readthedocs.io/en/latest/installing.html)):
 ```bash
 # normal build
 catkin build
@@ -173,7 +207,6 @@ this, run:
 > roscore
 > roslaunch mm_simulation simulation.launch
 ```
-where `[trajectory]` is replaced the desired trajectory.
 
 Alternatively, there is a separate
 [respository](https://github.com/utiasDSL/dsl__projects__mobile_manipulator_gazebo)
