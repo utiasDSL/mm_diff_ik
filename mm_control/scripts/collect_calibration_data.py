@@ -1,9 +1,7 @@
 #!/usr/bin/env python2
-"""Send the robot to a home configuration.
+"""Collect calibration data by sended the robot to different poses.
 
-The joint control node must be running.
-
-Configuation is specified by name from the list in config/home.yaml
+The joint control node must be running, and Vicon for the EE poses.
 """
 from datetime import datetime
 import json

@@ -197,6 +197,33 @@ publish the mobile base pose from Vicon, connect to the Vicon wifi
 `DSL_DroneNet_5G` (see the wiki for the password) and run `roslaunch mm_vicon
 vicon.launch`.
 
+## Calibration
+
+Scripts for calibration can be found in `mm_control/scripts`. The calibration
+routine optimizes over two SE(3) transforms, one between the base and arm, and
+one at the end effector, in order to minimize the error between the forward
+kinematic model and the measured EE pose.
+
+The `collect_calibration_data.py` script moves the robot to a sequence of
+configurations and records the joint angles and EE pose as measured by
+Vicon (as a position and quaternion). Vicon and the joint control node must be
+already running. 
+
+Configurations to which the robot will move are specified in
+`mm_control/config/calibration_configs.yaml`. When changing this file, be
+careful to test in simulation to ensure there are no self-collisions! The
+results of the data collection procedure are written to
+`mm_control/data/calibration_data_<date>_<time>.json`.
+
+To perform the calibration procedure, go to `mm_control/scripts` and run
+```
+calibrate.py ../data/<calibration_data_file>
+```
+(or substitute the path to whichever calibration data file you like). The
+optimized transforms are written to
+`mm_control/data/calibration_params_<date>_<time>.json`, where `<date>` and
+`<time>` match those of the calibration data file used.
+
 
 ## Simulation
 
