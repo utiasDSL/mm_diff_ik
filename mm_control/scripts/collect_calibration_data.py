@@ -5,12 +5,14 @@ The joint control node must be running.
 
 Configuation is specified by name from the list in config/home.yaml
 """
+from datetime import datetime
+import json
 import os
+
 import rospy
 import rospkg
 import numpy as np
 import yaml
-import json
 
 from trajectory_msgs.msg import JointTrajectoryPoint
 from geometry_msgs.msg import TransformStamped
@@ -20,7 +22,6 @@ from sensor_msgs.msg import JointState
 HZ = 10
 
 CONFIG_FILE = os.path.join("config", "calibration_configs.yaml")
-DATA_FILE = os.path.join("data", "calibration_data.json")
 
 JOINT_CONTROL_INFO_TOPIC = "/mm/control/joint/info"
 JOINT_CONTROL_SETPOINT_TOPIC = "/mm/control/joint/point"
@@ -42,7 +43,8 @@ def approx_quaternion_average(Q):
 
     This average is a good approximation when the quaternions are similar.
     """
-    return np.mean(Q, axis=0)
+    q = np.mean(Q, axis=0)
+    return q / np.linalg.norm(q)
 
 
 class CalibrationDataListener(object):
@@ -104,7 +106,6 @@ def main():
     rospack = rospkg.RosPack()
     pkg_path = rospack.get_path("mm_control")
     config_path = os.path.join(pkg_path, CONFIG_FILE)
-    data_path = os.path.join(pkg_path, DATA_FILE)
 
     with open(config_path) as f:
         config = yaml.load(f)
@@ -141,6 +142,8 @@ def main():
 
         # wait until controller has converged to the desired location
         while listener.has_large_error(qd):
+            if rospy.is_shutdown():
+                return
             rate.sleep()
 
         rospy.loginfo(
@@ -159,6 +162,11 @@ def main():
 
         rospy.loginfo("Done")
 
+    # save the recorded data
+    data_file_name = (
+        "calibration_data_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".json"
+    )
+    data_path = os.path.join(pkg_path, "data", data_file_name)
     with open(data_path, "w") as f:
         json.dump(data, f, indent=2)
 
