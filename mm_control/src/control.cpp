@@ -35,6 +35,8 @@ bool MMController::init(ros::NodeHandle& nh, const double hz) {
             "/ur_driver/joint_speed", 1);
     rb_joint_vel_pub = nh.advertise<geometry_msgs::Twist>(
             "/ridgeback_velocity_controller/cmd_vel", 1);
+
+    return true;
 }
 
 

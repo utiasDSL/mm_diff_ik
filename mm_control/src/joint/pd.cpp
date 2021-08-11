@@ -18,6 +18,8 @@ bool PDJointController::init(ros::NodeHandle& nh,
                               const JointMatrix& Kp) {
   mm::JointController::init(nh, hz);
   this->Kp = Kp;
+
+  return true;
 }
 
 int PDJointController::update(const ros::Time& now) {

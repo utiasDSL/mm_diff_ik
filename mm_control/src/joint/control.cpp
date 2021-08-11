@@ -25,6 +25,8 @@ bool JointController::init(ros::NodeHandle& nh, const double hz) {
                            &JointController::point_cb, this);
 
   traj_active = false;
+
+  return true;
 }
 
 // Control loop.

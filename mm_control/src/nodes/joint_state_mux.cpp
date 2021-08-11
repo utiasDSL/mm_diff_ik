@@ -31,6 +31,8 @@ class JointStateMux {
 
             rb_rec = false;
             ur10_rec = false;
+
+            return true;
         }
 
         // Update state of UR10 joints.
