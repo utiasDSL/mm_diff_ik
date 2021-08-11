@@ -24,7 +24,7 @@ def create_waypoints(traj, duration, dt):
 
     # convert to waypoint messages
     waypoints = []
-    for i in xrange(N):
+    for i in range(N):
         waypoint = conversions.waypoint_msg(
             ts[i], ps[i, :], vs[i, :], as_[i, :], qs[i, :], ws[i, :], alphas[i, :]
         )
