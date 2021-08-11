@@ -7,7 +7,7 @@ code, and generates the differential kinematics (i.e., Jacobians) for C++.
 import numpy as np
 import sympy as sym
 
-from util import R_t_from_T
+from mm_kinematics.util import R_t_from_T
 
 
 JOINT_NAMES = ['xb', 'yb', 'tb', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6']
@@ -97,7 +97,7 @@ class SymbolicKinematicModel(object):
         self.T0 = [sym.eye(4)]
 
         # Construct intermediate transforms.
-        for i in xrange(13):
+        for i in range(13):
             self.T0.append(self.T0[i] * self.T[i])
 
         # self.T0[1]  = self.T0[0]  * self.T[0]
