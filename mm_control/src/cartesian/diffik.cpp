@@ -35,6 +35,8 @@ bool DiffIKController::init(ros::NodeHandle& nh, const double hz) {
   force = Eigen::Vector3d::Zero();
   torque = Eigen::Vector3d::Zero();
   nf_xy << 1, 0;
+
+  return true;
 }
 
 int DiffIKController::update(const ros::Time& now) {

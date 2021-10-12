@@ -1,0 +1,10 @@
+# Sequence of poses of the arm that the robot moves to collect data for
+# calibration. Currently, the base does not move (calibration is done wherever
+# the base happens to be). Care must be taken to specify configurations in an
+# order such that no self-collisions occur.
+arm:
+  - [0.0, -2.3562, -1.5708, -2.3562, -1.5708, 1.5708]  # standard home
+  - [0.0, -3.1416, 0.0, 0.0, 0.0, 0.0]  # fully stretched out
+  - [0.0, -3.1416, 1.5708, 0.0, 1.5708, 0.0]
+  - [1.5708, -1.5708, -1.5708, 0.0, 0.0, -1.5708]
+  - [1.5708, -1.5708, -1.5708, -1.5708, 1.5708, -1.5708]

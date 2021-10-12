@@ -29,6 +29,8 @@ bool CartesianController::init(ros::NodeHandle& nh, const double hz) {
                            &CartesianController::point_cb, this);
 
   traj_active = false;
+
+  return true;
 }
 
 // Control loop.

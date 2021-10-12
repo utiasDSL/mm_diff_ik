@@ -6,9 +6,6 @@ from vicon_bridge.msg import Markers
 
 HZ = 10
 
-ORIGIN_MARKER = 'ThingEE1'
-# ORIENTATION_MARKER = 'ThingBase22'
-
 
 def find_marker(name, markers):
     for marker in markers:
@@ -18,11 +15,11 @@ def find_marker(name, markers):
 
 
 class MarkerEchoNode(object):
-    ''' Detect non-constellation vicon markers and republish as obstacles. '''
+    """Detect non-constellation vicon markers and republish as obstacles."""
+
     def __init__(self, marker_name):
         self.obstacles = []
-        self.marker_sub = rospy.Subscriber('/vicon/markers', Markers,
-                                           self.marker_cb)
+        self.marker_sub = rospy.Subscriber("/vicon/markers", Markers, self.marker_cb)
         self.marker_name = marker_name
         self.initialized = False
         self.markers = []
@@ -43,10 +40,10 @@ class MarkerEchoNode(object):
 
 def main():
     marker_name = sys.argv[1]
-    rospy.init_node('base_vicon_calibration_node')
+    rospy.init_node("base_vicon_calibration_node")
     node = MarkerEchoNode(marker_name)
     node.loop(HZ)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
