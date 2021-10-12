@@ -6,7 +6,7 @@ code, and generates the differential kinematics (i.e., Jacobians) for C++.
 """
 import numpy as np
 import sympy as sym
-import sympy.vector as symv
+from sympy.algebras.quaternion import Quaternion
 
 from mm_kinematics.util import R_t_from_T
 
@@ -67,12 +67,22 @@ T_ee_palm = symbolic_dh_transform(0, 0, 0.2, 0)
 T_ee_ft = symbolic_transform(r=sym.Matrix([0.02, 0, 0]))
 
 
+def skew(v):
+    return sym.Matrix([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+
+
+def cross(a, b):
+    """Cross product between sympy vectors a and b."""
+    return skew(a) * b
+
+
 class SymbolicKinematicModel(object):
     """Symbolic kinematic model for the Thing mobile manipulator."""
 
     def __init__(self):
         self._calc_forward_transforms()
         self._calc_geometric_jacobian()
+        # self._calc_analytic_jacobian_quat()  # this is quite slow
         self._lambdify_functions()
 
     def _calc_forward_transforms(self):
@@ -145,6 +155,14 @@ class SymbolicKinematicModel(object):
         z9 = R9 * z
         z10 = R10 * z
 
+        p_tb = t0_3
+        p_q1 = t0_6
+        p_q2 = t0_7
+        p_q3 = t0_8
+        p_q4 = t0_9
+        p_q5 = t0_10
+        p_q6 = t0_11
+
         # joints xb and yb are prismatic, and so cause no angular velocity.
         Jo = sym.Matrix.hstack(sym.zeros(3, 2), z2, z5, z6, z7, z8, z9, z10)
         Jp = sym.Matrix.hstack(
@@ -166,10 +184,33 @@ class SymbolicKinematicModel(object):
         # Full Jacobian
         self.J = sym.Matrix.vstack(Jp, Jo)
 
+    def _calc_analytic_jacobian_quat(self):
+        """Calculate analytic Jacobian with rotation parameterized as quaternion."""
+        T = self.T0[13]
+
+        # TODO probably have to rotate the quaternion here too to get out of DH
+        # convention
+        Q = Quaternion.from_rotation_matrix(T[:3, :3])
+        r = T[:3, 3]
+
+        Jps = [sym.diff(r, q) for q in self.q]
+        Jp = sym.Matrix.hstack(*Jps)
+
+        # TODO maybe diff the quaternions then construct afterward
+        Qvec = sym.Matrix([Q.b, Q.c, Q.d, Q.a])  # xyzw
+        # import IPython; IPython.embed()
+        Jos = [sym.diff(Qvec, q) for q in self.q]
+        Jo = sym.Matrix.hstack(*Jos)
+
+        self.Ja = sym.Matrix.vstack(Jp, Jo)
+
     def _lambdify_functions(self):
         """Create lamdified kinematic functions."""
         # Geometric Jacobian
         self.jacobian = sym.lambdify([self.q], self.J.subs(PARAM_SUB_DICT))
+
+        # Analytic Jacobian
+        # self.analytic_jacobian = sym.lambdify([self.q], self.Ja.subs(PARAM_SUB_DICT))
 
         T_w_base = self.T0[4].subs(PARAM_SUB_DICT)
         T_w_ee = self.T0[-2].subs(PARAM_SUB_DICT)
