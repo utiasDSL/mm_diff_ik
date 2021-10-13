@@ -1,85 +1,110 @@
 #pragma once
 
-#include <Eigen/Eigen>
 #include <ros/ros.h>
+#include <Eigen/Eigen>
 
 #include <std_msgs/Float64.h>
 
-#include <mm_msgs/WrenchInfo.h>
-#include <mm_msgs/Obstacles.h>
 #include <mm_kinematics/kinematics.h>
+#include <mm_msgs/Obstacles.h>
+#include <mm_msgs/WrenchInfo.h>
 #include <mm_optimization/qpoases.h>
 
 #include <mm_control/cartesian/control.h>
 #include <mm_control/cartesian/obstacle.h>
 
-
 namespace mm {
 
 // Distances for the velocity damper constraints.
 static const double M_PI_6 = M_PI / 6.0;
-static const JointVector INFLUENCE_DIST((JointVector() <<
-    0.5, 0.5, M_PI_6,                               /* base */
-    M_PI_4, M_PI_4, M_PI_4, M_PI_4, M_PI_4, M_PI_4  /* arm */
-).finished());
+static const JointVector INFLUENCE_DIST((JointVector() << 0.5,
+                                         0.5,
+                                         M_PI_6, /* base */
+                                         M_PI_4,
+                                         M_PI_4,
+                                         M_PI_4,
+                                         M_PI_4,
+                                         M_PI_4,
+                                         M_PI_4 /* arm */
+                                         ).finished());
 
 static const JointVector SAFETY_DIST = 0.25 * INFLUENCE_DIST;
 
 // Make the joint true if a position limit should be enforced, false otherwise.
 static const bool POSITIION_LIMITED[] = {
-    false, false, false,               /* base */
-    true, true, true, true, true, true /* arm  */
+    false, false, false,                  /* base */
+    true,  true,  true,  true, true, true /* arm  */
 };
 
 // Force values are in Newtons
 static const double MAX_COMPLIANCE_FORCE = 100;
 static const double FORCE_THRESHOLD = 5;
 
-static const int NUM_WSR = 50; // max number of working set recalculations
-
+static const int NUM_WSR = 50;  // max number of working set recalculations
 
 class DiffIKController : public CartesianController {
-    public:
-        DiffIKController() {}
-        ~DiffIKController() {}
+ public:
+  DiffIKController() {}
+  ~DiffIKController() {}
 
-        bool init(ros::NodeHandle& nh, const double hz);
+  bool init(ros::NodeHandle& nh, const double hz);
 
-    private:
-        /** VARIABLES **/
-        // Subscriber for information from the force/torque sensor.
-        ros::Subscriber wrench_info_sub;
+ private:
+  /** VARIABLES **/
+  // Subscriber for information from the force/torque sensor.
+  ros::Subscriber wrench_info_sub;
 
-        // Subscriber for desired force.
-        // TODO redundant: also contained in force info
-        ros::Subscriber force_des_sub;
+  // Subscriber for desired force.
+  // TODO redundant: also contained in force info
+  ros::Subscriber force_des_sub;
 
-        // Subscriber for obstacle detections.
-        ros::Subscriber obstacle_sub;
+  // Subscriber for obstacle detections.
+  ros::Subscriber obstacle_sub;
 
-        double fd;
-        Eigen::Vector3d force;
-        Eigen::Vector3d torque;
-        Eigen::Vector2d nf_xy;
-        std::vector<ObstacleModel> obstacles;
+  double fd;
+  Eigen::Vector3d force;
+  Eigen::Vector3d torque;
+  Eigen::Vector2d nf_xy;
+  std::vector<ObstacleModel> obstacles;
 
-        /** FUNCTIONS **/
-        int update(const ros::Time& now);
+  /** FUNCTIONS **/
+  int update(const ros::Time& now);
 
-        void wrench_info_cb(const mm_msgs::WrenchInfo& msg);
-        void force_des_cb(const std_msgs::Float64 msg);
-        void obstacle_cb(const mm_msgs::Obstacles& msg);
+  void wrench_info_cb(const mm_msgs::WrenchInfo& msg);
+  void force_des_cb(const std_msgs::Float64 msg);
+  void obstacle_cb(const mm_msgs::Obstacles& msg);
 
-        int nullspace_manipulability(qpoases::QPData& qp1_data,
-                                     const Eigen::VectorXd& u1,
-                                     Eigen::VectorXd& u2);
+  int nullspace_manipulability(qpoases::QPData& qp1_data,
+                               const Eigen::VectorXd& u1,
+                               Eigen::VectorXd& u2);
 
-        void calc_primary_objective(const ros::Time& now, JointMatrix& H,
-                                    JointVector& g);
+  void calc_primary_objective(const ros::Time& now,
+                              JointMatrix& H,
+                              JointVector& g);
 
-        void calc_joint_limits(JointVector& lb, JointVector& ub);
+  void calc_joint_limits(JointVector& lb, JointVector& ub);
 
-        int calc_obstacle_constraints(Eigen::MatrixXd& A, Eigen::VectorXd& b);
+  int calc_obstacle_constraints(Eigen::MatrixXd& A, Eigen::VectorXd& b);
+
+  // Functions to compute various components of the objective function.
+  void minimize_joint_velocity_objective(const JointMatrix& Q,
+                                         JointMatrix& H,
+                                         JointVector& g);
+  void minimize_joint_acceleration_objective(JointMatrix& H, JointVector& g);
+  void avoid_joint_limits_objective(JointMatrix& H, JointVector& g);
+  void pose_error_and_force_compliance_objective(const ros::Time& now,
+                                                 const Matrix6d& Kp,
+                                                 const Matrix6d& Kf,
+                                                 const Matrix6d& W,
+                                                 JointMatrix& H,
+                                                 JointVector& g);
+  void pushing_objective(const ros::Time& now,
+                         const double alpha_push,
+                         const double alpha_nf,
+                         const Matrix6d& W,
+                         JointMatrix& H,
+                         JointVector& g);
+  void manipulability_objective(JointMatrix& H, JointVector& g);
 };
 
-} // namespace mm
+}  // namespace mm

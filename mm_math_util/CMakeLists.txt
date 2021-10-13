@@ -39,12 +39,14 @@ include_directories(
 )
 
 # Tests
-catkin_add_executable_with_gtest(test_differentiation
-  test/test_differentiation.cpp
-)
-catkin_add_executable_with_gtest(test_wrap
-  test/test_wrap.cpp
-)
-catkin_add_executable_with_gtest(test_interp
-  test/test_interp.cpp
-)
+if(CATKIN_ENABLE_TESTING)
+  catkin_add_executable_with_gtest(test_differentiation
+    test/test_differentiation.cpp
+  )
+  catkin_add_executable_with_gtest(test_wrap
+    test/test_wrap.cpp
+  )
+  catkin_add_executable_with_gtest(test_interp
+    test/test_interp.cpp
+  )
+endif()

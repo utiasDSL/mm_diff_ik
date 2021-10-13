@@ -79,11 +79,16 @@ int DiffIKController::update(const ros::Time& now) {
   // Second QP can optimize manipulability.
   Eigen::VectorXd u1, u2;
   int status1 = qp.solve(u1);
-  // int status2 = nullspace_manipulability(qp.data, u1, u2);
+  int status2 = 0;  // 0 = good
   u = u1;
 
-  // TODO combine both statuses
-  return status1;
+  // uncomment to solve manipulability objective in the nullspace of primary QP
+  // solution
+  // status2 = nullspace_manipulability(qp.data, u1, u2);
+  // u = u2;
+
+  // If either status is non-zero, final status is too.
+  return status1 || status2;
 }
 
 void DiffIKController::wrench_info_cb(const mm_msgs::WrenchInfo& msg) {
@@ -146,15 +151,91 @@ int DiffIKController::nullspace_manipulability(qpoases::QPData& qp1_data,
   return qp.solve(u2);
 }
 
-void DiffIKController::calc_primary_objective(const ros::Time& now,
-                                              JointMatrix& H,
-                                              JointVector& g) {
+void DiffIKController::minimize_joint_velocity_objective(const JointMatrix& Q,
+                                                         JointMatrix& H,
+                                                         JointVector& g) {
+  H = Q;
+  g = JointVector::Zero();
+}
+
+void DiffIKController::minimize_joint_acceleration_objective(JointMatrix& H,
+                                                             JointVector& g) {
+  H = JointMatrix::Zero();
+  g = JointVector::Zero();
+
+  // Only do numerical differentiation with a non-zero timestep.
+  if (dt * dt > 0) {
+    H = JointMatrix::Identity() / (dt * dt);
+    g = -dq.transpose() * H;
+  }
+}
+
+void DiffIKController::avoid_joint_limits_objective(JointMatrix& H,
+                                                    JointVector& g) {
+  // Base has no limits, so first three joints are unweighted.
+  H = dt * dt * JointMatrix::Identity();
+  H.topLeftCorner<3, 3>() = Eigen::Matrix3d::Zero();
+
+  g = dt * (2 * q - (POSITION_LIMITS_UPPER + POSITION_LIMITS_LOWER));
+  g.head<3>() = Eigen::Vector3d::Zero();
+}
+
+void DiffIKController::pose_error_and_force_compliance_objective(
+    const ros::Time& now,
+    const Matrix6d& Kp,
+    const Matrix6d& Kf,
+    const Matrix6d& W,
+    JointMatrix& H,
+    JointVector& g) {
   // Sample the trajectory.
   CartesianTrajectoryPoint Xd;
   trajectory.sample(now, Xd);
 
   Vector6d Vd;
   Vd << Xd.twist.linear, Xd.twist.angular;
+
+  // Calculate mapping from base inputs to generalized coordinates. The
+  // former are in the base frame while the latter are in the world frame.
+  JointMatrix B = JointMatrix::Identity();
+  Kinematics::calc_joint_input_map(q, B);
+
+  // Calculate Jacobian.
+  JacobianMatrix J;
+  Kinematics::jacobian(q, J);
+  JacobianMatrix JB = J * B;
+
+  Eigen::Vector3d f_compliant = force;
+  Eigen::Vector3d torque_compliant = torque;
+
+  double f_norm = force.norm();
+  if (f_norm > MAX_COMPLIANCE_FORCE) {
+    f_compliant = MAX_COMPLIANCE_FORCE * force / f_norm;
+  }
+
+  Vector6d wrench_compliant;
+  wrench_compliant << f_compliant, torque_compliant;
+
+  Vector6d wrench_compliant_d = Vector6d::Zero();
+  wrench_compliant_d << 0, 0, fd, 0, 0, 0;
+
+  Vector6d P_err = calc_cartesian_control_error(Xd.pose, q);
+  Vector6d W_err = wrench_compliant_d - wrench_compliant;
+
+  Vector6d V_compliant = Vd + Kp * P_err + Kf * W_err;
+
+  H = JB.transpose() * W * JB;
+  g = -V_compliant.transpose() * W * JB;
+}
+
+void DiffIKController::pushing_objective(const ros::Time& now,
+                                         const double alpha_push,
+                                         const double alpha_nf,
+                                         const Matrix6d& W,
+                                         JointMatrix& H,
+                                         JointVector& g) {
+  // Sample the trajectory.
+  CartesianTrajectoryPoint Xd;
+  trajectory.sample(now, Xd);
 
   // Calculate mapping from base inputs to generalized coordinates. The
   // former are in the base frame while the latter are in the world frame.
@@ -169,96 +250,6 @@ void DiffIKController::calc_primary_objective(const ros::Time& now,
   Kinematics::jacobian(q, J);
   JacobianMatrix JB = J * B;
 
-  double f_norm = force.norm();
-
-  /*************************************************************************/
-  /* 1. Minimize velocity objective. */
-
-  JointMatrix Q1 = JointMatrix::Identity();
-  JointVector C1 = JointVector::Zero();
-
-  // To reduce base movement, increase the base joint weighting.
-  // Q1.topLeftCorner<3, 3>() = 10 * Eigen::Matrix3d::Identity();
-
-  /*************************************************************************/
-  /* 2. Avoid joint limits objective. */
-
-  // Base has no limits, so first three joints are unweighted.
-  JointMatrix Q2 = dt * dt * JointMatrix::Identity();
-  Q2.topLeftCorner<3, 3>() = Eigen::Matrix3d::Zero();
-
-  JointVector C2 =
-      dt * (2 * q - (POSITION_LIMITS_UPPER + POSITION_LIMITS_LOWER));
-  C2.head<3>() = Eigen::Vector3d::Zero();
-
-  /*************************************************************************/
-  /* 3. Error minimization objective */
-
-  Matrix6d Kp = Matrix6d::Identity();
-  // Kp.diagonal() << 1, 1, 1, 0, 0, 0;
-
-  Matrix6d W3 = Matrix6d::Identity();
-  // W3.diagonal() << 1, 1, 1, 0, 0, 0;
-
-  JointMatrix Q3 = JB.transpose() * W3 * JB;
-  JointVector C3 = -(Kp * P_err + Vd).transpose() * W3 * JB;
-
-  /*************************************************************************/
-  /* 4. Minimize joint acceleration */
-
-  JointMatrix Q4 = JointMatrix::Zero();
-  JointVector C4 = JointVector::Zero();
-
-  // Only do numerical differentiation with a non-zero timestep.
-  // if (dt * dt > 0) {
-  //     Q4 = JointMatrix::Identity() / (dt * dt);
-  //     C4 = -dq.transpose() * Q4;
-  // }
-
-  /*************************************************************************/
-  /* 5. Force compliance */
-
-  // Limit the maximum force applied by compliance. Not a feature of the
-  // controller, but reasonable for safety when interacting with people.
-  // TODO does this make sense? shouldn't this make it so that the robot
-  // eventually stops deviating from its position?
-  Eigen::Vector3d f_compliant = force;
-  Eigen::Vector3d torque_compliant = torque;
-  if (f_norm > MAX_COMPLIANCE_FORCE) {
-    f_compliant = MAX_COMPLIANCE_FORCE * force / f_norm;
-  }
-
-  Vector6d wrench_compliant;
-  wrench_compliant << f_compliant, torque_compliant;
-
-  Matrix6d Kp_com = Matrix6d::Zero();
-  Kp_com.diagonal() << 1, 1, 0, 1, 1, 1;
-
-  // only comply in directions where gain is non-zero
-  // 0.01 is pretty good for human interaction; could even probably go a bit
-  // higher
-  Matrix6d Kf_com = Matrix6d::Zero();
-  // Matrix6d Kf_com = 0.01 * Matrix6d::Identity();
-  Kf_com.diagonal() << 0, 0, 0.005, 0, 0, 0;
-  // Kf_com.diagonal() << 0, 0, 0, 0.01, 0.01, 0.01;
-
-  // TODO should take in fd as a vector
-  Vector6d wrench_compliant_d = Vector6d::Zero();
-  // wrench_compliant_d << 0, 0, fd, 0, 0, 0;
-  wrench_compliant_d << 0, 0, -10, 0, 0, 0;
-  Vector6d W_err = wrench_compliant_d - wrench_compliant;
-  // ROS_INFO_STREAM("Wd = " << wrench_compliant_d);
-
-  Vector6d Vc = Vd + Kp_com * P_err + Kf_com * W_err;
-  // ROS_INFO_STREAM("Vc = " << Vc);
-
-  Matrix6d W5 = Matrix6d::Identity();
-  JointMatrix Q5 = JB.transpose() * W5 * JB;
-  JointVector C5 = -Vc.transpose() * W5 * JB;
-
-  /*************************************************************************/
-  /* 7. Pushing */
-
   // position normal
   Eigen::Vector2d np_xy = P_err.head<2>().normalized();
 
@@ -270,56 +261,116 @@ void DiffIKController::calc_primary_objective(const ros::Time& now,
   Eigen::Vector2d f_xy = force.head<2>();
   if (f_xy.norm() > FORCE_THRESHOLD) {
     nf_xy = f_xy.normalized();
-    // ROS_INFO_STREAM("f_xy = " << f_xy);
   } else {
-    double alpha_nf = 0.01;
     nf_xy = slerp2d(nf_xy, np_xy, alpha_nf);
   }
 
   // push direction balances between the two
-  double alpha_push = 0.5;
   Eigen::Vector2d push_dir = slerp2d(nf_xy, np_xy, -alpha_push);
 
   // TODO fixed gains for now
-  Vector6d Vp = Vector6d::Zero();
-  Vp << 0.2 * push_dir, 1 * P_err.tail<4>();
+  Vector6d V_push = Vector6d::Zero();
+  V_push << 0.2 * push_dir, 1 * P_err.tail<4>();
 
-  Matrix6d W7 = Matrix6d::Identity();
-  JointMatrix Q7 = B.transpose() * J.transpose() * W7 * J * B;
-  JointVector C7 = -Vp.transpose() * W7 * J * B;
+  H = JB.transpose() * W * JB;
+  g = -V_push.transpose() * W * JB;
 
   // for safety, in case end of trajectory is reached
   // if (P_err.head<2>().norm() <= 0.2) {
   //     ROS_INFO_STREAM("near end, stopping");
-  //     Q7 = JointMatrix::Zero();
-  //     C7 = JointVector::Zero();
+  //     H = JointMatrix::Zero();
+  //     g = JointVector::Zero();
   // }
+}
 
-  // get rid of these for now to avoid accidental mess ups
-  Q7 = JointMatrix::Zero();
-  C7 = JointVector::Zero();
+void DiffIKController::manipulability_objective(JointMatrix& H,
+                                                JointVector& g) {
+  JointMatrix B = JointMatrix::Identity();
+  Kinematics::calc_joint_input_map(q, B);
+
+  JointVector m_grad;
+  Kinematics::manipulability_gradient_analytic(q, m_grad);
+  g = -dt * B.transpose() * m_grad;
+  H = JointMatrix::Zero();
+}
+
+void DiffIKController::calc_primary_objective(const ros::Time& now,
+                                              JointMatrix& H,
+                                              JointVector& g) {
+  /*************************************************************************/
+  /* Minimize velocity objective. */
+
+  JointMatrix R = JointMatrix::Identity();
+  // To reduce base movement, increase the base joint weighting.
+  // R.topLeftCorner<3, 3>() = 10 * Eigen::Matrix3d::Identity();
+
+  JointMatrix H_vel;
+  JointVector g_vel;
+  minimize_joint_velocity_objective(R, H_vel, g_vel);
+
+  /*************************************************************************/
+  /* Avoid joint limits objective. */
+
+  JointMatrix H_limit;
+  JointVector g_limit;
+  avoid_joint_limits_objective(H_limit, g_limit);
+
+  /*************************************************************************/
+  /* Minimize joint acceleration */
+
+  JointMatrix H_acc;
+  JointVector g_acc;
+  minimize_joint_acceleration_objective(H_acc, g_acc);
+
+  /*************************************************************************/
+  /* Pose error and force compliance */
+
+  Matrix6d Kp = Matrix6d::Identity();
+  // Kp.diagonal() << 1, 1, 1, 0, 0, 0;
+  // Kp.diagonal() << 1, 1, 0, 1, 1, 1;
+
+  // only comply in directions where gain is non-zero
+  // 0.01 is pretty good for human interaction; could even probably go a bit
+  // higher
+  Matrix6d Kf = 0.01 * Matrix6d::Identity();
+  // Kf.diagonal() << 0, 0, 0.005, 0, 0, 0;
+
+  Matrix6d W = Matrix6d::Identity();
+
+  JointMatrix H_err;
+  JointVector g_err;
+  pose_error_and_force_compliance_objective(now, Kp, Kf, W, H_err, g_err);
+
+  /*************************************************************************/
+  /* Pushing */
+
+  JointMatrix H_push;
+  JointVector g_push;
+  Matrix6d W_push = Matrix6d::Identity();
+  pushing_objective(now, /* alpha_push = */ 0.5, /* alpha_nf = */ 0.01, W_push,
+                    H_push, g_push);
 
   /*************************************************************************/
   /* Manipulability */
 
-  // JointVector m_grad;
-  // Kinematics::manipulability_gradient_analytic(q, m_grad);
-  // JointVector C_mi = -dt * B.transpose() * m_grad;
+  JointMatrix H_manip;
+  JointVector g_manip;
+  manipulability_objective(H_manip, g_manip);
 
   /*************************************************************************/
   /* Objective weighting */
 
-  double w1 = 1.0;    // minimize velocity -- this should typically be 1.0
-  double w2 = 0.0;    // avoid joint limits
-  double w3 = 100.0;  // minimize pose error
-  double w4 = 0.0;    // minimize acceleration
-  double w5 = 0.0;    // force compliance
-  double w7 = 0.0;    // pushing
-  double w_mi = 0.0;
+  double w_vel = 1.0;  // should typically be 1.0
+  double w_limit = 0.0;
+  double w_acc = 0.0;
+  double w_err = 100.0;
+  double w_push = 0.0;
+  double w_manip = 0.0;
 
-  H = w1 * Q1 + w2 * Q2 + w3 * Q3 + w4 * Q4 + w5 * Q5 + w7 * Q7;
-  g = w1 * C1 + w2 * C2 + w3 * C3 + w4 * C4 + w5 * C5 +
-      w7 * C7;  // + w_mi*C_mi;
+  H = w_vel * H_vel + w_limit * H_limit + w_acc * H_acc + w_err * H_err +
+      w_push * H_push + w_manip * H_manip;
+  g = w_vel * g_vel + w_limit * g_limit + w_acc * g_acc + w_err * g_err +
+      w_push * g_push + w_manip * g_manip;
 }
 
 void DiffIKController::calc_joint_limits(JointVector& lb, JointVector& ub) {

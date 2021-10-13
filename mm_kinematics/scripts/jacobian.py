@@ -6,10 +6,6 @@ import tf.transformations as tfs
 import IPython
 
 
-def cross(x):
-    return np.array([[0, -x[2], x[1]], [x[2], 0, -x[0]], [-x[1], x[0], 0]])
-
-
 def main():
     np.set_printoptions(precision=3, suppress=True)
     model = SymbolicKinematicModel()

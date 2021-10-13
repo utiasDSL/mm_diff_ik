@@ -75,18 +75,20 @@ target_link_libraries(${PROJECT_NAME}
 # )
 
 # Tests
-catkin_add_executable_with_gtest(test_kinematics
-  test/test_kinematics.cpp
-)
-target_link_libraries(test_kinematics
-  ${PROJECT_NAME}
-)
+if(CATKIN_ENABLE_TESTING)
+  catkin_add_executable_with_gtest(test_kinematics
+    test/test_kinematics.cpp
+  )
+  target_link_libraries(test_kinematics
+    ${PROJECT_NAME}
+  )
 
-catkin_add_executable_with_gtest(test_manipulability
-  test/test_manipulability.cpp
-)
-target_link_libraries(test_manipulability
-  ${PROJECT_NAME}
-)
+  catkin_add_executable_with_gtest(test_manipulability
+    test/test_manipulability.cpp
+  )
+  target_link_libraries(test_manipulability
+    ${PROJECT_NAME}
+  )
+endif()
 
 endif()
