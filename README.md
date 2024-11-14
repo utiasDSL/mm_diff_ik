@@ -1,7 +1,15 @@
-# Mobile Manipulation
+# Differential Inverse Kinematics Control for Mobile Manipulation
 
 This repository contains ROS packages for control and other utilities for the
-UTIAS mobile manipulator (the "Thing"). 
+UTIAS mobile manipulator (the "Thing"). In particular, it contains the code
+used for the experiments in [this
+paper](https://doi.org/10.1109/CRV52889.2021.00017) (the PDF can also be found
+[here](https://www.dynsyslab.org/wp-content/papercite-data/pdf/heins-crv21.pdf)).
+You can also find a video [here](http://tiny.cc/crv21-mm).
+
+This repository has been superseded by
+[mobile_manipulation_central](https://github.com/utiasDSL/mobile_manipulation_central)
+and is **no longer maintained**.
 
 ## Contents
 1. [Robot Information](#robot-information)
@@ -21,7 +29,7 @@ front that provides a two-dimensional scan in a 270 degree arc in front of the
 robot. The end effector has a Robotiq FT 300 force torque sensor mounted at the
 wrist to measure the applied wrench, as well as Robotiq 3 finger gripper for
 manipulation. See the
-[datasheets](https://github.com/utiasDSL/dsl__projects__mobile_manipulator/tree/master/datasheets)
+[datasheets](https://github.com/utiasDSL/mm_diff_ik/tree/master/datasheets)
 for more details on each of the components.
 
 ### Software
@@ -193,7 +201,7 @@ Defines custom ROS messages used by other packages in the project.
 
 Basic simulation of the Thing kinematics in Python with a simple matplotlib
 visualization. There is also a Gazebo simulation available
-[here](https://github.com/utiasDSL/dsl__projects__mobile_manipulator_gazebo).
+[here](https://github.com/utiasDSL/mm_diff_ik_gazebo).
 
 
 ### mm_trajectories
@@ -247,7 +255,7 @@ this, run:
 ```
 
 Alternatively, there is a separate
-[respository](https://github.com/utiasDSL/dsl__projects__mobile_manipulator_gazebo)
+[respository](https://github.com/utiasDSL/mm_diff_ik_gazebo)
 containing packages for a Gazebo simulation, which should be entirely
 compatible with the controllers in this package. Assuming that repository has been installed in the workspace, built, and sourced, then instead of
 ```
